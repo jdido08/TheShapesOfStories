@@ -1,0 +1,1 @@
+Please carefully double check your analysis to ensure it is both accurate and internally consistent (e.g. decreasing arcs are matched by decreasing end_emotional_scores between story components). If corrections are needed, please only output the corrected JSON

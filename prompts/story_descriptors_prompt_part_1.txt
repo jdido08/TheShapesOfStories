@@ -1,0 +1,6 @@
+Please carefully evaluate the story component below, then identify key words and/or phrases that best represent and describe the plot of the story component.Note that:
+1. The key words/phrases could be popular quotes, characters, events, objects, settings of the story component plot
+2. All key words/phrases should be listed in chronological order
+3. No key word/phrase should contain the name of the story or the name of the main protagonist
+4. Each key word/phrase must end with a period (".")
+5. The total length of characters of all key words/phrases for a story component should be around provided chars_capacity number

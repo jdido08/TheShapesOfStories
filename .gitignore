@@ -155,3 +155,4 @@ config.yaml
 booksum/
 .csv
 scripts/
+.data
