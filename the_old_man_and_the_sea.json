@@ -2,6 +2,7 @@
     "story_plot_data": {
         "title": "The Old Man and the Sea",
         "protagonist": "Santiago",
+        "overall_context": "An aging fisherman named Santiago struggles with a giant marlin far out in the Gulf Stream.",
         "story_components": [
             {
                 "end_time": 0,

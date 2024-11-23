@@ -306,7 +306,7 @@ def transform_story_data(data):
             arc_y_values = np.insert(arc_y_values, 0, prepend_y)
         
         data['story_components'][story_component_index]['arc_x_values'] = arc_x_values.tolist()
-        data['story_components'][story_component_index]['arc_y_valyes'] = arc_y_values.tolist()
+        data['story_components'][story_component_index]['arc_y_values'] = arc_y_values.tolist()
 
         story_component_index = story_component_index + 1
 

@@ -1,3 +1,4 @@
+# Import necessary libraries
 import cairo
 import gi
 import numpy as np
@@ -5,11 +6,21 @@ import math
 from shapely.geometry import Polygon
 from shapely.affinity import rotate as shapely_rotate
 import shapely.affinity
+import openai  # For LLM interactions
+import yaml
+from openai import OpenAI
 
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
 gi.require_version('PangoCairo', '1.0')
 from gi.repository import Pango, PangoCairo
+
+
+    # Load API key from config
+with open("config.yaml", 'r') as stream:
+    config = yaml.safe_load(stream)
+    OPENAI_KEY = config['openai_key_vonnegutgraphs']
+    client = OpenAI(api_key=OPENAI_KEY)
 
 def create_shape(story_data):
     # Extract the overall x_values and y_values
@@ -79,13 +90,14 @@ def create_shape(story_data):
     all_rendered_boxes = []
 
     # Process each story component
-    for component in story_data['story_components'][1:]:
-        arc_x_values = component['arc_x_values']
-        arc_y_values = component['arc_y_values']
-        description = component['description']
+    for component in story_data['story_components']:
+        arc_x_values = component.get('arc_x_values', [])
+        arc_y_values = component.get('arc_y_values', [])
+        description = component.get('description', '')
+        descriptors = component.get('descriptors', [])
 
-        # Skip if description or arc data is missing
-        if not description or not arc_x_values or not arc_y_values:
+        # Skip if arc data is missing
+        if not arc_x_values or not arc_y_values:
             continue
 
         # Scale and shift arc coordinates
@@ -110,11 +122,131 @@ def create_shape(story_data):
             cr.line_to(x, y)
         cr.stroke()
 
-        # Draw text along the arc using the original text plotting behavior
-        draw_text_on_curve(cr, arc_x_values_scaled, arc_y_values_scaled, description, pangocairo_context, font_desc, all_rendered_boxes)
+        # Step 1: Calculate arc length
+        arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled)
+
+        # Step 2: Estimate characters that fit
+        average_char_width = get_average_char_width(pangocairo_context, font_desc)
+        num_characters = estimate_characters_fit(arc_length, average_char_width)
+
+        # Ensure at least some characters can be displayed
+        if num_characters < 5:
+            continue  # Skip this arc if too small
+
+        # Step 3: Generate descriptors
+        descriptors_text = generate_descriptors(
+            overall_context=story_data.get('overall_context', ''),
+            specific_section=description,
+            existing_descriptors=descriptors,
+            desired_length=num_characters
+        )
+
+        # Step 4: Render the text along the arc
+        draw_text_on_curve(
+            cr, arc_x_values_scaled, arc_y_values_scaled, descriptors_text,
+            pangocairo_context, font_desc, all_rendered_boxes
+        )
 
     # Save the image to a file
     surface.write_to_png("text_along_curve.png")
+
+def calculate_arc_length(arc_x_values, arc_y_values):
+    segment_lengths = np.hypot(
+        np.diff(arc_x_values), np.diff(arc_y_values)
+    )
+    total_length = np.sum(segment_lengths)
+    return total_length
+
+def get_average_char_width(pangocairo_context, font_desc):
+    # Measure average character width
+    layout = Pango.Layout.new(pangocairo_context)
+    layout.set_font_description(font_desc)
+    # Use a representative sample of characters
+    sample_text = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    layout.set_text(sample_text, -1)
+    total_width = layout.get_pixel_size()[0]
+    average_char_width = total_width / len(sample_text)
+    return average_char_width
+
+def estimate_characters_fit(arc_length, average_char_width, spacing=1.0):
+    # Estimate the number of characters that can fit along the arc
+    return int(arc_length / (average_char_width * spacing))
+
+def generate_descriptors(overall_context, specific_section, existing_descriptors, desired_length):
+    # Use existing descriptors if available
+    descriptors = existing_descriptors.copy()
+
+    # If descriptors are empty or insufficient, use LLM to generate more
+    if not descriptors or len(' '.join(descriptors)) < desired_length:
+        # System message to set context for the model
+        system_message = {
+            "role": "system",
+            "content": "You are an expert storyteller. Your task is to provide a list of concise keywords or phrases that represent and describe story segments effectively."
+        }
+
+        # User message as the main prompt
+        user_message = {
+            "role": "user",
+            "content": f"""
+Given the context of the novel "The Old Man and the Sea" and the following specific section, please provide a list of concise keywords or phrases that best represent and describe this story segment. The keywords/phrases should help observers identify this particular story segment and should include:
+
+1. Iconic phrases or popular quotes from the story segment.
+2. Names or descriptions of important or iconic characters involved in that part of the story.
+3. Names or descriptions of significant events that occur during the segment.
+4. Names or descriptions of notable inanimate objects that play a role in the story segment.
+5. Names or descriptions of key settings where the story segment takes place.
+6. Descriptive phrases of the story segment.
+
+All keywords/phrases should be listed in chronological order and end with punctuation (e.g., a period or exclamation point). The total length should be approximately {desired_length} characters.
+
+**Overall Context:**
+{overall_context}
+
+**Specific Section:**
+{specific_section}
+
+**Descriptors (Approximately {desired_length} characters):**
+"""
+        }
+
+        # Compile messages
+        chat_messages = [system_message, user_message]
+
+        # Create completion request
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",  # Update as needed
+            messages=chat_messages,
+            max_tokens=desired_length // 4,  # Estimate tokens from character length
+            temperature=0.7
+        )
+
+        # Parse and extract the response content
+        response_text = completion.choices[0].message.content.strip()
+        
+        # Split the generated text into descriptors
+        generated_descriptors = [phrase.strip() for phrase in response_text.split('\n') if phrase.strip()]
+        descriptors.extend(generated_descriptors)
+
+    # Ensure descriptors are unique and in chronological order
+    descriptors = list(dict.fromkeys(descriptors))
+
+    # Add punctuation if missing
+    descriptors = [desc if desc[-1] in '.!?' else desc + '.' for desc in descriptors]
+
+    # Combine descriptors into a single text, separated by spaces
+    descriptors_text = ' '.join(descriptors)
+
+    # Trim the text if it exceeds the desired length
+    if len(descriptors_text) > desired_length:
+        descriptors_text = descriptors_text[:desired_length].rstrip()
+        # Remove partial word at the end
+        if not descriptors_text.endswith((' ', '.', '!', '?')):
+            descriptors_text = descriptors_text.rsplit(' ', 1)[0]
+        descriptors_text += '.'
+
+    return descriptors_text
+
+
 
 def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
     # Initialize variables for character placement

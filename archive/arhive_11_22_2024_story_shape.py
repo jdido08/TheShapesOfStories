@@ -11,11 +11,7 @@ gi.require_version('Pango', '1.0')
 gi.require_version('PangoCairo', '1.0')
 from gi.repository import Pango, PangoCairo
 
-def create_shape(story_data):
-    # Extract the overall x_values and y_values
-    x_values = story_data['x_values']
-    y_values = story_data['y_values']
-
+def create_shape(x_values, y_values, text):
     # Set image dimensions based on desired inches and DPI
     dpi = 300  # High-quality print resolution
     width_in_inches = 15
@@ -46,9 +42,6 @@ def create_shape(story_data):
     x_values_scaled = [(x - x_min) * scale_x + margin_x for x in x_values]
     y_values_scaled = [height - ((y - y_min) * scale_y + margin_y) for y in y_values]  # Invert y-axis
 
-    # Create a mapping from original to scaled coordinates
-    coordinate_mapping = dict(zip(zip(x_values, y_values), zip(x_values_scaled, y_values_scaled)))
-
     # Create a Cairo surface and context with the specified width and height
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     cr = cairo.Context(surface)
@@ -57,7 +50,7 @@ def create_shape(story_data):
     cr.set_source_rgb(1, 1, 1)  # White background
     cr.paint()
 
-    # Draw the overall curve (optional, for visualization)
+    # Draw the curve (optional, for visualization)
     cr.set_source_rgb(0, 0, 0)  # Black color for the curve
     cr.set_line_width(2)  # Increase line width for better visibility in high-resolution
 
@@ -69,62 +62,6 @@ def create_shape(story_data):
         cr.line_to(x, y)
 
     cr.stroke()
-
-    # Prepare Pango layout
-    pangocairo_context = PangoCairo.create_context(cr)
-    font_size = 72  # Adjust font size as needed
-    font_desc = Pango.FontDescription(f"Sans {font_size}")
-
-    # For overlap detection between arcs
-    all_rendered_boxes = []
-
-    # Process each story component
-    for component in story_data['story_components'][1:]:
-        arc_x_values = component['arc_x_values']
-        arc_y_values = component['arc_y_values']
-        description = component['description']
-
-        # Skip if description or arc data is missing
-        if not description or not arc_x_values or not arc_y_values:
-            continue
-
-        # Scale and shift arc coordinates
-        arc_x_values_scaled = []
-        arc_y_values_scaled = []
-        for x, y in zip(arc_x_values, arc_y_values):
-            if (x, y) in coordinate_mapping:
-                x_scaled, y_scaled = coordinate_mapping[(x, y)]
-            else:
-                # Scale individually if not in the overall mapping
-                x_scaled = (x - x_min) * scale_x + margin_x
-                y_scaled = height - ((y - y_min) * scale_y + margin_y)
-            arc_x_values_scaled.append(x_scaled)
-            arc_y_values_scaled.append(y_scaled)
-
-        # Draw the arc
-        cr.set_source_rgb(0, 0, 0)  # Black color for the arc
-        cr.set_line_width(2)
-
-        cr.move_to(arc_x_values_scaled[0], arc_y_values_scaled[0])
-        for x, y in zip(arc_x_values_scaled[1:], arc_y_values_scaled[1:]):
-            cr.line_to(x, y)
-        cr.stroke()
-
-        # Draw text along the arc using the original text plotting behavior
-        draw_text_on_curve(cr, arc_x_values_scaled, arc_y_values_scaled, description, pangocairo_context, font_desc, all_rendered_boxes)
-
-    # Save the image to a file
-    surface.write_to_png("text_along_curve.png")
-
-def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
-    # Initialize variables for character placement
-    char_positions = []
-    total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
-    cumulative_curve_lengths = np.insert(np.cumsum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))), 0, 0)
-
-    idx_on_curve = 0  # Index on the curve
-    distance_along_curve = 0  # Distance along the curve
-    rendered_boxes = []  # List to keep track of character bounding boxes
 
     # Function to calculate the tangent angle at a point on the curve
     def get_tangent_angle(x_vals, y_vals, idx):
@@ -139,6 +76,21 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
             dy = y_vals[idx + 1] - y_vals[idx - 1]
         angle = math.atan2(dy, dx)
         return angle
+
+    # Prepare Pango layout
+    pangocairo_context = PangoCairo.create_context(cr)
+    font_size = 72  # Adjust font size as needed
+    font_desc = Pango.FontDescription(f"Sans {font_size}")
+
+    # Initialize variables for character placement
+    char_positions = []
+    total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
+    cumulative_curve_lengths = np.insert(np.cumsum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))), 0, 0)
+
+    # Start placing characters
+    idx_on_curve = 0  # Index on the curve
+    distance_along_curve = 0  # Distance along the curve
+    rendered_boxes = []  # List to keep track of character bounding boxes
 
     for char in text:
         # Measure character dimensions
@@ -182,27 +134,15 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
             translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
 
             # Check for overlap with the previous character
-            overlap = False
             if rendered_boxes:
                 if translated_box.intersects(rendered_boxes[-1]):
                     # Move further along the curve to avoid overlap
                     distance_along_curve += 1  # Increase this step as needed for performance vs. precision
                     continue
 
-            # Check for overlap with other arcs' characters
-            for other_box in all_rendered_boxes:
-                if translated_box.intersects(other_box):
-                    # Move further along the curve to avoid overlap
-                    distance_along_curve += 1  # Increase this step as needed for performance vs. precision
-                    overlap = True
-                    break
-            if overlap:
-                continue
-
             # No overlap detected, place the character
             char_positions.append((x, y, angle, char, char_width, char_height))
             rendered_boxes.append(translated_box)
-            all_rendered_boxes.append(translated_box)
 
             # Move the distance along the curve forward by the width of the character
             distance_along_curve += char_width  # Adjust as necessary
@@ -229,3 +169,7 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
         # Render the character
         PangoCairo.show_layout(cr, layout)
         cr.restore()
+
+    # Save the image to a file
+    surface.write_to_png("text_along_curve.png")
+
