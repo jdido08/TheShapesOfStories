@@ -1,9 +1,7 @@
 from structured_story_data import create_story_data
 from story_function import transform_story_data
-#from story_shape import create_shape
-# from story_shape_w_summary import create_shape
-from story_shape_w_descriptors import create_shape
-# from story_shape_w_dynamic_descriptors import create_shape
+#from story_shape_w_descriptors_2 import create_shape
+from story_shape_w_descriptors_3 import create_shape
 import json
 
 #input path should be composite data

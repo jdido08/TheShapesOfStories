@@ -67,8 +67,6 @@ def create_shape(story_data):
     x_range = x_max - x_min
     y_range = y_max - y_min
 
-
-
     # Calculate scaling factors without preserving aspect ratio
     drawable_width = width - 2 * margin_x
     drawable_height = height - 2 * margin_y
@@ -135,8 +133,6 @@ def create_shape(story_data):
                 y_scaled = height - ((y - y_min) * scale_y + margin_y)
             arc_x_values_scaled.append(x_scaled)
             arc_y_values_scaled.append(y_scaled)
-
-        #get arc x and y values in original scales in json
 
         # Draw the arc
         cr.set_source_rgb(0, 0, 0)  # Black color for the arc
@@ -260,6 +256,11 @@ Generate a succinct, concise, and stylized description for the following segment
 Your description should:
 
 - Be exactly **{desired_length}** words long.
+- **First, draft the description following the guidelines below.**
+- **Then, count the number of words in your description and adjust it to meet the exact word count if necessary.**
+
+Guidelines for the description:
+
 - Consist of keywords or phrases that best represent and describe this story segment.
 - Help observers identify this particular story segment.
 - Include elements such as:
@@ -275,32 +276,36 @@ Your description should:
 - **Do not include any quotation marks ("") in the outputs.**
 - **Punctuation and spaces are included but do not count as words.**
 
-**Example 1:**
+**Example with Step-by-Step Word Count:**
 
 - **Title:** "Harry Potter and the Sorcerer's Stone"
 - **Component Description:** "Harry discovers he is a wizard and goes to Hogwarts for the first time."
 - **Desired Word Count:** 15
 
-Sample Description:
+**Step 1: Draft the Description**
 
 Privet Drive. Hagrid Arrives. Wizard Revelation. Diagon Alley. Wand Chooses Wizard. Hogwarts Express. Sorting Hat.
 
+**Step 2: Count the Words**
+
+- Privet Drive. *(2 words)*
+- Hagrid Arrives. *(2 words)*
+- Wizard Revelation. *(2 words)*
+- Diagon Alley. *(2 words)*
+- Wand Chooses Wizard. *(3 words)*
+- Hogwarts Express. *(2 words)*
+- Sorting Hat. *(2 words)*
+
+**Total Words:** 2 + 2 + 2 + 2 + 3 + 2 + 2 = **15 words**
+
+**The description meets the desired word count.**
+
 ---
 
-**Example 2:**
+**Here's the JSON providing more context on the entire story:**
 
-- **Title:** "The Lord of the Rings: The Fellowship of the Ring"
-- **Component Description:** "The formation of the Fellowship and the beginning of their journey."
-- **Desired Word Count:** 20
-
-Sample Description:
-
-Shire Begins. Ring Found. Gandalf Warns. Bree Meeting. Strider Leads. Rivendell Council. Fellowship Forms. Moria Mines. Balrog Encounter. Gandalf Falls.
-
----
-
-Here's the JSON providing more context on the entire story:
 {story_dict}
+
 """
             }
 
@@ -334,6 +339,7 @@ def adjust_descriptors(desired_length, actual_length, original_output, chat_mess
     user_message = {
         "role": "user",
         "content":f"""
+
 The previous description does not meet the required word count specifications.
 
 - **Target Word Count:** {desired_length}
@@ -344,29 +350,30 @@ The previous description does not meet the required word count specifications.
 
 Please revise the description to meet the following requirements:
 
+1. **First, draft the revised description following the guidelines below.**
+2. **Then, count the number of words in your description and adjust it to meet the exact word count if necessary.**
+
+Guidelines for the description:
+
 - Adjust the description to be exactly **{desired_length}** words long.
-- Ensure that all previous guidelines are followed:
-
-  - Consist of keywords or phrases that best represent and describe the story segment.
-  - Help observers identify this particular story segment.
-  - Include elements such as:
-    1. Iconic phrases or popular quotes from the story segment.
-    2. Names or descriptions of important or iconic characters involved or introduced in that part of the story.
-    3. Names or descriptions of significant events that occur during the segment.
-    4. Names or descriptions of notable inanimate objects that play a role in the story segment.
-    5. Names or descriptions of key settings where the story segment takes place.
-    6. Descriptive phrases of the story segment.
-  - List the keywords/phrases in chronological order.
-  - **Capitalize all important words in the keywords/phrases, except for unimportant words such as articles, conjunctions, and prepositions.**
-  - Include spaces within keywords or phrases as needed, and **include a space after the punctuation that separates keywords/phrases.**
-  - **Do not include any quotation marks ("") in the outputs.**
-  - **Punctuation and spaces are included but do not count as words.**
-
-Please adjust your description accordingly to meet the exact word count and guidelines.
+- Consist of keywords or phrases that best represent and describe the story segment.
+- Help observers identify this particular story segment.
+- Include elements such as:
+  - Iconic phrases or popular quotes from the story segment.
+  - Names or descriptions of important or iconic characters involved or introduced in that part of the story.
+  - Names or descriptions of significant events that occur during the segment.
+  - Names or descriptions of notable inanimate objects that play a role in the story segment.
+  - Names or descriptions of key settings where the story segment takes place.
+  - Descriptive phrases of the story segment.
+- List the keywords/phrases in chronological order.
+- **Capitalize all important words in the keywords/phrases, except for unimportant words such as articles, conjunctions, and prepositions.**
+- Include spaces within keywords or phrases as needed, and **include a space after the punctuation that separates keywords/phrases.**
+- **Do not include any quotation marks ("") in the outputs.**
+- **Punctuation and spaces are included but do not count as words.**
 
 ---
 
-**Example Adjustment:**
+**Example Adjustment with Step-by-Step Word Count:**
 
 If the original output was:
 
@@ -375,11 +382,61 @@ Privet Drive. Hagrid Arrives. Diagon Alley. Wand Chooses. Hogwarts Express. Sort
 - **Actual Word Count:** 12
 - **Target Word Count:** 15
 
-An adjusted version meeting the 15-word requirement could be:
+**Step 1: Draft the Revised Description**
 
-Privet Drive. Letters Arrive. Hagrid Visits. Diagon Alley. Ollivander's Wand Chooses. Hogwarts Express. Sorting Hat Ceremony.
+Privet Drive. Letters Flood In. Hagrid Arrives. Diagon Alley Visit. Ollivander's Wand Chooses Wizard. Hogwarts Express. Sorting Hat Ceremony.
 
-- **Adjusted Word Count:** 15 words
+**Step 2: Count the Words**
+
+- Privet Drive. *(2 words)*
+- Letters Flood In. *(3 words)*
+- Hagrid Arrives. *(2 words)*
+- Diagon Alley Visit. *(3 words)*
+- Ollivander's Wand Chooses Wizard. *(4 words)*
+- Hogwarts Express. *(2 words)*
+- Sorting Hat Ceremony. *(3 words)*
+
+**Total Words:** 2 + 3 + 2 + 3 + 4 + 2 + 3 = **19 words**
+
+**Adjustment Needed:**
+
+Since the total word count exceeds the target, we need to reduce the number of words.
+
+**Final Revised Description:**
+
+Privet Drive. Hagrid Arrives. Wizard Revelation. Diagon Alley. Wand Chooses. Hogwarts Express. Sorting Hat.
+
+**Counting Again:**
+
+- Privet Drive. *(2 words)*
+- Hagrid Arrives. *(2 words)*
+- Wizard Revelation. *(2 words)*
+- Diagon Alley. *(2 words)*
+- Wand Chooses. *(2 words)*
+- Hogwarts Express. *(2 words)*
+- Sorting Hat. *(2 words)*
+
+**Total Words:** 2 x 7 phrases = **14 words**
+
+We still need one more word. Let's adjust:
+
+**Adjusted Description:**
+
+Privet Drive. Hagrid Arrives. Wizard Revelation. Diagon Alley. Ollivander's Wand Chooses. Hogwarts Express. Sorting Hat.
+
+**Counting Words:**
+
+- Privet Drive. *(2 words)*
+- Hagrid Arrives. *(2 words)*
+- Wizard Revelation. *(2 words)*
+- Diagon Alley. *(2 words)*
+- Ollivander's Wand Chooses. *(3 words)*
+- Hogwarts Express. *(2 words)*
+- Sorting Hat. *(2 words)*
+
+**Total Words:** 2 + 2 + 2 + 2 + 3 + 2 + 2 = **15 words**
+
+**The description now meets the desired word count.**
 """
     }
 
@@ -517,6 +574,10 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
         # Render the character
         PangoCairo.show_layout(cr, layout)
         cr.restore()
+
+
+
+
 
 
 

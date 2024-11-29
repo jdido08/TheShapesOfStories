@@ -10,7 +10,7 @@ import openai  # For LLM interactions
 import yaml
 from openai import OpenAI
 import copy
-from story_function import get_component_arc_function
+from archive.story_function_test_2 import get_component_arc_function
 
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
@@ -68,7 +68,6 @@ def create_shape(story_data):
     y_range = y_max - y_min
 
 
-
     # Calculate scaling factors without preserving aspect ratio
     drawable_width = width - 2 * margin_x
     drawable_height = height - 2 * margin_y
@@ -113,30 +112,31 @@ def create_shape(story_data):
 
     title = story_data.get('title', '')
 
+    # Inside the create_shape function
+
     # Process each story component
-    for component in story_data['story_components'][1:]:
+    for component_index, component in enumerate(story_data['story_components'][1:]):
+        # Extract arc data and description
         arc_x_values = component.get('arc_x_values', [])
         arc_y_values = component.get('arc_y_values', [])
         description = component.get('description', '')
-
+        
+        # Ensure arc_x_values and arc_y_values are lists
+        arc_x_values = list(arc_x_values)
+        arc_y_values = list(arc_y_values)
+        
         # Skip if arc data is missing
-        if not arc_x_values or not arc_y_values:
+        if len(arc_x_values) == 0 or len(arc_y_values) == 0:
             continue
 
         # Scale and shift arc coordinates
         arc_x_values_scaled = []
         arc_y_values_scaled = []
         for x, y in zip(arc_x_values, arc_y_values):
-            if (x, y) in coordinate_mapping:
-                x_scaled, y_scaled = coordinate_mapping[(x, y)]
-            else:
-                # Scale individually if not in the overall mapping
-                x_scaled = (x - x_min) * scale_x + margin_x
-                y_scaled = height - ((y - y_min) * scale_y + margin_y)
+            x_scaled = (x - x_min) * scale_x + margin_x
+            y_scaled = margin_y + (y_max - y) * scale_y  # Adjust y-values and invert y-axis
             arc_x_values_scaled.append(x_scaled)
             arc_y_values_scaled.append(y_scaled)
-
-        #get arc x and y values in original scales in json
 
         # Draw the arc
         cr.set_source_rgb(0, 0, 0)  # Black color for the arc
@@ -150,69 +150,100 @@ def create_shape(story_data):
         # Step 1: Calculate arc length
         arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled)
 
-        # Step 2: Estimate characters that fit
+        # Step 2: Estimate the number of characters that fit
         average_char_width = get_average_char_width(pangocairo_context, font_desc)
         target_chars = estimate_characters_fit(arc_length, average_char_width)
-        target_words = target_chars / 4.7
+        target_words = target_chars / 5  # Approximate average word length
 
-        # Ensure at least some characters can be displayed
+        # Ensure at least some words can be displayed
         if target_words < 5:
             continue  # Skip this arc if too small
-        
-        x = 5  # Acceptable percentage range
-        lower_bound = target_words * (1 - x / 100)
-        upper_bound = target_words * (1 + x / 100)
 
-        valid_descriptor = False
+        # Define acceptable range (±5% of target)
+        acceptable_range = 0.05
+        lower_bound = target_words * (1 - acceptable_range)
+        upper_bound = target_words * (1 + acceptable_range)
+
         # Step 3: Generate descriptors
         descriptors_text, chat_messages = generate_descriptors(
             title=title,
             component_description=description,
             story_dict=simple_story_data,
-            desired_length=target_words
+            desired_length=int(target_words)
         )
-        
-        actual_chars = len(descriptors_text) 
+
         actual_words = len(descriptors_text.split())
 
-        print("original descriptors: ", descriptors_text, " | target: ", target_words, " | actual: ",  actual_words, "Acceptable Range: ", lower_bound, " - ", upper_bound)
+        print(f"Original descriptors: '{descriptors_text}' | Target words: {target_words:.2f} | "
+            f"Actual words: {actual_words} | Acceptable range: {lower_bound:.2f} - {upper_bound:.2f}")
 
-        # Check if actual_chars falls within the range
-        if lower_bound <= actual_chars <= upper_bound:
-            valid_descriptor = True
-        else:
+        # Check if actual word count falls within the acceptable range
+        if not (lower_bound <= actual_words <= upper_bound):
             count = 1
-            while not valid_descriptor and count < 5:
-                
+            max_attempts = 5
+            while count < max_attempts:
+                # Adjust descriptors
                 descriptors_text, chat_messages = adjust_descriptors(
-                    desired_length=target_words,
+                    desired_length=int(target_words),
                     actual_length=actual_words,
                     original_output=descriptors_text,
                     chat_messages=chat_messages
                 )
-               
 
-                actual_chars = len(descriptors_text)
                 actual_words = len(descriptors_text.split())
+
+                print(f"Adjusted descriptors: '{descriptors_text}' | Target words: {target_words:.2f} | "
+                    f"Actual words: {actual_words} | Attempt: {count}/{max_attempts}")
+
                 if lower_bound <= actual_words <= upper_bound:
-                    valid_descriptor = True
+                    break  # Acceptable descriptor length achieved
 
-                print("adjusted_descriptors: ", descriptors_text, " | target: ", target_words, " | actual: ",  actual_words, "Acceptable Range: ", lower_bound, " - ", upper_bound)
-                count = count + 1
-            
+                count += 1
 
+        # Step 4: Calculate text length in pixels
+        text_length_in_pixels = calculate_text_length_in_pixels(descriptors_text, pangocairo_context, font_desc)
 
+        # Step 5: Compare text length with arc length
+        if text_length_in_pixels > arc_length:
+            # Extend the arc
+            extended_arc_x_values_scaled, extended_arc_y_values_scaled = extend_arc(
+                component['arc_x_values'], component['arc_y_values'], arc_x_values_scaled, arc_y_values_scaled,
+                text_length_in_pixels, arc_length, component, x_min, x_max, y_min, y_max,
+                scale_x, scale_y, margin_x, margin_y
+            )
+            # Update the arc values
+            arc_x_values_scaled = extended_arc_x_values_scaled
+            arc_y_values_scaled = extended_arc_y_values_scaled
+            # Update the component's scaled x and y values
+            component['arc_x_values_scaled'] = arc_x_values_scaled
+            component['arc_y_values_scaled'] = arc_y_values_scaled
 
+            # Get the new adjusted end point
+            adjusted_end_point = (arc_x_values_scaled[-1], arc_y_values_scaled[-1])
 
+            # Update subsequent arcs
+            update_subsequent_arcs(
+                story_data['story_components'],
+                component_index,
+                adjusted_end_point,
+                scale_x,
+                scale_y,
+                margin_x,
+                margin_y,
+                x_min,
+                y_max
+            )
 
-        # Step 4: Render the text along the arc
+        # Step 6: Render the text along the arc
         draw_text_on_curve(
             cr, arc_x_values_scaled, arc_y_values_scaled, descriptors_text,
             pangocairo_context, font_desc, all_rendered_boxes
         )
 
-    # Save the image to a file
-    surface.write_to_png("text_along_curve.png")
+
+        # Save the image to a file
+        surface.write_to_png("text_along_curve.png")
+
 
 def calculate_arc_length(arc_x_values, arc_y_values):
     segment_lengths = np.hypot(
@@ -518,7 +549,142 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
         PangoCairo.show_layout(cr, layout)
         cr.restore()
 
+def calculate_text_length_in_pixels(text, pangocairo_context, font_desc):
+    # Create a layout for the text
+    layout = Pango.Layout.new(pangocairo_context)
+    layout.set_font_description(font_desc)
+    layout.set_text(text, -1)
+    text_width, _ = layout.get_pixel_size()
+    return text_width
 
+
+def extend_arc(arc_x_values, arc_y_values, arc_x_values_scaled, arc_y_values_scaled,
+               text_length_in_pixels, arc_length, component, x_min, x_max, y_min, y_max,
+               scale_x, scale_y, margin_x, margin_y):
+    # Calculate how much extra length is needed
+    extra_length_needed = text_length_in_pixels - arc_length
+
+    # Reconstruct the arc function with extrapolation allowed
+    x1 = component['x1_unscaled']
+    y1 = component['y1_unscaled']
+    x2 = component['x2_unscaled']
+    y2 = component['y2_unscaled']
+    arc_type = component['arc_type']
+
+    arc_function = get_component_arc_function(x1, x2, y1, y2, arc_type, allow_extrapolation=True)
+
+    # Determine the x increment based on the existing arc
+    x_increment = (arc_x_values[-1] - arc_x_values[0]) / len(arc_x_values)
+
+    # Start from the last unscaled x value
+    x_prev = arc_x_values[-1]
+    y_prev = arc_y_values[-1]
+
+    adjusted_arc_x_values = list(arc_x_values)
+    adjusted_arc_y_values = list(arc_y_values)
+
+    cumulative_length = arc_length
+
+    # Extend the arc until the cumulative length matches the text length
+    while cumulative_length < text_length_in_pixels:
+        x_new = x_prev + x_increment
+        y_new = arc_function(x_new)
+
+        # Handle potential None values
+        if y_new is None:
+            # For safety, you can set y_new to y_prev or break the loop
+            y_new = y_prev  # Continue with the last known y value
+            # Alternatively, break the loop if extrapolation fails
+            # break
+
+        # Append new unscaled points
+        adjusted_arc_x_values.append(x_new)
+        adjusted_arc_y_values.append(y_new)
+
+        # Scale the new point
+        x_scaled = margin_x + (x_new - x_min) * scale_x
+        y_scaled = margin_y + (y_max - y_new) * scale_y
+
+        # Append to scaled arrays
+        arc_x_values_scaled.append(x_scaled)
+        arc_y_values_scaled.append(y_scaled)
+
+        # Update cumulative length
+        segment_length = np.hypot(x_scaled - arc_x_values_scaled[-2], y_scaled - arc_y_values_scaled[-2])
+        cumulative_length += segment_length
+
+        x_prev = x_new
+        y_prev = y_new
+
+        # Safety check to prevent infinite loops
+        if len(adjusted_arc_x_values) > 1000:
+            break
+
+    return arc_x_values_scaled, arc_y_values_scaled
+
+def update_subsequent_arcs(story_components, current_index, adjusted_end_point,
+                           scale_x, scale_y, margin_x, margin_y, x_min, y_max):
+    if current_index + 1 < len(story_components):
+        next_component = story_components[current_index + 1]
+
+        # Update the start point of the next component
+        x1_unscaled = (adjusted_end_point[0] - margin_x) / scale_x + x_min
+        y1_unscaled = y_max - (adjusted_end_point[1] - margin_y) / scale_y
+
+        # Adjust x2_unscaled to maintain the same duration
+        original_duration = next_component['x2_unscaled'] - next_component['x1_unscaled']
+        x2_unscaled = x1_unscaled + original_duration
+
+        y2_unscaled = next_component['y2_unscaled']
+        arc_type = next_component['arc_type']
+
+        # Handle cases where x1_unscaled == x2_unscaled
+        if x1_unscaled == x2_unscaled:
+            x2_unscaled += 1e-6  # Small increment to prevent division by zero
+
+        # Ensure x1_unscaled < x2_unscaled
+        if x1_unscaled > x2_unscaled:
+            x1_unscaled, x2_unscaled = x2_unscaled, x1_unscaled
+            y1_unscaled, y2_unscaled = y2_unscaled, y1_unscaled
+
+        # Reconstruct the arc function with extrapolation allowed
+        arc_function = get_component_arc_function(
+            x1_unscaled, x2_unscaled, y1_unscaled, y2_unscaled, arc_type, allow_extrapolation=True
+        )
+
+        # Generate new unscaled x and y values
+        num_points = len(next_component['arc_x_values'])
+        x_values = np.linspace(x1_unscaled, x2_unscaled, num_points)
+        y_values = [arc_function(x) for x in x_values]
+
+        # Handle potential None values in y_values
+        if any(y is None for y in y_values):
+            # Replace None values with the last valid y value
+            last_valid_y = y1_unscaled
+            for idx, y in enumerate(y_values):
+                if y is None:
+                    y_values[idx] = last_valid_y
+                else:
+                    last_valid_y = y
+
+        # Scale the new x and y values
+        x_values_scaled = [margin_x + (x - x_min) * scale_x for x in x_values]
+        y_values_scaled = [margin_y + (y_max - y) * scale_y for y in y_values]
+
+        # Update the component's x and y values
+        next_component['arc_x_values'] = x_values
+        next_component['arc_y_values'] = y_values
+        next_component['arc_x_values_scaled'] = x_values_scaled
+        next_component['arc_y_values_scaled'] = y_values_scaled
+
+        # Update the adjusted end point
+        new_adjusted_end_point = (x_values_scaled[-1], y_values_scaled[-1])
+
+        # Recursively update subsequent arcs
+        update_subsequent_arcs(
+            story_components, current_index + 1, new_adjusted_end_point,
+            scale_x, scale_y, margin_x, margin_y, x_min, y_max
+        )
 
 
 

@@ -183,6 +183,7 @@ def get_story_arc(x, functions_list):
             return result
     return None  # Return None if x is outside the range of all functions
 
+
 def transform_story_data(data):
 
     # with open(file_path, 'r') as file:
@@ -223,10 +224,9 @@ def transform_story_data(data):
         'end_time': 'story_component_end_time', 
         'description': 'story_component_description', 
         'end_emotional_score': 'story_component_end_emotional_score',
-        'arc': 'story_component_arc',
-        'descriptors': 'story_component_descriptors'
+        'arc': 'story_component_arc'
     })
-    df = df[['title', 'protagonist', 'story_component_end_time', 'story_component_description', 'story_component_end_emotional_score','story_component_arc', 'story_component_descriptors']]
+    df = df[['title', 'protagonist', 'story_component_end_time', 'story_component_end_emotional_score','story_component_arc']]
     df = df.sort_values(by='story_component_end_time', ascending=True) #sort dataframe so numbers in order 
     
     #convert time values to x-values
@@ -245,12 +245,10 @@ def transform_story_data(data):
         story_component_times = [x_dict[df.loc[i, 'story_component_end_time']], x_dict[df.loc[i + 1, 'story_component_end_time']]]
         story_component_end_emotional_scores = [df.loc[i, 'story_component_end_emotional_score'], df.loc[i + 1, 'story_component_end_emotional_score']]
         arc = df.loc[i + 1, 'story_component_arc']  # Using the interpolation of the second point
-        story_component_descriptors = df.loc[i+1, 'story_component_descriptors']
         dict_item = { #contract dict for each story component
             'story_component_times': story_component_times,
             'story_component_end_emotional_scores': story_component_end_emotional_scores,
-            'arc': arc,
-            'story_component_descriptors': story_component_descriptors
+            'arc': arc
         }
         array_of_dicts.append(dict_item) # Adding the dictionary to the array
         #print(dict_item)
@@ -268,7 +266,7 @@ def transform_story_data(data):
         story_arc_functions_list.append(component_arc_function)
   
     #get final values 
-    x_values = np.linspace(min(x_scale), max(x_scale), 500)  # 1000 points for smoothness
+    x_values = np.linspace(min(x_scale), max(x_scale), 1000)  # 1000 points for smoothness
     y_values = np.array([get_story_arc(x, story_arc_functions_list) for x in x_values]) # Calculating corresponding y-values using the master function
     y_values = scale_y_values(y_values, -10, 10)
     
@@ -281,7 +279,6 @@ def transform_story_data(data):
         story_component_times = item['story_component_times']
         story_component_end_emotional_scores = item['story_component_end_emotional_scores']
         story_component_arc = item['arc']
-        story_component_descriptors = item['story_component_descriptors']
         
         component_arc_function = get_component_arc_function(story_component_times[0], story_component_times[1], story_component_end_emotional_scores[0], story_component_end_emotional_scores[1], story_component_arc)
         result = np.array([get_story_arc(x, [component_arc_function]) for x in x_values])
@@ -311,9 +308,9 @@ def transform_story_data(data):
         story_component_index = story_component_index + 1
 
     #calc actual chars in story
-    text_list = list(itertools.chain.from_iterable(df['story_component_descriptors']))
-    text_list = text_list[1:] #get rid of first item which will always be #N/A
-    text = "".join(text_list)
+    # text_list = list(itertools.chain.from_iterable(df['story_component_descriptors']))
+    # text_list = text_list[1:] #get rid of first item which will always be #N/A
+    # text = "".join(text_list)
     #text = text.replace("!.","!")
 
     data['x_values'] = x_values.tolist()
