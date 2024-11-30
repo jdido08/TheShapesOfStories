@@ -185,8 +185,13 @@ def get_story_arc(x, functions_list):
 
 
 def transform_story_data(data):
-    # Convert JSON to DataFrame
+
+    # with open(file_path, 'r') as file:
+    #     data = json.load(file)
+                       
+    #convert json to dataframe - mostly for historical reasons I'm setup elsewhere to handle dataframes
     try:
+        # Directly use the dictionary
         df = pd.json_normalize(
             data, 
             record_path=['story_components'], 
@@ -197,108 +202,120 @@ def transform_story_data(data):
             record_prefix='story_component_'
         )
     except Exception as e:
-        print("Error:", e)
-        return None
+        try:
+            df = pd.json_normalize(
+            data, 
+            meta=[
+                'title', 
+                'protagonist'
+            ],
+            record_prefix='story_component_'
+        )
+        except Exception as e:
+            print("Error:", e)
 
-    # Print the column names for debugging
-    #print("DataFrame columns:", df.columns.tolist())
+    # Get the title directly from the dictionary
+    #print(data)
+    title = data['title']
+    protagonist = data['protagonist']
 
-    # Use 'story_component_modified_end_time' and 'story_component_modified_end_emotional_score' directly
-    df['story_component_end_time'] = df['story_component_modified_end_time']
-    df['story_component_end_emotional_score'] = df['story_component_modified_end_emotional_score']
-
-    # Rename other columns as needed
+    #format dataframe
     df = df.rename(columns={
-        'story_component_description': 'story_component_description',
-        'story_component_arc': 'story_component_arc'
+        'modified_end_time': 'story_component_end_time', 
+        'description': 'story_component_description', 
+        'modified_end_emotional_score': 'story_component_end_emotional_score',
+        'arc': 'story_component_arc'
     })
+    df = df[['title', 'protagonist', 'story_component_end_time', 'story_component_end_emotional_score','story_component_arc']]
+    df = df.sort_values(by='story_component_end_time', ascending=True) #sort dataframe so numbers in order 
+    
+    #print(df)
 
-    # Select relevant columns
-    df = df[['title', 'protagonist', 'story_component_end_time', 'story_component_end_emotional_score', 'story_component_arc', 'story_component_description']]
-    df = df.sort_values(by='story_component_end_time', ascending=True)
-
-    # Convert time values to x-values
+    #convert time values to x-values
     story_time_values = df['story_component_end_time'].tolist()
     x_original = np.array(story_time_values)
-    x_scale = np.array(scale_plot_points(x_original, 1, 10))  # Scale x values so they are 1 - 10
+    x_scale = np.array(scale_plot_points(story_time_values, 1, 10)) #scale x values so they are 1 - 10
+    x_dict = {} #store pairs of x_original values and their scaled counterparts  
+    for i in range(len(x_original)):
+        x_original_value = x_original[i]
+        x_scale_value = x_scale[i]
+        x_dict[x_original_value] = x_scale_value
 
-    # Store pairs of x_original values and their scaled counterparts
-    x_dict = dict(zip(x_original, x_scale))
-
-    # Extract individual story components
-    array_of_dicts = []
+    #extract individual story components
+    array_of_dicts = [] #loop through dataframe, grab pairs of values, and store story component data in dictionary
     for i in range(len(df) - 1):  # -1 because we are considering pairs of adjacent rows
-        start_time = x_dict[df.loc[i, 'story_component_end_time']]
-        end_time = x_dict[df.loc[i + 1, 'story_component_end_time']]
-        start_emotional_score = df.loc[i, 'story_component_end_emotional_score']
-        end_emotional_score = df.loc[i + 1, 'story_component_end_emotional_score']
-        arc = df.loc[i + 1, 'story_component_arc']  # Using the arc of the second point
-
-        dict_item = {
-            'story_component_times': [start_time, end_time],
-            'story_component_end_emotional_scores': [start_emotional_score, end_emotional_score],
+        story_component_times = [x_dict[df.loc[i, 'story_component_end_time']], x_dict[df.loc[i + 1, 'story_component_end_time']]]
+        story_component_end_emotional_scores = [df.loc[i, 'story_component_end_emotional_score'], df.loc[i + 1, 'story_component_end_emotional_score']]
+        arc = df.loc[i + 1, 'story_component_arc']  # Using the interpolation of the second point
+        dict_item = { #contract dict for each story component
+            'story_component_times': story_component_times,
+            'story_component_end_emotional_scores': story_component_end_emotional_scores,
             'arc': arc
         }
-        array_of_dicts.append(dict_item)
+        array_of_dicts.append(dict_item) # Adding the dictionary to the array
+        #print(dict_item)
 
-    # Create a list to store the component story arcs
-    story_arc_functions_list = []
-    for item in array_of_dicts:
+    
+    story_arc_functions_list = [] # create ist to store the component story arcs
+    for item in array_of_dicts: # Loop through the array to create and add arc to list
         story_component_times = item['story_component_times']
         story_component_end_emotional_scores = item['story_component_end_emotional_scores']
         story_component_arc = item['arc']
+        
 
         # Create the function based on the specified interpolation
-        component_arc_function = get_component_arc_function(
-            story_component_times[0],
-            story_component_times[1],
-            story_component_end_emotional_scores[0],
-            story_component_end_emotional_scores[1],
-            story_component_arc
-        )
+        component_arc_function = get_component_arc_function(story_component_times[0], story_component_times[1], story_component_end_emotional_scores[0], story_component_end_emotional_scores[1], story_component_arc)
         story_arc_functions_list.append(component_arc_function)
-
-    # Get final values
-    x_values = np.linspace(min(x_scale), max(x_scale), 500)  # 1000 points for smoothness
-    y_values = np.array([get_story_arc(x, story_arc_functions_list) for x in x_values])  # Calculate corresponding y-values
+  
+    #get final values 
+    x_values = np.linspace(min(x_scale), max(x_scale), 1000)  # 1000 points for smoothness
+    y_values = np.array([get_story_arc(x, story_arc_functions_list) for x in x_values]) # Calculating corresponding y-values using the master function
     y_values = scale_y_values(y_values, -10, 10)
-
-    # Process arcs for each story component
+    
+    
+    #figure out text -- WIP 
+    arcs = []
     story_component_index = 1
+    total_chars = 0
     for item in array_of_dicts:
         story_component_times = item['story_component_times']
         story_component_end_emotional_scores = item['story_component_end_emotional_scores']
         story_component_arc = item['arc']
-
-        component_arc_function = get_component_arc_function(
-            story_component_times[0],
-            story_component_times[1],
-            story_component_end_emotional_scores[0],
-            story_component_end_emotional_scores[1],
-            story_component_arc
-        )
+        
+        component_arc_function = get_component_arc_function(story_component_times[0], story_component_times[1], story_component_end_emotional_scores[0], story_component_end_emotional_scores[1], story_component_arc)
         result = np.array([get_story_arc(x, [component_arc_function]) for x in x_values])
-
+        
         non_none_positions = np.where(result != None)[0]
         arc_x_values = x_values[non_none_positions]
         arc_y_values = y_values[non_none_positions]
+        # data['story_components'][story_component_index]['arc_x_values'] = arc_x_values.tolist()
+        # data['story_components'][story_component_index]['arc_y_values'] = arc_y_values.tolist()
 
-        # Handle specific arcs if necessary
-        if story_component_arc in ['Straight Increase', 'Straight Decrease']:
-            prepend_indices = [non_none_positions[0] - 2, non_none_positions[0] - 1]
-            prepend_x = x_values[prepend_indices]
-            prepend_y = y_values[prepend_indices]
+        #maybe delete this
+        if story_component_arc in ['Straight Increase','Straight Decrease']:
+            prepend_x_posistion = non_none_positions[0] - 1
+            prepend_x = x_values[prepend_x_posistion]
+            prepend_y = y_values[prepend_x_posistion]
             arc_x_values = np.insert(arc_x_values, 0, prepend_x)
             arc_y_values = np.insert(arc_y_values, 0, prepend_y)
-
+            prepend_x_posistion = non_none_positions[0] - 2
+            prepend_x = x_values[prepend_x_posistion]
+            prepend_y = y_values[prepend_x_posistion]
+            arc_x_values = np.insert(arc_x_values, 0, prepend_x)
+            arc_y_values = np.insert(arc_y_values, 0, prepend_y)
+        
         data['story_components'][story_component_index]['arc_x_values'] = arc_x_values.tolist()
         data['story_components'][story_component_index]['arc_y_values'] = arc_y_values.tolist()
 
-        story_component_index += 1
+        story_component_index = story_component_index + 1
+
+    #calc actual chars in story
+    # text_list = list(itertools.chain.from_iterable(df['story_component_descriptors']))
+    # text_list = text_list[1:] #get rid of first item which will always be #N/A
+    # text = "".join(text_list)
+    #text = text.replace("!.","!")
 
     data['x_values'] = x_values.tolist()
     data['y_values'] = y_values.tolist()
-
+    
     return data
-
-

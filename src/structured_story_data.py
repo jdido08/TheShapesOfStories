@@ -508,19 +508,18 @@ def create_story_data(input_path, output_path):
     story_plot_data = json.loads(response)
      #story_data = {'story_plot_data': story_plot_data, **story_data} #add it so story_plot_data appears at the top
 
-    # Create an empty JSON object
-    output_json = {}
-   
-    # Add story_plot_data as a field
-    output_json['story_plot_data'] = story_plot_data
 
+    for component in story_plot_data["story_components"]:
+        component['modified_end_point'] = component['end_time']
+        component['modified_end_emotional_score'] = component['end_emotional_score']
+    
     output_path = output_path
     title = story_data['title'].lower().replace(' ', '_')
     output_path = os.path.join(output_path, f"{title}.json")
     with open(output_path, 'w') as json_file:
-        json.dump(output_json, json_file, indent=4)
+        json.dump(story_plot_data, json_file, indent=4)
 
-    return output_json
+    return story_plot_data
 
 
 
