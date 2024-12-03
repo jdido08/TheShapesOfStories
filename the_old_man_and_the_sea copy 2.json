@@ -1,57 +1,71 @@
 {
-    "story_plot_data": {
-        "title": "The Old Man and the Sea",
-        "protagonist": "Santiago",
-        "overall_context": "An aging fisherman named Santiago struggles with a giant marlin far out in the Gulf Stream.",
-        "story_components": [
-            {
-                "end_time": 0,
-                "description": "#N/A",
-                "end_emotional_score": 0,
-                "arc": "#N/A"
-            },
-            {
-                "end_time": 10,
-                "description": "Santiago has gone 84 days without catching a fish, considered unlucky, and is alone as Manolin can no longer fish with him.",
-                "end_emotional_score": -6,
-                "arc": "Linear Decrease"
-            },
-            {
-                "end_time": 30,
-                "description": "Santiago sets out to sea, determined and hopeful to break his unlucky streak, feeling a deep connection with the sea.",
-                "end_emotional_score": 1,
-                "arc": "Gradual-to-Rapid Increase"
-            },
-            {
-                "end_time": 50,
-                "description": "Santiago hooks a marlin, leading to a grueling struggle that tests his strength, skill, and resilience.",
-                "end_emotional_score": 3,
-                "arc": "Linear Increase"
-            },
-            {
-                "end_time": 70,
-                "description": "After an intense battle, Santiago finally kills the marlin, feeling a mix of triumph and exhaustion.",
-                "end_emotional_score": 5,
-                "arc": "Linear Increase"
-            },
-            {
-                "end_time": 80,
-                "description": "Santiago fights off sharks, but they mutilate the marlin, and he loses his harpoon, knife, and club in the process.",
-                "end_emotional_score": -4,
-                "arc": "Straight Decrease"
-            },
-            {
-                "end_time": 90,
-                "description": "Defeated by the relentless sharks, Santiago loses the marlin's flesh and returns to shore with only the skeleton.",
-                "end_emotional_score": -8,
-                "arc": "Linear Decrease"
-            },
-            {
-                "end_time": 100,
-                "description": "Santiago is found by Manolin, who expresses admiration and love, promising to fish together again, restoring Santiago's spirit.",
-                "end_emotional_score": 1,
-                "arc": "Gradual-to-Rapid Increase"
-            }
-        ]
-    }
+    "title": "The Old Man and the Sea",
+    "protagonist": "Santiago",
+    "overall_context": "An aging fisherman named Santiago struggles with a giant marlin far out in the Gulf Stream.",
+    "story_components": [
+        {
+            "end_time": 0,
+            "modified_end_time": 0,
+            "description": "#N/A",
+            "end_emotional_score": 0,
+            "modified_end_emotional_score": 0,
+            "arc": "#N/A"
+        },
+        {
+            "end_time": 10,
+            "modified_end_time": 10,
+            "description": "Santiago has gone 84 days without catching a fish, considered unlucky, and is alone as Manolin can no longer fish with him.",
+            "end_emotional_score": -6,
+            "modified_end_emotional_score": -6,
+            "arc": "Linear Decrease"
+        },
+        {
+            "end_time": 30,
+            "modified_end_time": 30,
+            "description": "Santiago sets out to sea, determined and hopeful to break his unlucky streak, feeling a deep connection with the sea.",
+            "end_emotional_score": 1,
+            "modified_end_emotional_score": 1,
+            "arc": "Gradual-to-Rapid Increase"
+        },
+        {
+            "end_time": 50,
+            "modified_end_time": 50,
+            "description": "Santiago hooks a marlin, leading to a grueling struggle that tests his strength, skill, and resilience.",
+            "end_emotional_score": 3,
+            "modified_end_emotional_score": 3,
+            "arc": "Linear Increase"
+        },
+        {
+            "end_time": 70,
+            "modified_end_time": 70,
+            "description": "After an intense battle, Santiago finally kills the marlin, feeling a mix of triumph and exhaustion.",
+            "end_emotional_score": 5,
+            "modified_end_emotional_score": 5,
+            "arc": "Linear Increase"
+        },
+        {
+            "end_time": 80,
+            "modified_end_time": 80,
+            "description": "Santiago fights off sharks, but they mutilate the marlin, and he loses his harpoon, knife, and club in the process.",
+            "end_emotional_score": -4,
+            "modified_end_emotional_score": -4,
+            "arc": "Straight Decrease"
+        },
+        {
+            "end_time": 90,
+            "modified_end_time": 90,
+            "description": "Defeated by the relentless sharks, Santiago loses the marlin's flesh and returns to shore with only the skeleton.",
+            "end_emotional_score": -8,
+            "modified_end_emotional_score": -8,
+            "arc": "Linear Decrease"
+        },
+        {
+            "end_time": 100,
+            "modified_end_time": 100.1576367184708,
+            "description": "Santiago is found by Manolin, who expresses admiration and love, promising to fish together again, restoring Santiago's spirit.",
+            "end_emotional_score": 1,
+            "modified_end_emotional_score": 1,
+            "arc": "Gradual-to-Rapid Increase"
+        }
+    ]
 }

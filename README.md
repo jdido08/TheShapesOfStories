@@ -57,6 +57,11 @@ Approach:
 2. Manual Inspection 
 
 
+Approach:
+1. Step by step testing 
+2. curve arc
+
+
 
 NEw Approach:
 1. Calc length

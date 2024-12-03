@@ -20,14 +20,28 @@ with open(json_path, 'r', encoding='utf-8') as file:
 
 
 
-for x in range(1):
+status = "processing"
+count = 1
+while status == "processing":
     # print(story_data['story_components'][1]['modified_end_time'])
     story_data = transform_story_data(story_data)
-    story_data = create_shape(story_data)
+    story_data, status = create_shape(story_data)
+    print(count, " .) ", status)
+    count = count + 1
     #print(story_data['story_components'][1]['modified_end_time'])
-    
 
-#print(story_data)
- # Save the modified data back to a JSON file
+
+
+#clean up story_data for saving
+del story_data['x_values']
+del story_data['y_values']
+for component in story_data['story_components']:
+
+    if 'arc_x_values' in component:
+        del component['arc_x_values']
+
+    if 'arc_y_values' in component:
+        del component['arc_y_values']
+
 with open(json_path, 'w', encoding='utf-8') as file:
     json.dump(story_data, file, ensure_ascii=False, indent=4)

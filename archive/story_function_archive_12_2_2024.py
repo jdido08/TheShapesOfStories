@@ -149,44 +149,30 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             return a_up * (x - x2)**2 + b_up
         else:
             return None
-        
-
-    if x1 == x2:
-        # x1 == x2, return a function that is only defined at x == x1
-        def point_function(x):
-            if x == x1:
-                return y1
-            else:
-                return None
-        return point_function
-    else:
-        # Existing code for other arcs
-        if arc in['Step-by-Step Increase', 'Step-by-Step Decrease']:
-            return step_function
-        elif arc in ['Straight Increase','Straight Decrease']:
-            return drop_function
-        elif arc in ['Linear Increase','Linear Decrease','Linear Flat']:
-            return linear_function
-        elif arc in ['Concave Down, Increase', 'Rapid-to-Gradual Increase']:
-            return concave_down_increasing_function
-        elif arc in ['Concave Down, Decrease', 'Gradual-to-Rapid Decrease']:
-            return concave_down_decreasing_function
-        elif arc in ['Concave Up, Increase', 'Gradual-to-Rapid Increase']:
-            return concave_up_increasing_function
-        elif arc in ['Concave Up, Decrease', 'Rapid-to-Gradual Decrease']:
-            return concave_up_decreasing_function
-        elif arc in ['Hyperbola Increase','Hyperbola Decrease', 'S-Curve Increase', 'S-Curve Decrease']:
-            return curvy_down_up
-        elif arc  == 'test':
-            return test
-        else:
-            #print(arc)
-            raise ValueError("Interpolation method not supported")
-    
-
 
       
-   
+    if arc in['Step-by-Step Increase', 'Step-by-Step Decrease']:
+        return step_function
+    elif arc in ['Straight Increase','Straight Decrease']:
+        return drop_function
+    elif arc in ['Linear Increase','Linear Decrease','Linear Flat']:
+       return linear_function
+    elif arc in ['Concave Down, Increase', 'Rapid-to-Gradual Increase']:
+        return concave_down_increasing_function
+    elif arc in ['Concave Down, Decrease', 'Gradual-to-Rapid Decrease']:
+        return concave_down_decreasing_function
+    elif arc in ['Concave Up, Increase', 'Gradual-to-Rapid Increase']:
+        return concave_up_increasing_function
+    elif arc in ['Concave Up, Decrease', 'Rapid-to-Gradual Decrease']:
+        return concave_up_decreasing_function
+    elif arc in ['Hyperbola Increase','Hyperbola Decrease', 'S-Curve Increase', 'S-Curve Decrease']:
+        return curvy_down_up
+    elif arc  == 'test':
+        return test
+    else:
+        #print(arc)
+        raise ValueError("Interpolation method not supported")
+    
 
     
 # Master function to evaluate the emotional score for any given plot point number
@@ -274,14 +260,6 @@ def transform_story_data(data):
 
     # Get final values
     x_values = np.linspace(min(x_scale), max(x_scale), 500)  # 1000 points for smoothness
-
-    # Ensure x_values includes all x1 and x2 values
-    x1_x2_values = set()
-    for item in array_of_dicts:
-        x1_x2_values.update(item['story_component_times'])
-    x_values = np.unique(np.concatenate([x_values, np.array(list(x1_x2_values))]))
-    x_values.sort()
-
     y_values = np.array([get_story_arc(x, story_arc_functions_list) for x in x_values])  # Calculate corresponding y-values
     y_values = scale_y_values(y_values, -10, 10)
 

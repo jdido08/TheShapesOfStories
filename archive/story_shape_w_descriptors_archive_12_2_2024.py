@@ -258,7 +258,7 @@ def create_shape(story_data):
                 component['modified_end_emotional_score'] = new_y
                 surface.write_to_png("text_along_curve.png")
                 #print("HEY")
-                return story_data, "processing"
+                return story_data
 
         elif curve_length_status == "curve_too_long":
             #print("Result: The curve was too long; extra space remains after placing all phrases.")
@@ -271,15 +271,14 @@ def create_shape(story_data):
                 component['modified_end_time'] = original_arc_end_time_values[-1]
                 component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
                 surface.write_to_png("text_along_curve.png")
-                return story_data, "processing"
+                return story_data
 
         elif curve_length_status == "curve_correct_length":
             surface.write_to_png("text_along_curve.png")
-            #print("Result: All phrases fit exactly on the curve.")
+            print("Result: All phrases fit exactly on the curve.")
 
     # Save the image to a file
     surface.write_to_png("text_along_curve.png")
-    return story_data, "completed"
 
 def calculate_arc_length(arc_x_values, arc_y_values):
     segment_lengths = np.hypot(
@@ -313,7 +312,7 @@ def estimate_characters_fit(arc_length, average_char_width, spacing=1.0):
 def generate_descriptors(title, component_description, story_data, desired_length):
         
     story_dict = copy.deepcopy(story_data)
-
+    
     #clean up story_dict before sending to LLM
     del story_dict['x_values']
     del story_dict['y_values']
@@ -325,18 +324,7 @@ def generate_descriptors(title, component_description, story_data, desired_lengt
         if 'arc_y_values' in component:
             del component['arc_y_values']
         
-    #get previous story arc_texts
-    existing_arc_texts = ""
-    for component in story_dict['story_components']:
-        if 'arc_text' in component:
-            if(existing_arc_texts == ""):
-                existing_arc_texts = """Pay special attention to the `arc_text` of previous story components to maintain continuity and avoid repeating words.
-
-**Previous `arc_text`s:**
-
-"""
-            existing_arc_texts = existing_arc_texts + " " + component['arc_text']
-    
+        
 
     # System message to set context for the model
     system_message = {
@@ -344,19 +332,15 @@ def generate_descriptors(title, component_description, story_data, desired_lengt
         "content": "You are an expert storyteller. Your task is to provide a list of concise keywords or phrases that represent and describe story segments effectively."
     }
 
-    
-
     # User message as the main prompt
     user_message = {
         "role": "user",
         "content": f"""
-Generate a succinct, concise, and stylized description for the following segment of the story **"{title}"**: **"{component_description}"**.
-
-Use the JSON below to understand how this segment fits into the larger narrative. {existing_arc_texts}
+Generate a succinct, concise, and stylized description for the following segment of the story **"{title}"**: **"{component_description}"**. Use the JSON below to understand how this segment fits into the larger narrative.
 
 Your description should:
 
-- Be exactly **35** characters long.
+- Be exactly **{desired_length}** characters long.
 - Consist of keywords or phrases that best represent and describe this story segment.
 - Help observers identify this particular story segment.
 - Include elements such as:
@@ -368,10 +352,6 @@ Your description should:
   6. Descriptive phrases of the story segment.
 
 - **After generating your output, verify that it is EXACTLY the specified length.**
-
-- **Avoid using words or phrases that have already appeared in previous `arc_text`s, unless necessary for coherence. Use synonyms or alternative expressions to keep the narrative fresh.**
-
-- **Ensure the description continues the flow of the overall story, connecting smoothly with previous segments.**
 
 - List the keywords/phrases in chronological order.
 
@@ -394,7 +374,6 @@ Your description should:
 - **You MUST count each character, including spaces and punctuation, to ensure exact match to the specified length.**
 
 **Example Output:**
-
 For a story segment about a character's first day at a new job, an example 50-character description:
 Nervous. First Day. Office. Challenges. Potential.
 (Verification: 
@@ -405,7 +384,6 @@ Total: 50 characters exactly)
 
 Here's the JSON providing more context on the entire story:
 {story_dict}
-
 """
             }
 
