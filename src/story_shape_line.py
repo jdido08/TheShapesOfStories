@@ -26,7 +26,7 @@ with open("config.yaml", 'r') as stream:
     OPENAI_KEY = config['openai_key_vonnegutgraphs']
     client = OpenAI(api_key=OPENAI_KEY)
 
-def create_shape(story_data):
+def create_shape_line(story_data):
 
     # Extract the overall x_values and y_values (scaled from transform_story_data)
     x_values = story_data['x_values']  # Scaled x_values (from 1 to 10)
@@ -109,7 +109,6 @@ def create_shape(story_data):
     pangocairo_context = PangoCairo.create_context(cr)
     font_size = 72  # Adjust font size as needed
     font_desc = Pango.FontDescription(f"Sans {font_size}")
-    arc_sample_text = ""
 
     # For overlap detection between arcs
     all_rendered_boxes = []
@@ -163,179 +162,9 @@ def create_shape(story_data):
             cr.line_to(x, y)
         cr.stroke()
 
-        # Step 1: Calculate arc length
-        arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled)
-
-        # Step 2: Calculate Descriptors (if needed)
-        # Step 2: Calculate Descriptors (if needed)
-        if 'arc_text' not in component:
-
-            
-            # Before estimating characters
-            average_char_width = get_average_char_width(pangocairo_context, font_desc, arc_sample_text)
-            average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled)
-            target_chars = estimate_characters_fit(arc_length, average_char_width, average_rotation_angle)
-
-            component['target_arc_text_chars'] = target_chars
-            target_words = target_chars / 4.7
-
-            # Ensure at least some characters can be displayed
-            if target_chars < 5:
-                continue  # Skip this arc if too small
-
-            x = 5  # Acceptable character range buffer
-            lower_bound = target_chars - 3
-            upper_bound = target_chars + 3
-
-            valid_descriptor = False
-            max_attempts = 5  # Set your desired maximum number of attempts
-            attempt = 1
-
-            # Step 3: Generate descriptors
-            descriptors_text, chat_messages = generate_descriptors(
-                title=title,
-                component_description=description,
-                story_data=story_data,
-                desired_length=target_chars
-            )
-
-            actual_chars = len(descriptors_text)
-
-            # Check if actual_chars falls within the range
-            if lower_bound <= actual_chars <= upper_bound:
-                valid_descriptor = True
-                print("Arc Text Valid (", actual_chars,"/",target_chars,") : ", descriptors_text )
-            else:
-                while not valid_descriptor and attempt <= max_attempts:
-
-                    descriptors_text, chat_messages = adjust_descriptors(
-                        desired_length=target_chars,
-                        actual_length=actual_chars,
-                        chat_messages=chat_messages
-                    )
-
-                    # if attempt == 3:
-                    #     # Expand acceptable range
-                    #     lower_bound -= 2
-                    #     upper_bound += 2
-
-                    actual_chars = len(descriptors_text)
-                    if lower_bound <= actual_chars <= upper_bound:
-                        valid_descriptor = True
-                        print("Arc Text Valid (", actual_chars,"/",target_chars,") : ", descriptors_text )
-                    else:
-                        print("Arc Text NOT valid (", actual_chars,"/",target_chars,") : ", descriptors_text )
-                        attempt += 1  # Increment attempt counter
-
-            # After attempts, proceed with the last generated descriptor
-            component['arc_text'] = descriptors_text
-            component['actual_arc_text_chars'] = len(descriptors_text)
-        else:
-            descriptors_text = component['arc_text']
-            component['actual_arc_text_chars'] = len(component['arc_text'])
-
-        arc_sample_text = arc_sample_text + " " + descriptors_text
         
-
-       # Draw text on curve using the updated function
-        curve_length_status = draw_text_on_curve(
-            cr, arc_x_values_scaled, arc_y_values_scaled, descriptors_text,
-            pangocairo_context, font_desc, all_rendered_boxes
-        )
-
-        # You can now use curve_length_status as needed
-        if curve_length_status == "curve_too_short":
-            #print("Result: The curve was too short; not all phrases could be plotted.")
-            
-            # Suppose we have original_arc_end_time_values (x) and original_arc_end_emotional_score_values (y)
-            x_og = np.array(original_arc_end_time_values)
-            y_og = np.array(original_arc_end_emotional_score_values)
-
-            # Step 1: Sort the data by x-values (just in case they aren't sorted)
-            sorted_indices = np.argsort(x_og)
-            x_og = x_og[sorted_indices]
-            y_og = y_og[sorted_indices]
-
-            # Step 2: Remove duplicates or near-duplicates
-            # Define a small tolerance for what counts as "nearly identical"
-            tolerance = 1e-12
-            unique_indices = [0]  # Always include the first point
-            for i in range(1, len(x_og)):
-                if x_og[i] - x_og[unique_indices[-1]] > tolerance:
-                    unique_indices.append(i)
-
-            x_og = x_og[unique_indices]
-            y_og = y_og[unique_indices]
-
-            # Now x should be strictly increasing
-            # Next, create the cubic spline
-            cs = CubicSpline(x_og, y_og, extrapolate=True)
-
-            # You can now safely use cs for interpolation/extrapolation
-            new_x = x_og[-1] + (x_og[1] - x_og[0])
-            new_y = float(cs(new_x))
-            
-            if(new_x >= old_min_x and new_x <= old_max_x and new_y >= old_min_y and new_y <= old_max_y):
-                component['modified_end_time'] = new_x
-                component['modified_end_emotional_score'] = new_y
-                surface.write_to_png("text_along_curve.png")
-                return story_data, "processing"
-            elif(new_x >= old_max_x or new_x <= old_min_x):
-                #keep x constant and increment why value 
-                new_x = x_og[-1]
-                component['modified_end_time'] = new_x
-                component['modified_end_emotional_score'] = new_y
-                surface.write_to_png("text_along_curve.png")
-                return story_data, "processing"
-            elif(new_y >= old_max_y or new_y <= old_min_y):
-                #keep y constant increase x
-                new_y = y_og[-1]
-                component['modified_end_time'] = new_x
-                component['modified_end_emotional_score'] = new_y
-                surface.write_to_png("text_along_curve.png")
-                return story_data, "processing"
-            else:
-                surface.write_to_png("text_along_curve.png")
-                #print("new_x ", new_x, " old_min_x: ", old_min_x, " old_max_x: ", old_max_x)
-                #print("new_y ", new_y, " old_min_y: ", old_min_y, " old_max_y: ", old_max_y)
-                status = "curve too long but can't change because of min/max constraints"
-                #print("curve too long but can't change because of min/max constraints")
-
-        elif curve_length_status == "curve_too_long":
-            #print("Result: The curve was too long; extra space remains after placing all phrases.")
-
-            if(original_arc_end_time_values[-1] != old_min_x and original_arc_end_time_values[-1] != new_max_x and original_arc_end_emotional_score_values[-1] != old_min_y and original_arc_end_emotional_score_values[-1] != old_max_y and len(component['arc_x_values']) > 1):
-
-                original_arc_end_time_values.pop()
-                original_arc_end_emotional_score_values.pop()
-
-                component['modified_end_time'] = original_arc_end_time_values[-1]
-                component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
-                surface.write_to_png("text_along_curve.png")
-                #print("curve_too_long")
-                return story_data, "processing"
-            else:
-                surface.write_to_png("text_along_curve.png")
-                status = "curve too short but can't change because of min/max constraints"
-                #print("curve too short but can't change because of min/max constraints")
-
-        elif curve_length_status == "curve_correct_length":
-            surface.write_to_png("text_along_curve.png")
-            status = 'All phrases fit exactly on the curve.'
-            #print("Result: All phrases fit exactly on the curve.")
-        
-        if("status" not in component):
-            #when you get to the end of processing a component make component on json 
-            component['status'] = status
-            print("component with end time ",  component['end_time'], " status: ", status)
-        else:
-            component['status'] = status
-        
-
-
     # Save the image to a file
-    surface.write_to_png("text_along_curve.png")
-    print("STORY COMPLETE")
+    surface.write_to_png("text_along_curve_line_3.png")
     return story_data, "completed"
 
 def calculate_arc_length(arc_x_values, arc_y_values):
@@ -345,40 +174,27 @@ def calculate_arc_length(arc_x_values, arc_y_values):
     total_length = np.sum(segment_lengths)
     return total_length
 
-def get_average_char_width(pangocairo_context, font_desc, sample_text=None):
+def get_average_char_width(pangocairo_context, font_desc):
+    # Measure average character width
     layout = Pango.Layout.new(pangocairo_context)
     layout.set_font_description(font_desc)
 
-    # Use provided sample_text or default sample
-    if sample_text is None or sample_text == "":
-        sample_text = (
-            "Nervous. First Day. Office. Challenges. Potential."
-        )
-    
- 
+    # Use a representative sample of characters
+    sample_text = (
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789"
+        " .,!?;:'\"()-"
+    )
 
     layout.set_text(sample_text, -1)
     total_width = layout.get_pixel_size()[0]
-    # Exclude spaces from character count if you wish
-    num_chars = len(sample_text.replace(" ", ""))
-    average_char_width = total_width / num_chars
+    average_char_width = total_width / len(sample_text)
     return average_char_width
 
-def estimate_characters_fit(arc_length, average_char_width, average_rotation_angle=0, spacing=1.0):
-    rotation_adjustment = 1 + (abs(math.sin(math.radians(average_rotation_angle))) * 0.1)
-    adjusted_char_width = average_char_width * rotation_adjustment * spacing
-    return int(arc_length / adjusted_char_width)
-
-def calculate_average_rotation_angle(x_values, y_values):
-    angles = []
-    for idx in range(1, len(x_values)):
-        dx = x_values[idx] - x_values[idx - 1]
-        dy = y_values[idx] - y_values[idx - 1]
-        angle = math.degrees(math.atan2(dy, dx))
-        angles.append(angle)
-    average_angle = sum(angles) / len(angles)
-    return average_angle
-
+def estimate_characters_fit(arc_length, average_char_width, spacing=1.0):
+    # Estimate the number of characters that can fit along the arc
+    return int(arc_length / (average_char_width * spacing))
 
 def generate_descriptors(title, component_description, story_data, desired_length):
         
@@ -422,11 +238,11 @@ def generate_descriptors(title, component_description, story_data, desired_lengt
         "content": f"""
 Generate a succinct, concise, and stylized description for the following segment of the story **"{title}"**: **"{component_description}"**.
 
-Use the structured data below to understand how this segment fits into the larger narrative. {existing_arc_texts}
+Use the JSON below to understand how this segment fits into the larger narrative. {existing_arc_texts}
 
 Your description should:
 
-- Be exactly {desired_length} characters long.
+- Be exactly **35** characters long.
 - Consist of keywords or phrases that best represent and describe this story segment.
 - Help observers identify this particular story segment.
 - Include elements such as:
@@ -473,7 +289,7 @@ space = 1, "Day" = 3, "." = 1, "Office" = 6, "." = 1,
 "Challenges" = 10, "." = 1, "Potential" = 9, "." = 1
 Total: 50 characters exactly)
 
-Here's some structured data providing more context on the entire story:
+Here's the JSON providing more context on the entire story:
 {story_dict}
 
 """
@@ -498,61 +314,40 @@ Here's some structured data providing more context on the entire story:
 
     return response_text, chat_messages
 
-def adjust_descriptors(desired_length, actual_length, chat_messages):
-    # Calculate the difference
-    length_difference = desired_length - actual_length
+def adjust_descriptors(desired_length, actual_length, chat_messages ):
+    # System message to set context for the model
+    system_message = {
+        "role": "system",
+        "content": "You are an expert storyteller. Your task is to provide a list of concise keywords or phrases that represent and describe story segments effectively."
+    }
 
-    # Modify the user message to include the difference
+    # User message as the main prompt
     user_message = {
         "role": "user",
-        "content": f"""
-The previous description was {actual_length} characters long but needs to be adjusted to exactly {desired_length} characters.
-
-CRITICAL DESCRIPTOR GENERATION GUIDELINES:
-
-Your task is to create a COMPLETELY UNIQUE segment description that:
-- STANDS ENTIRELY ON ITS OWN
-- CONTAINS NO REFERENCE to previous story segments
-- INTRODUCES NEW NARRATIVE ELEMENTS
-- CAPTURES THE ESSENCE of this specific moment WITHOUT relying on prior context
-
-Key Principles:
-- ZERO CONTINUITY with previous descriptions
-- INDEPENDENT narrative snapshot
-- FRESH perspective for EACH story segment
-- ZERO character or event callbacks
-
-REQUIREMENTS:
-- Exactly {desired_length} characters long
-- Each description is a SELF-CONTAINED narrative fragment
-- Use ENTIRELY NEW descriptive language
-- AVOID any linguistic or thematic echoes from previous segments
-
-Think of each descriptor as a STANDALONE HAIKU of the moment - capturing its UNIQUE EMOTIONAL and NARRATIVE CORE without external references.
-
-Output ONLY the updated description that is a COMPLETE NARRATIVE UNIVERSE unto itself.
+        "content":f"""
+The previous description does not meet the required characters count specifications. It was {actual_length} characters instead of {desired_length} characters. 
+Please adjust your description accordingly to meet the exact characters count and guidelines and please output only the updated description and nothing else.
 """
     }
 
-    # Append the new message to the chat history
+    # Compile messages
     chat_messages.append(user_message)
 
     # Create completion request
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o",  # Update as needed
         messages=chat_messages,
-        max_tokens=int(desired_length * 5),
+        max_tokens=int(desired_length * 5),  # Estimate tokens from character length
         temperature=0.7
     )
 
     # Parse and extract the response content
     response_text = completion.choices[0].message.content.strip()
-    assistant_message = {"role": "assistant", "content": response_text}
-    chat_messages.append(assistant_message)
+    data = {"role":"assistant", "content":response_text}
+    chat_messages.append(data)
 
     return response_text, chat_messages
-
-
+    
 def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
     # Initialize variables for character placement
     total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
@@ -691,7 +486,7 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
         cr.restore()
 
     # Determine the curve length status
-    average_char_width = get_average_char_width(pangocairo_context, font_desc, text)
+    average_char_width = get_average_char_width(pangocairo_context, font_desc)
     remaining_curve_length = total_curve_length - distance_along_curve
 
     if not all_text_fits:

@@ -9,9 +9,7 @@ import os
 OPENAI_KEY = None
 
 system_message = """
-You're a helpful assistant and expert literary scholar. 
-
-Please analyze any story using the following framework inspired by Kurt Vonnegut's thesis on the shapes of stories. The frameworks segments a story into components based on the protagonist's emotional journey.
+You're a helpful assistant and expert literary scholar. Your job is to analyze any story using the framework listed below that segments a story into components based on the protagonist's emotional journey.
 
 Framework Overview:
 1. Story Time: A story's narrative is viewed on a timeline from 0 to 100, representing the percentage of progress through the story. Time 0 is the very start of the story, and time 100 is its conclusion.
@@ -194,10 +192,6 @@ Example 4: Creation Story
         }
     ]
 }
-
-Questions?
-If you have any questions about this framework or need further clarification on how to apply it to, please feel free to ask.
-
 """
 
 
@@ -494,7 +488,8 @@ def create_story_data(input_path, output_path):
 
         completion = client.chat.completions.create(
             #model="gpt-3.5-turbo-1106",
-            model="gpt-4-1106-preview", 
+            #model="gpt-4-1106-preview", 
+            model="gpt-4o-2024-08-06",
             max_tokens=4095,
             temperature = 0.4,
             response_format={ "type": "json_object" }, #note only "gpt-4-1106-preview" and "gpt-3.5-turbo-1106" support JSON MODE 
@@ -510,7 +505,7 @@ def create_story_data(input_path, output_path):
 
 
     for component in story_plot_data["story_components"]:
-        component['modified_end_point'] = component['end_time']
+        component['modified_end_time'] = component['end_time']
         component['modified_end_emotional_score'] = component['end_emotional_score']
     
     output_path = output_path

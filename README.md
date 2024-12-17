@@ -1,3 +1,11 @@
+# Things to do:
+1. polish story creation prompt --> work with anthropic
+2. schedule batches for story 
+3. 
+
+
+
+
 # Things to work on
 1. Improve descriptors generation 
    - I think with each descriptor you need an explanation of the descriptor. 

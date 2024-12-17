@@ -17,23 +17,34 @@
             "description": "Santiago has gone 84 days without catching a fish, considered unlucky, and is alone as Manolin can no longer fish with him.",
             "end_emotional_score": -6,
             "modified_end_emotional_score": -6,
-            "arc": "Linear Decrease"
+            "arc": "Linear Decrease",
+            "target_arc_text_chars": 36,
+            "arc_text": "Santiago's Solitude. Unfishful Days.",
+            "actual_arc_text_chars": 36,
+            "status": "curve too short but can't change because of min/max constraints"
         },
         {
             "end_time": 30,
-            "modified_end_time": 30,
+            "modified_end_time": 29.258517034068138,
             "description": "Santiago sets out to sea, determined and hopeful to break his unlucky streak, feeling a deep connection with the sea.",
             "end_emotional_score": 1,
-            "modified_end_emotional_score": 1,
-            "arc": "Gradual-to-Rapid Increase"
+            "modified_end_emotional_score": 0.4905833711511214,
+            "arc": "Gradual-to-Rapid Increase",
+            "target_arc_text_chars": 45,
+            "arc_text": "Santiago's Voyage. Hopeful Heart. Sea Bond.",
+            "actual_arc_text_chars": 43,
+            "status": "All phrases fit exactly on the curve."
         },
         {
             "end_time": 50,
-            "modified_end_time": 50,
+            "modified_end_time": 49.69939879759519,
             "description": "Santiago hooks a marlin, leading to a grueling struggle that tests his strength, skill, and resilience.",
             "end_emotional_score": 3,
-            "modified_end_emotional_score": 3,
-            "arc": "Linear Increase"
+            "modified_end_emotional_score": 2.963631643060161,
+            "arc": "Linear Increase",
+            "target_arc_text_chars": 20,
+            "arc_text": "```json\nMighty Battle at Sea.\n```",
+            "actual_arc_text_chars": 33
         },
         {
             "end_time": 70,
@@ -56,12 +67,12 @@
             "modified_end_time": 90,
             "description": "Defeated by the relentless sharks, Santiago loses the marlin's flesh and returns to shore with only the skeleton.",
             "end_emotional_score": -8,
-            "modified_end_emotional_score": -8,
+            "modified_end_emotional_score": -8.0,
             "arc": "Linear Decrease"
         },
         {
             "end_time": 100,
-            "modified_end_time": 100.1576367184708,
+            "modified_end_time": 100.0,
             "description": "Santiago is found by Manolin, who expresses admiration and love, promising to fish together again, restoring Santiago's spirit.",
             "end_emotional_score": 1,
             "modified_end_emotional_score": 1,

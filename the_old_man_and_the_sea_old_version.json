@@ -1,0 +1,109 @@
+{
+    "title": "The Old Man and the Sea",
+    "protagonist": "Santiago",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "#N/A",
+            "end_emotional_score": -3,
+            "arc": "#N/A",
+            "descriptors": [
+                "#N/A"
+            ],
+            "modified_end_time": 0,
+            "modified_end_emotional_score": -3
+        },
+        {
+            "end_time": 10,
+            "description": "Santiago's unlucky streak continues, but he remains determined and hopeful as he sets out to sea on the 85th day.",
+            "end_emotional_score": -2,
+            "arc": "Linear Increase",
+            "descriptors": [
+                "Eighty-four days.",
+                "Unlucky.",
+                "Determination."
+            ],
+            "modified_end_time": 10,
+            "modified_end_emotional_score": -2
+        },
+        {
+            "end_time": 30,
+            "description": "Santiago hooks a giant marlin, feeling a sense of purpose and challenge despite the struggle.",
+            "end_emotional_score": 1,
+            "arc": "Gradual-to-Rapid Increase",
+            "descriptors": [
+                "Giant marlin.",
+                "Hooked.",
+                "Challenge."
+            ],
+            "modified_end_time": 30,
+            "modified_end_emotional_score": 1
+        },
+        {
+            "end_time": 50,
+            "description": "The battle with the marlin continues, testing Santiago's endurance and spirit, but he remains resolute.",
+            "end_emotional_score": 3,
+            "arc": "Linear Increase",
+            "descriptors": [
+                "Endurance.",
+                "Struggle.",
+                "Resolute."
+            ],
+            "modified_end_time": 50,
+            "modified_end_emotional_score": 3
+        },
+        {
+            "end_time": 70,
+            "description": "Santiago finally kills the marlin, achieving a moment of triumph and fulfillment.",
+            "end_emotional_score": 5,
+            "arc": "Linear Increase",
+            "descriptors": [
+                "Triumph.",
+                "Fulfillment.",
+                "Harpoon."
+            ],
+            "modified_end_time": 70,
+            "modified_end_emotional_score": 5
+        },
+        {
+            "end_time": 80,
+            "description": "A mako shark attacks the marlin, and Santiago fights it off but loses his harpoon, starting to feel the weight of his struggle.",
+            "end_emotional_score": 2,
+            "arc": "Linear Decrease",
+            "descriptors": [
+                "Mako shark.",
+                "Harpoon lost.",
+                "Struggle."
+            ],
+            "modified_end_time": 80,
+            "modified_end_emotional_score": 2
+        },
+        {
+            "end_time": 90,
+            "description": "More sharks attack, and Santiago fights them with diminishing resources, leading to exhaustion and despair.",
+            "end_emotional_score": -5,
+            "arc": "Gradual-to-Rapid Decrease",
+            "descriptors": [
+                "Sharks.",
+                "Exhaustion.",
+                "Despair."
+            ],
+            "modified_end_time": 90,
+            "modified_end_emotional_score": -5
+        },
+        {
+            "end_time": 100,
+            "description": "Santiago returns home defeated, but Manolin's care and the recognition of his effort provide a glimmer of hope.",
+            "end_emotional_score": -2,
+            "arc": "Rapid-to-Gradual Increase",
+            "descriptors": [
+                "Return home.",
+                "Defeated.",
+                "Manolin.",
+                "Hope."
+            ],
+            "modified_end_time": 100,
+            "modified_end_emotional_score": -2
+        }
+    ]
+}
