@@ -10,7 +10,7 @@ import openai  # For LLM interactions
 import yaml
 from openai import OpenAI
 import copy
-from story_function import get_component_arc_function
+from archive.story_function_archive_12_23_2024 import get_component_arc_function
 from scipy.interpolate import CubicSpline
 import json
 
@@ -26,7 +26,7 @@ with open("config.yaml", 'r') as stream:
     OPENAI_KEY = config['openai_key_vonnegutgraphs']
     client = OpenAI(api_key=OPENAI_KEY)
 
-def create_shape(story_data):
+def create_shape(story_data, font_style):
 
     # Extract the overall x_values and y_values (scaled from transform_story_data)
     x_values = story_data['x_values']  # Scaled x_values (from 1 to 10)
@@ -108,7 +108,7 @@ def create_shape(story_data):
     # Prepare Pango layout
     pangocairo_context = PangoCairo.create_context(cr)
     font_size = 72  # Adjust font size as needed
-    font_desc = Pango.FontDescription(f"Sans {font_size}")
+    font_desc = Pango.FontDescription(f"{font_style} {font_size}")
     arc_sample_text = ""
 
     # For overlap detection between arcs

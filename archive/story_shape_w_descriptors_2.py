@@ -10,7 +10,7 @@ import openai  # For LLM interactions
 import yaml
 from openai import OpenAI
 import copy
-from story_function import get_component_arc_function
+from archive.story_function_archive_12_23_2024 import get_component_arc_function
 
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')

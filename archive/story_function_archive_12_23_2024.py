@@ -359,7 +359,7 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             #return straight_decrease_function
             #return smooth_exponential_decrease_function
             return partial_exponential_transition_function
-        elif arc in ['Linear Increase','Linear Decrease','Linear Flat']:
+        elif arc in ['Linear Increase','Linear Decrease','Gradual Increase', 'Gradual Decrease', 'Linear Flat']:
             return linear_function
         elif arc in ['Concave Down, Increase', 'Rapid-to-Gradual Increase']:
             return concave_down_increasing_function
@@ -375,7 +375,7 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             return test
         else:
             #print(arc)
-            raise ValueError("Interpolation method not supported")
+            raise ValueError(f"{arc} Interpolation method not supported")
     
 
 

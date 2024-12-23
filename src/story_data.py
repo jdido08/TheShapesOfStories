@@ -349,6 +349,6 @@ def create_story_data(input_path, output_path):
 
     return story_plot_data
 
-input_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/the_old_man_and_the_sea_composite_data.json'
-output_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/'
-create_story_data(input_path, output_path)
+# input_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/the_old_man_and_the_sea_composite_data.json'
+# output_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/'
+# create_story_data(input_path, output_path)
