@@ -10,9 +10,9 @@ import openai  # For LLM interactions
 import yaml
 from openai import OpenAI
 import copy
-from archive.story_function_archive_12_23_2024 import get_component_arc_function
 from scipy.interpolate import CubicSpline
 import json
+import os
 
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
@@ -27,42 +27,79 @@ with open("config.yaml", 'r') as stream:
     client = OpenAI(api_key=OPENAI_KEY)
 
 def create_shape(story_data_path,
+                num_points = 500,
                 font_style="Sans",
                 font_size=72,
-                background_type='solid', 
+                font_color = (0, 0, 0), #default to black
                 line_type = 'char',
+                line_thickness = 2,
+                line_color = (0,0,0),
+                background_type='solid', 
                 background_value=(1, 1, 1), 
+                has_title = "NO", #values YES or NO
                 title_font_style = "Sans",
                 title_font_size=96,
+                title_font_color = (0, 0, 0),#default to black
                 width_in_inches = 15,
                 height_in_inches = 15):
+    
 
     with open(story_data_path, 'r', encoding='utf-8') as file:
         story_data = json.load(file)
         if 'story_plot_data' in story_data:
             story_data = story_data['story_plot_data']
-
     
+    #get title 
+    path_title = story_data['title'].lower().replace(' ', '_')
+    path_size = f'{width_in_inches}x{height_in_inches}'
+    check_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{path_title}_{path_size}.json'
+    #check if specific file exists for story + size and if it does exist use it
+    if os.path.exists(check_path):
+        story_data_path = check_path
+        with open(story_data_path, 'r', encoding='utf-8') as file:
+            story_data = json.load(file)
+            if 'story_plot_data' in story_data:
+                story_data = story_data['story_plot_data']
+
+    #create story_shape_path
+    story_shape_title = story_data['title'].lower().replace(' ', '_')
+    story_shape_size = f'{width_in_inches}x{height_in_inches}'
+    
+    if line_type == "line":
+        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{line_thickness}.png'
+    else:
+        story_shape_font = font_style.lower().replace(' ', '_') + "_" + str(font_size)
+        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{story_shape_font}.png'
 
     status = "processing"
     count = 1
     # while status == "processing":
-    for i in range(10):
+    for i in range(1000):
         # print(story_data['story_components'][1]['modified_end_time'])
-        story_data = transform_story_data(story_data)
+        story_data = transform_story_data(story_data, num_points)
 
-        story_data, status = create_shape_single_pass(story_data, 
-                    font_style,
-                    font_size,
-                    background_type, 
-                    line_type,
-                    background_value, 
-                    title_font_style,
-                    title_font_size,
-                    width_in_inches,
-                    height_in_inches)
+        story_data, status = create_shape_single_pass(
+                    story_data=story_data, 
+                    font_style=font_style,
+                    font_size=font_size,
+                    font_color = font_color,
+                    line_type=line_type,
+                    line_thickness = line_thickness,
+                    line_color = line_color,
+                    background_type=background_type, 
+                    background_value=background_value, 
+                    has_title = has_title,
+                    title_font_style=title_font_style,
+                    title_font_size=title_font_size,
+                    title_font_color = title_font_color,
+                    width_in_inches=width_in_inches,
+                    height_in_inches=height_in_inches,
+                    story_shape_path=story_shape_path)
 
         #print(count, " .) ", status)
+        if(count % 50 == 0):
+            print(count)
+
         count = count + 1
         if status == "completed":
             break
@@ -81,20 +118,31 @@ def create_shape(story_data_path,
         if 'arc_y_values' in component:
             del component['arc_y_values']
 
-    with open(story_data_path, 'w', encoding='utf-8') as file:
+    #set new path
+    new_title = story_data['title'].lower().replace(' ', '_')
+    new_size = f'{width_in_inches}x{height_in_inches}'
+    new_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{new_title}_{new_size}.json'
+    with open(new_path, 'w', encoding='utf-8') as file:
         json.dump(story_data, file, ensure_ascii=False, indent=4)
 
 
 def create_shape_single_pass(story_data, 
-                 font_style="Sans",
-                 font_size=72,
-                 background_type='solid', 
-                 line_type = 'char',
-                 background_value=(1, 1, 1), 
-                 title_font_style = "Sans",
-                 title_font_size=96,
-                 width_in_inches = 15,
-                 height_in_inches = 15):
+                font_style="Sans",
+                font_size=72,
+                font_color = (0, 0, 0), #default to black
+                line_type = 'char',
+                line_thickness = 2,
+                line_color = (0,0,0),
+                background_type='solid', 
+                background_value=(1, 1, 1), 
+                has_title = "NO",
+                title_font_style = "Sans",
+                title_font_size=96,
+                title_font_color = (0, 0 , 0), #default to black
+                width_in_inches = 15,
+                height_in_inches = 15,
+                story_shape_path = "test"):
+    
     """
     Creates the shape with story data and optionally sets the background and draws a title.
 
@@ -132,7 +180,11 @@ def create_shape_single_pass(story_data,
     height = int(height_in_inches * dpi)
 
     # Set margins in inches and convert to pixels
-    margin_in_inches = 1  # 1-inch margins
+    #margin_in_inches = 1  # 1-inch margins
+    ratio = 1.0 / 15.0
+    margin_in_inches = ratio * min(width_in_inches, height_in_inches)
+    margin_in_inches = max(0.25, min(margin_in_inches, 1.0))
+
     margin_x = int(margin_in_inches * dpi)
     margin_y = int(margin_in_inches * dpi)
 
@@ -183,7 +235,7 @@ def create_shape_single_pass(story_data,
 
 
     # If we have a title, draw it at the top center
-    if title:
+    if has_title == "YES":
         # Create a layout for the title
         title_layout = PangoCairo.create_layout(cr)
         title_font_desc = Pango.FontDescription(f"{title_font_style} {title_font_size}")
@@ -200,14 +252,14 @@ def create_shape_single_pass(story_data,
         # Align title at the bottom left margin
         title_x = margin_x
         title_y = height - margin_y - title_height
-        cr.set_source_rgb(0, 0, 0)
+        cr.set_source_rgb(*title_font_color)
         cr.move_to(title_x, title_y)
         PangoCairo.show_layout(cr, title_layout)
 
     if line_type == "line":
         # Draw the overall curve (optional)
-        cr.set_source_rgb(0, 0, 0)  # Black color for the curve
-        cr.set_line_width(2)  # Increase line width for better visibility in high-resolution
+        cr.set_source_rgb(*line_color)  # Black color for the curve
+        cr.set_line_width(line_thickness)  # Increase line width for better visibility in high-resolution
 
         # Move to the starting point of the curve
         cr.move_to(x_values_scaled[0], y_values_scaled[0])
@@ -216,6 +268,8 @@ def create_shape_single_pass(story_data,
         for x, y in zip(x_values_scaled[1:], y_values_scaled[1:]):
             cr.line_to(x, y)
         cr.stroke()
+        surface.write_to_png(story_shape_path)
+        return story_data, "completed"
 
     elif line_type == "char":
         #set descriptions font
@@ -260,12 +314,17 @@ def create_shape_single_pass(story_data,
             original_arc_end_emotional_score_values = [reverse_scale_y_values(y, old_min_y, old_max_y, new_min_y, new_max_y) for y in arc_y_values]
 
             # Draw the arc
-            cr.set_source_rgb(0, 0, 0)  # Black color for the arc
             cr.set_line_width(2)
             cr.move_to(arc_x_values_scaled[0], arc_y_values_scaled[0])
             for x, y in zip(arc_x_values_scaled[1:], arc_y_values_scaled[1:]):
                 cr.line_to(x, y)
+
+            # 2. Stroke with alpha=0 so nothing actually shows up
+            cr.set_source_rgba(0, 0, 0, 0)  # fully transparent black
             cr.stroke()
+
+            # 3. Now set real color for text
+            cr.set_source_rgb(*font_color)      # black text
 
             # Step 1: Calculate arc length
             arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled)
@@ -350,22 +409,22 @@ def create_shape_single_pass(story_data,
                 if(new_x >= old_min_x and new_x <= old_max_x and new_y >= old_min_y and new_y <= old_max_y):
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
-                    surface.write_to_png("text_along_curve.png")
+                    surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 elif(new_x >= old_max_x or new_x <= old_min_x):
                     new_x = x_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
-                    surface.write_to_png("text_along_curve.png")
+                    surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 elif(new_y >= old_max_y or new_y <= old_min_y):
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
-                    surface.write_to_png("text_along_curve.png")
+                    surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 else:
-                    surface.write_to_png("text_along_curve.png")
+                    surface.write_to_png(story_shape_path)
                     status = "curve too long but can't change due to constraints"
 
             elif curve_length_status == "curve_too_long":
@@ -378,14 +437,14 @@ def create_shape_single_pass(story_data,
 
                     component['modified_end_time'] = original_arc_end_time_values[-1]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
-                    surface.write_to_png("text_along_curve.png")
+                    surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 else:
-                    surface.write_to_png("text_along_curve.png")
+                    surface.write_to_png(story_shape_path)
                     status = "curve too short but can't change due to constraints"
 
             elif curve_length_status == "curve_correct_length":
-                surface.write_to_png("text_along_curve.png")
+                surface.write_to_png(story_shape_path)
                 status = 'All phrases fit exactly on the curve.'
 
             if("status" not in component):
@@ -394,7 +453,7 @@ def create_shape_single_pass(story_data,
                 component['status'] = status
 
         # Save the image to a file
-        surface.write_to_png("text_along_curve.png")
+        surface.write_to_png(story_shape_path)
         return story_data, "completed"
     else:
         print("line_type: ", line_type, "  is not valid. Needs to be line or char.")
@@ -1092,7 +1151,7 @@ def get_story_arc(x, functions_list):
     return None  # Return None if x is outside the range of all functions
 
 
-def transform_story_data(data):
+def transform_story_data(data, num_points):
     # Convert JSON to DataFrame
     try:
         df = pd.json_normalize(
@@ -1167,7 +1226,7 @@ def transform_story_data(data):
         story_arc_functions_list.append(component_arc_function)
 
     # Get final values
-    x_values = np.linspace(min(x_scale), max(x_scale), 500)  # 1000 points for smoothness
+    x_values = np.linspace(min(x_scale), max(x_scale), num_points)  # 1000 points for smoothness
 
     # Ensure x_values includes all x1 and x2 values
     x1_x2_values = set()
