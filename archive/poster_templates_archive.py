@@ -117,9 +117,10 @@ def create_poster_template_fixed_grid(
 
     # 11) Save the result
     img.save(out_filename)
+    square_side_inches = square_side /  300
     print(
         f"Saved '{out_filename}' with {rows} rows × {columns} columns of squares.\n"
-        f"Final square side: {square_side:.2f}, row_gap: {row_gap:.2f}, col_gap: {col_gap:.2f}"
+        f"Final square side: {square_side_inches} in. , row_gap: {row_gap:.2f}, col_gap: {col_gap:.2f}"
     )
 
 
@@ -132,8 +133,8 @@ if __name__ == "__main__":
         height=900,
         margin=25,
         title_height=72,
-        rows=12,
-        columns=12,
+        rows=5,
+        columns=5,
         row_gap=10,
         col_gap=10
     )

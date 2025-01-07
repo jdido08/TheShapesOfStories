@@ -40,8 +40,6 @@ def create_shape(story_data_path,
                 title_font_style = "Sans",
                 title_font_size=96,
                 title_font_color = (0, 0, 0),#default to black
-                title_padding = 20,
-                gap_above_title = 20,
                 width_in_inches = 15,
                 height_in_inches = 15,
                 recursive_mode = True):
@@ -95,8 +93,6 @@ def create_shape(story_data_path,
                     title_font_style=title_font_style,
                     title_font_size=title_font_size,
                     title_font_color = title_font_color,
-                    title_padding = title_padding,
-                    gap_above_title = gap_above_title,
                     width_in_inches=width_in_inches,
                     height_in_inches=height_in_inches,
                     story_shape_path=story_shape_path,
@@ -131,6 +127,7 @@ def create_shape(story_data_path,
     with open(new_path, 'w', encoding='utf-8') as file:
         json.dump(story_data, file, ensure_ascii=False, indent=4)
 
+
 def create_shape_single_pass(story_data, 
                 font_style="Sans",
                 font_size=72,
@@ -144,29 +141,22 @@ def create_shape_single_pass(story_data,
                 title_font_style = "Sans",
                 title_font_size=96,
                 title_font_color = (0, 0 , 0), #default to black
-                title_padding = 20,
-                gap_above_title = 20,
                 width_in_inches = 15,
                 height_in_inches = 15,
                 story_shape_path = "test",
                 recursive_mode = True):
     
     """
-    Creates the shape with story data and optionally sets the background 
-    and draws a title in a dedicated space at the bottom.
+    Creates the shape with story data and optionally sets the background and draws a title.
 
     Parameters:
     - story_data: dict containing story arcs and optional 'title', 'author' fields
     - font_style: string, e.g. "Arial" for font face
-    - background_type: str, one of 'transparent', 'solid'
+    - background_type: str, one of 'transparent', 'solid', 'image'
     - background_value: 
         if 'solid', tuple (r, g, b) for background color
         if 'transparent', ignored
-    - line_type: 'char' (text along arcs) or 'line' (just a line)
-    - has_title: "YES" or "NO" (whether to reserve space and draw a title)
-    - title_font_style, title_font_size, title_font_color: style for the title
-    - width_in_inches, height_in_inches: final image size in inches
-    - recursive_mode: whether to keep adjusting arcs if they're too short/long
+    - title_font_size: int, font size for the title
     """
 
     # Extract the overall x_values and y_values (scaled from transform_story_data)
@@ -193,13 +183,15 @@ def create_shape_single_pass(story_data,
     height = int(height_in_inches * dpi)
 
     # Set margins in inches and convert to pixels
+    #margin_in_inches = 1  # 1-inch margins
     ratio = 1.0 / 15.0
     margin_in_inches = ratio * min(width_in_inches, height_in_inches)
     margin_in_inches = max(0.25, min(margin_in_inches, 1.0))
+
     margin_x = int(margin_in_inches * dpi)
     margin_y = int(margin_in_inches * dpi)
 
-    # Determine data range for x and y
+    # Determine data range
     x_min = min(x_values)
     x_max = max(x_values)
     y_min = min(y_values)
@@ -207,129 +199,115 @@ def create_shape_single_pass(story_data,
     x_range = x_max - x_min
     y_range = y_max - y_min
 
-    # Create a Cairo surface and context
-    import cairo
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-    cr = cairo.Context(surface)
-
-    from gi.repository import Pango, PangoCairo
-    pangocairo_context = PangoCairo.create_context(cr)
-
-    # Set background according to specified type
-    if background_type == 'transparent':
-        cr.set_source_rgba(0, 0, 0, 0)
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.paint()
-        cr.set_operator(cairo.OPERATOR_OVER)
-    elif background_type == 'solid':
-        r, g, b = background_value
-        cr.set_source_rgb(r, g, b)
-        cr.paint()
-    else:
-        print("background_type:", background_type, "is not valid (must be 'transparent' or 'solid').")
-
-   # 3) If we have a title, measure its pixel height
-    title_text = story_data.get('title', '')
-    measured_title_height = 0
-
-    if has_title == "YES":
-        layout_temp = PangoCairo.create_layout(cr)
-        scaled_title_size = title_font_size * (300 / 96)
-        temp_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
-        layout_temp.set_font_description(temp_desc)
-        layout_temp.set_text(title_text, -1)
-        _, measured_title_height = layout_temp.get_pixel_size()
-
-    # So the total vertical space for the "title band" is:
-    # measured_title_height + title_padding
-    title_band_height = measured_title_height + title_padding
-
-    # The arcs should stop 'gap_above_title' pixels above that band.
-    # So we subtract (title_band_height + gap_above_title) from the available space.
+    # Calculate scaling factors without preserving aspect ratio
     drawable_width = width - 2 * margin_x
-    drawable_height = (height - 2 * margin_y) - (title_band_height + gap_above_title)
-    if drawable_height < 0:
-        drawable_height = 0
+    drawable_height = height - 2 * margin_y
+    scale_x = drawable_width / x_range
+    scale_y = drawable_height / y_range
 
-    # 4) Compute scale factors & map your story arcs into [margin_y, margin_y+drawable_height]
-    x_values = story_data['x_values']
-    y_values = story_data['y_values']
-    x_min, x_max = min(x_values), max(x_values)
-    y_min, y_max = min(y_values), max(y_values)
-    x_range = x_max - x_min
-    y_range = y_max - y_min
-
-    scale_x = drawable_width / x_range if x_range else 1
-    scale_y = drawable_height / y_range if y_range else 1
-
-    # The bottom edge for arcs is margin_y + drawable_height
-    x_values_scaled = [(x - x_min)*scale_x + margin_x for x in x_values]
-    y_values_scaled = [
-        (margin_y + drawable_height) - ((y - y_min)*scale_y)
-        for y in y_values
-    ]
+    # Adjust x_values and y_values: scale and shift to include margins
+    x_values_scaled = [(x - x_min) * scale_x + margin_x for x in x_values]
+    y_values_scaled = [height - ((y - y_min) * scale_y + margin_y) for y in y_values]  # Invert y-axis
 
     # Create a mapping from original to scaled coordinates
     coordinate_mapping = dict(zip(zip(x_values, y_values), zip(x_values_scaled, y_values_scaled)))
 
-    # Now ready to draw arcs/text
+    # Create a Cairo surface and context with the specified width and height
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    cr = cairo.Context(surface)
+    pangocairo_context = PangoCairo.create_context(cr) # Prepare Pango layout
+    #PangoCairo.context_set_resolution(pangocairo_context, dpi) #dont need this anymore
+
+
     title = story_data.get('title', '')
     author = story_data.get('author', '')
 
-    # -------------------------------------------------------------
-    # Remove the old "title at top" code.
-    # We'll draw the title *after* arcs, at the very bottom.
-    # -------------------------------------------------------------
+    # Set background according to specified type
+    if background_type == 'transparent':
+        # Just clear the surface; ARGB32 supports alpha, so it'll remain transparent
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_OVER)
 
-    # If line_type = 'line', just draw a line
+    elif background_type == 'solid':
+        # background_value should be a tuple (r,g,b)
+        r, g, b = background_value
+        cr.set_source_rgb(r, g, b)
+        cr.paint()
+    else:
+        print("background_type: ", background_type, " is not valid needs to be solid or transparent")
+
+
+    # If we have a title, draw it at the top center
+    if has_title == "YES":
+        # Create a layout for the title
+        title_layout = PangoCairo.create_layout(cr)
+        title_font_size_for_300dpi = title_font_size * (300 / 96)  # ~225
+        title_font_desc = Pango.FontDescription(f"{title_font_style} {title_font_size_for_300dpi}")
+        title_layout.set_font_description(title_font_desc)
+
+        # Format title text
+        title_text = title
+        # if author:
+        #     title_text += f"\nby {author}"
+
+        title_layout.set_text(title_text, -1)
+        title_width, title_height = title_layout.get_pixel_size()
+
+        # Align title at the bottom left margin
+        title_x = margin_x
+        title_y = height - margin_y - title_height
+        cr.set_source_rgb(*title_font_color)
+        cr.move_to(title_x, title_y)
+        PangoCairo.show_layout(cr, title_layout)
+
     if line_type == "line":
-        cr.set_source_rgb(*line_color)
-        cr.set_line_width(line_thickness)
+        # Draw the overall curve (optional)
+        cr.set_source_rgb(*line_color)  # Black color for the curve
+        cr.set_line_width(line_thickness)  # Increase line width for better visibility in high-resolution
 
+        # Move to the starting point of the curve
         cr.move_to(x_values_scaled[0], y_values_scaled[0])
-        for sx, sy in zip(x_values_scaled[1:], y_values_scaled[1:]):
-            cr.line_to(sx, sy)
-        cr.stroke()
 
+        # Draw the curve using lines
+        for x, y in zip(x_values_scaled[1:], y_values_scaled[1:]):
+            cr.line_to(x, y)
+        cr.stroke()
         surface.write_to_png(story_shape_path)
         return story_data, "completed"
 
     elif line_type == "char":
-        from scipy.interpolate import CubicSpline
-        import numpy as np
-
-        font_size_for_300dpi = font_size * (300 / 96)
-        import copy
-
-        # Prepare for text on arcs
-        from gi.repository import Pango
+        #set descriptions font
+        font_size_for_300dpi = font_size * (300 / 96)  # ~225
         font_desc = Pango.FontDescription(f"{font_style} {font_size_for_300dpi}")
         arc_sample_text = ""
 
+        # Process each story component
         all_rendered_boxes = []
-        status = "completed"
+        for index, component in enumerate(story_data['story_components'][1:]):
+            index = index + 1  # Because [1:] shifts the starting index
 
-        for index, component in enumerate(story_data['story_components'][1:], start=1):
             arc_x_values = component.get('arc_x_values', [])
             arc_y_values = component.get('arc_y_values', [])
             description = component.get('description', '')
 
+            # Skip if arc data is missing
             if not arc_x_values or not arc_y_values:
                 continue
 
-            # Scale arc coordinates
+            # Scale and shift arc coordinates
             arc_x_values_scaled = []
             arc_y_values_scaled = []
-            for (xx, yy) in zip(arc_x_values, arc_y_values):
-                if (xx, yy) in coordinate_mapping:
-                    arc_x_values_scaled.append(coordinate_mapping[(xx, yy)][0])
-                    arc_y_values_scaled.append(coordinate_mapping[(xx, yy)][1])
+            for x, y in zip(arc_x_values, arc_y_values):
+                if (x, y) in coordinate_mapping:
+                    x_scaled, y_scaled = coordinate_mapping[(x, y)]
                 else:
-                    # fallback
-                    sx = (xx - x_min) * scale_x + margin_x
-                    sy = (margin_y + drawable_height) - ((yy - y_min) * scale_y)
-                    arc_x_values_scaled.append(sx)
-                    arc_y_values_scaled.append(sy)
+                    # Scale individually if not in the overall mapping
+                    x_scaled = (x - x_min) * scale_x + margin_x
+                    y_scaled = height - ((y - y_min) * scale_y + margin_y)
+                arc_x_values_scaled.append(x_scaled)
+                arc_y_values_scaled.append(y_scaled)
 
             # Reverse scaling functions
             def reverse_scale_plot_points(scaled_x, old_min, old_max, new_min=1, new_max=10):
@@ -338,41 +316,36 @@ def create_shape_single_pass(story_data,
             def reverse_scale_y_values(scaled_y, old_min, old_max, new_min=-10, new_max=10):
                 return ((scaled_y - new_min) / (new_max - new_min)) * (old_max - old_min) + old_min
 
-            original_arc_end_time_values = [
-                reverse_scale_plot_points(xv, old_min_x, old_max_x, new_min_x, new_max_x)
-                for xv in arc_x_values
-            ]
-            original_arc_end_emotional_score_values = [
-                reverse_scale_y_values(yv, old_min_y, old_max_y, new_min_y, new_max_y)
-                for yv in arc_y_values
-            ]
+            # Reverse scaling from transform_story_data
+            original_arc_end_time_values = [reverse_scale_plot_points(x, old_min_x, old_max_x, new_min_x, new_max_x) for x in arc_x_values]
+            original_arc_end_emotional_score_values = [reverse_scale_y_values(y, old_min_y, old_max_y, new_min_y, new_max_y) for y in arc_y_values]
 
-            # Draw the arc path (invisible stroke first)
+            # Draw the arc
             cr.set_line_width(2)
             cr.move_to(arc_x_values_scaled[0], arc_y_values_scaled[0])
-            for sx, sy in zip(arc_x_values_scaled[1:], arc_y_values_scaled[1:]):
-                cr.line_to(sx, sy)
+            for x, y in zip(arc_x_values_scaled[1:], arc_y_values_scaled[1:]):
+                cr.line_to(x, y)
 
-            cr.set_source_rgba(0, 0, 0, 0)  # invisible
+            # 2. Stroke with alpha=0 so nothing actually shows up
+            cr.set_source_rgba(0, 0, 0, 0)  # fully transparent black
             cr.stroke()
 
-            # Now set real color for text
-            cr.set_source_rgb(*font_color)
+            # 3. Now set real color for text
+            cr.set_source_rgb(*font_color)      # black text
 
-            # Calculate arc length
+            # Step 1: Calculate arc length
             arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled)
 
-            # If arc_text not generated yet, do so
+            # Step 2: Generate arc text if needed
             if 'arc_text' not in component:
                 average_char_width = get_average_char_width(pangocairo_context, font_desc, arc_sample_text)
                 average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled)
                 target_chars = estimate_characters_fit(arc_length, average_char_width, average_rotation_angle)
+
                 component['target_arc_text_chars'] = target_chars
-
                 if target_chars < 5:
-                    continue
+                    continue  # Skip if too small
 
-                # Generate descriptors (call your GPT logic)
                 descriptors_text, chat_messages = generate_descriptors(
                     title=title,
                     component_description=description,
@@ -383,6 +356,7 @@ def create_shape_single_pass(story_data,
                 actual_chars = len(descriptors_text)
                 lower_bound = target_chars - 3
                 upper_bound = target_chars + 3
+
                 valid_descriptor = False
                 max_attempts = 5
                 attempt = 1
@@ -402,28 +376,23 @@ def create_shape_single_pass(story_data,
                         else:
                             attempt += 1
 
+                # After attempts, proceed with the last generated descriptor
                 component['arc_text'] = descriptors_text
                 component['actual_arc_text_chars'] = len(descriptors_text)
             else:
                 descriptors_text = component['arc_text']
                 component['actual_arc_text_chars'] = len(descriptors_text)
 
-            arc_sample_text += " " + descriptors_text
+            arc_sample_text = arc_sample_text + " " + descriptors_text
 
             # Draw text on curve
             curve_length_status = draw_text_on_curve(
-                cr,
-                arc_x_values_scaled,
-                arc_y_values_scaled,
-                descriptors_text,
-                pangocairo_context,
-                font_desc,
-                all_rendered_boxes
+                cr, arc_x_values_scaled, arc_y_values_scaled, descriptors_text,
+                pangocairo_context, font_desc, all_rendered_boxes
             )
 
-            # Check if curve too short/long, do your recursion logic...
             if curve_length_status == "curve_too_short":
-                # Attempt adjusting via CubicSpline
+                # Attempt adjusting the curve via cubic spline
                 x_og = np.array(original_arc_end_time_values)
                 y_og = np.array(original_arc_end_emotional_score_values)
                 sorted_indices = np.argsort(x_og)
@@ -436,6 +405,7 @@ def create_shape_single_pass(story_data,
                 for i in range(1, len(x_og)):
                     if x_og[i] - x_og[unique_indices[-1]] > tolerance:
                         unique_indices.append(i)
+
                 x_og = x_og[unique_indices]
                 y_og = y_og[unique_indices]
 
@@ -443,20 +413,18 @@ def create_shape_single_pass(story_data,
                 new_x = x_og[-1] + (x_og[1] - x_og[0])
                 new_y = float(cs(new_x))
 
-                if (new_x >= old_min_x and new_x <= old_max_x 
-                    and new_y >= old_min_y and new_y <= old_max_y
-                    and recursive_mode):
+                if(new_x >= old_min_x and new_x <= old_max_x and new_y >= old_min_y and new_y <= old_max_y and recursive_mode == True):
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
                     surface.write_to_png(story_shape_path)
                     return story_data, "processing"
-                elif ((new_x >= old_max_x or new_x <= old_min_x) and recursive_mode):
+                elif((new_x >= old_max_x or new_x <= old_min_x) and recursive_mode == True):
                     new_x = x_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
                     surface.write_to_png(story_shape_path)
                     return story_data, "processing"
-                elif ((new_y >= old_max_y or new_y <= old_min_y) and recursive_mode):
+                elif((new_y >= old_max_y or new_y <= old_min_y) and recursive_mode == True):
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
@@ -467,14 +435,13 @@ def create_shape_single_pass(story_data,
                     status = "curve too long but can't change due to constraints"
 
             elif curve_length_status == "curve_too_long":
-                if (original_arc_end_time_values[-1] != old_min_x 
-                    and original_arc_end_time_values[-1] != new_max_x
-                    and original_arc_end_emotional_score_values[-1] != old_min_y
-                    and original_arc_end_emotional_score_values[-1] != old_max_y
-                    and len(component['arc_x_values']) > 1 and recursive_mode):
-                    
+                if(original_arc_end_time_values[-1] != old_min_x and original_arc_end_time_values[-1] != new_max_x and 
+                original_arc_end_emotional_score_values[-1] != old_min_y and original_arc_end_emotional_score_values[-1] != old_max_y and 
+                len(component['arc_x_values']) > 1 and recursive_mode == True):
+
                     original_arc_end_time_values.pop()
                     original_arc_end_emotional_score_values.pop()
+
                     component['modified_end_time'] = original_arc_end_time_values[-1]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
                     surface.write_to_png(story_shape_path)
@@ -487,48 +454,16 @@ def create_shape_single_pass(story_data,
                 surface.write_to_png(story_shape_path)
                 status = 'All phrases fit exactly on the curve.'
 
-            component['status'] = status
+            if("status" not in component):
+                component['status'] = status
+            else:
+                component['status'] = status
 
-        # Once arcs are fully drawn, we place the title in the reserved space at bottom
-        # (instead of top).
-        # 6) Now place the title, below that gap
-        if has_title == "YES":
-            # The top of the "title band" is at 'height - margin_y - title_band_height'.
-            # But we actually added 'gap_above_title' above that band, so:
-            # The arcs end at: margin_y + drawable_height
-            # The gap is: gap_above_title
-            # Title band starts at: (margin_y + drawable_height) + gap_above_title
-            # or equivalently: height - margin_y - title_band_height
-            # They should be the same number.
-
-            final_layout = PangoCairo.create_layout(cr)
-            final_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
-            final_layout.set_font_description(final_desc)
-            final_layout.set_text(title_text, -1)
-
-            # The top of the title band:
-            title_band_top = (margin_y + drawable_height) + gap_above_title
-            # That is the same as (height - margin_y - title_band_height).
-
-            # If you want to place it flush at that top:
-            title_x = margin_x
-            title_y = title_band_top  # same as above
-
-            # If you want it centered in that band, do:
-            # _, actual_title_height = final_layout.get_pixel_size()
-            # title_y = title_band_top + (title_band_height - actual_title_height)/2
-
-            cr.set_source_rgb(*title_font_color)
-            cr.move_to(title_x, title_y)
-            PangoCairo.show_layout(cr, final_layout)
-
-        # 7) Save final image
+        # Save the image to a file
         surface.write_to_png(story_shape_path)
         return story_data, "completed"
-
     else:
-        print("line_type:", line_type, " is not valid. Needs to be 'line' or 'char'.")
-
+        print("line_type: ", line_type, "  is not valid. Needs to be line or char.")
 
 def calculate_arc_length(arc_x_values, arc_y_values):
     segment_lengths = np.hypot(

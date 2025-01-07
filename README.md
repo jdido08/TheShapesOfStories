@@ -1,3 +1,11 @@
+update: 1/6/2024
+- I have created a way to automatically create stories
+- I think right now posters are causing me too much fuss and I just need to move forward
+- going to go with 5x7 horizontal prints -- one per story and plan is to just make a ton 
+- launch with basic background and fonts 
+- need to figure out title placement 
+
+
 # Things to do:
 1. polish story creation prompt --> work with anthropic
 2. schedule batches for story 
