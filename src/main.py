@@ -22,9 +22,14 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 title_font_color = (0, 0, 0), #only used if has_title = "YES"
                 title_padding = 0, #extra padding in pixels between bottom and title
                 gap_above_title=100, #padding in pixels between title and story shape
-                width_in_inches = 7,
-                height_in_inches = 5,
-                recursive_mode = True) #if you want to recurisvely generate story
+                border=True, #True or False
+                border_thickness=30, #only applicable if border is set to True
+                border_color=(0, 0, 0), #only applicable if border is set to True
+                width_in_inches = 6,  #design width size
+                height_in_inches = 6, #design width size
+                wrap_in_inches=1.5,  # for canvas print outs 
+                recursive_mode = True, #if you want to recurisvely generate story
+                output_format="png") #options png or svg
 
 #notes:
 #15x15 -- font_size = 72

@@ -1,3 +1,17 @@
+Update:
+- different size canvas is the future; people can mix and match
+- pastel colors to begin with 
+- on canvas
+    - top; author, year of book
+    - bottom: shapes of stories branding 
+- need to:
+    - refine logic for generating text; if outside acceptable range then quick so I can mannually adjust
+    - refine logic for generate arc text 
+    - refine logic for creating smoother curves without truncations 
+    
+
+
+
 update: 1/6/2024
 - I have created a way to automatically create stories
 - I think right now posters are causing me too much fuss and I just need to move forward

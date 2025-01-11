@@ -218,15 +218,27 @@ def create_shape_single_pass(story_data,
     total_height_px = int(total_height_in * dpi)
 
 
-   
+    # Set margins in inches and convert to pixels
+    ratio = 1.0 / 15.0
+    margin_in_inches = ratio * min(width_in_inches, height_in_inches)
+    margin_in_inches = max(0.25, min(margin_in_inches, 1.0))
+    margin_x = int(margin_in_inches * dpi)
+    margin_y = int(margin_in_inches * dpi)
+
+    # Determine data range for x and y
+    x_min = min(x_values)
+    x_max = max(x_values)
+    y_min = min(y_values)
+    y_max = max(y_values)
+    x_range = x_max - x_min
+    y_range = y_max - y_min
 
     # Create a Cairo surface and context
     import cairo
-     # create the surface
-    if output_format=="svg":
-        surface = cairo.SVGSurface(story_shape_path, total_width_px, total_height_px)
+    if output_format == "svg":
+        surface = cairo.SVGSurface(story_shape_path, width, height)
     else:
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, total_width_px, total_height_px)
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     cr = cairo.Context(surface)
 
     from gi.repository import Pango, PangoCairo
@@ -245,13 +257,23 @@ def create_shape_single_pass(story_data,
     else:
         print("background_type:", background_type, "is not valid (must be 'transparent' or 'solid').")
 
-    # Now translate so (0,0) is at the main design top-left
-    design_offset_x = wrap_in_inches * dpi
-    design_offset_y = wrap_in_inches * dpi
-    cr.save()
-    cr.translate(design_offset_x, design_offset_y)
+    # if border == True:
+    #     cr.set_source_rgb(*border_color)       # e.g. (0,0,0) for black
+    #     cr.set_line_width(border_thickness)    # e.g. 4 px thick
+    #     cr.rectangle(0, 0, width, height)      # outer edge
+    #     cr.stroke()
 
-    # The actual design is 15" × 15"
+
+    # We shift the origin so that (0,0) effectively starts at the
+    # top-left corner of the “actual” area.
+    actual_area_x_offset = wrap_in_inches * dpi
+    actual_area_y_offset = wrap_in_inches * dpi
+
+    cr.save()
+    cr.translate(actual_area_x_offset, actual_area_y_offset)
+
+    # 2) After you have defined design_width and design_height,
+    #    draw the border AFTER translating.
     design_width = int(width_in_inches * dpi)
     design_height = int(height_in_inches * dpi)
 
@@ -263,26 +285,11 @@ def create_shape_single_pass(story_data,
         cr.stroke()
         cr.restore()
 
-     # Set margins in inches and convert to pixels
-    # Now define margins *inside* that design region
-    margin_ratio = 0.05
-    margin_x = int(margin_ratio * design_width)
-    margin_y = int(margin_ratio * design_height)
-
-    # Determine data range for x and y
-    x_min = min(x_values)
-    x_max = max(x_values)
-    y_min = min(y_values)
-    y_max = max(y_values)
-    x_range = x_max - x_min
-    y_range = y_max - y_min
-
    # 3) If we have a title, measure its pixel height
     title_text = story_data.get('title', '')
     measured_title_height = 0
 
     if has_title == "YES":
-        # measure text height
         layout_temp = PangoCairo.create_layout(cr)
         scaled_title_size = title_font_size * (300 / 96)
         temp_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
@@ -290,20 +297,16 @@ def create_shape_single_pass(story_data,
         layout_temp.set_text(title_text, -1)
         _, measured_title_height = layout_temp.get_pixel_size()
 
-        title_band_height = measured_title_height + title_padding
+    # So the total vertical space for the "title band" is:
+    # measured_title_height + title_padding
+    title_band_height = measured_title_height + title_padding
 
-        # arcs stop short of that band
-        # arcs fill up to: design_height - 2*margin_y - (title_band_height + gap_above_title)
-
-    else:
-        # no title, so no band
-        title_band_height = 0
-
-    drawable_width = design_width - 2 * margin_x
-    drawable_height = (design_height
-                    - 2 * margin_y
-                    - title_band_height
-                    - gap_above_title)
+    # The arcs should stop 'gap_above_title' pixels above that band.
+    # So we subtract (title_band_height + gap_above_title) from the available space.
+    drawable_width = width - 2 * margin_x
+    drawable_height = (height - 2 * margin_y) - (title_band_height + gap_above_title)
+    if drawable_height < 0:
+        drawable_height = 0
 
     # 4) Compute scale factors & map your story arcs into [margin_y, margin_y+drawable_height]
     x_values = story_data['x_values']
@@ -581,20 +584,30 @@ def create_shape_single_pass(story_data,
         # (instead of top).
         # 6) Now place the title, below that gap
         if has_title == "YES":
-            
+            # The top of the "title band" is at 'height - margin_y - title_band_height'.
+            # But we actually added 'gap_above_title' above that band, so:
+            # The arcs end at: margin_y + drawable_height
+            # The gap is: gap_above_title
+            # Title band starts at: (margin_y + drawable_height) + gap_above_title
+            # or equivalently: height - margin_y - title_band_height
+            # They should be the same number.
+
             final_layout = PangoCairo.create_layout(cr)
             final_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
             final_layout.set_font_description(final_desc)
             final_layout.set_text(title_text, -1)
 
-            # the top edge of the title band is at:
-            title_band_top = margin_y + drawable_height + gap_above_title
+            # The top of the title band:
+            title_band_top = (margin_y + drawable_height) + gap_above_title
+            # That is the same as (height - margin_y - title_band_height).
 
-            # place text at (title_x, title_y)
+            # If you want to place it flush at that top:
             title_x = margin_x
-            title_y = title_band_top
+            title_y = title_band_top  # same as above
 
-            cr.move_to(title_x, title_y)
+            # If you want it centered in that band, do:
+            # _, actual_title_height = final_layout.get_pixel_size()
+            # title_y = title_band_top + (title_band_height - actual_title_height)/2
 
             cr.set_source_rgb(*title_font_color)
             cr.move_to(title_x, title_y)
