@@ -8,7 +8,7 @@ story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/stor
 
 create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_old_man_and_the_sea.json',
                 num_points=500, #number of points in the line 
-                line_type = 'char', #values line or char
+                line_type = 'line', #values line or char
                 line_thickness = 10, #only used if line_type = line
                 line_color = (0, 0, 0), #only used if line_type = line
                 font_style="Sans", #only used if line_type set to char
@@ -21,9 +21,9 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 title_font_size=24, #only used if has_title = "YES"
                 title_font_color = (0, 0, 0), #only used if has_title = "YES"
                 title_padding = 0, #extra padding in pixels between bottom and title
-                gap_above_title=100, #padding in pixels between title and story shape
+                gap_above_title=20, #padding in pixels between title and story shape
                 border=True, #True or False
-                border_thickness=30, #only applicable if border is set to True
+                border_thickness=60, #only applicable if border is set to True
                 border_color=(0, 0, 0), #only applicable if border is set to True
                 width_in_inches = 6,  #design width size
                 height_in_inches = 6, #design width size

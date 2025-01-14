@@ -309,6 +309,7 @@ def create_story_data(input_path, output_path):
     
     story_title = story_data['title']
     author_name = story_data['openlib']['author_name'][0]
+    year = story_data['openlib']['publishing']['first_publish_year']
 
     # List is in priority order
     summary_sources = [
@@ -331,6 +332,9 @@ def create_story_data(input_path, output_path):
     story_plot_data = analyze_story(author_name, story_title, story_summary)
     story_plot_data = json.loads(story_plot_data)
     story_validity = validate_story_arcs(story_plot_data)
+    story_plot_data["type"] = "book"
+    story_data["author"] = author_name
+    story_data["year"] = year
     story_plot_data['summary'] = story_summary
     story_plot_data['story_summary_source'] = story_summary_source
     story_plot_data['shape_validity'] = story_validity

@@ -1014,46 +1014,14 @@ def scale_y_values(y_values, new_min, new_max):
 
 def get_component_arc_function(x1, x2, y1, y2, arc):
 
-    def exponential_step_function(x):
-        # 1) If out of range, return None
-        if not (x1 <= x <= x2):
-            return None
-        
-        # 2) Decide how many steps you want
-        num_steps = int(math.ceil(x2 - x1))
-        print(num_steps, " ", x2, " - ", x1)
-        if num_steps < 1:
-            num_steps = 1
-        
-        
-        # 3) We create the sub-intervals
-        x_edges = np.linspace(x1, x2, num_steps + 1)  # e.g. [x1, x1+1, x1+2, ..., x2]
-        # total change in y is (y2 - y1)
-        dy = (y2 - y1) / num_steps
-        
-        # 4) Find which step i such that x_edges[i] <= x <= x_edges[i+1]
-        # e.g. loop or use a quick search:
-        for i in range(num_steps):
-            start = x_edges[i]
-            end   = x_edges[i+1]
-            
-            if start <= x <= end:
-                # y_base is the bottom of step i
-                y_base = y1 + i * dy
-                
-                # now define an exponential from y_base up to y_base + dy
-                # choose a k (steepness)
-                k = 15  # or 10, or something user-chosen
-                # map x into [0..1] for exponential
-                alpha = (x - start) / (end - start)  # 0 to 1
-                # standard increase formula:
-                local_y = y_base + dy * (1 - math.exp(-k * alpha))
-                return local_y
-        
-        # If x somehow equals x2 exactly, let's ensure we return y2
-        return y2
-
-
+    # def smooth_step_function(x):
+    #     if x1 <= x <= x2:
+    #         x_center = (x1 + x2) / 2
+    #         k = (x2 - x1) / 10  # Adjust k for smoothness; smaller k means steeper transition
+    #         transition = 1 / (1 + np.exp(-(x - x_center) / k))
+    #         return y1 + (y2 - y1) * transition
+    #     else:
+    #         return None
 
     def smooth_step_function(x):
         if x1 <= x <= x2:
@@ -1092,40 +1060,15 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         else:
             return None
 
-    def smooth_exponential_decrease_function(x):
-        # Only define behavior in the interval [x1, x2]
+    def smooth_drop_function(x):
         if x1 <= x <= x2:
-            # We want the function to rapidly drop from y1 at x1 and approach y2 as x approaches x2.
-            # Let's choose k so that at x2 we're close to y2, say within 1%:
-            # exp(-k*(x2-x1)) = 0.01 -> -k*(x2-x1)=ln(0.01) -> k = -ln(0.01)/(x2-x1)
-            # ln(0.01) ~ -4.60517, so k ≈ 4.6/(x2-x1).
-            # You can adjust this factor (4.6) if you want a different "steepness".
-            if x2 > x1:  
-                k = 15 / (x2 - x1)
-            else:
-                # Avoid division by zero if times are equal
-                k = 1.0
-
-            return y2 + (y1 - y2)*math.exp(-k*(x - x1))
+            x_center = x1 + (x2 - x1) / 2
+            k = (x2 - x1) / 10
+            transition = 1 / (1 + np.exp(-(x - x_center) / k))
+            return y1 + (y2 - y1) * transition
         else:
             return None
 
-    def smooth_exponential_increase_function(x):
-        # Similar logic but reversed to create a curve that starts low and rises up.
-        if x1 <= x <= x2:
-            if x2 > x1:
-                #k = 4.6 / (x2 - x1)
-                k = 15 / (x2 - x1)
-            else:
-                k = 1.0
-
-            # For an "increase", you can simply flip the logic:
-            # Start at y1 and approach y2 from below using a mirrored exponential shape:
-            # y(x) = y1 + (y2 - y1)*(1 - exp(-k*(x - x1)))
-            return y1 + (y2 - y1)*(1 - math.exp(-k*(x - x1)))
-        else:
-            return None
-    
     def straight_decrease_function(x):
         if x1 <= x <= x2:
             # Parameters to adjust
@@ -1145,7 +1088,34 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
                 return None
         else:
             return None
- 
+
+        # if x1 <= x <= x2:
+        #     # Parameters to adjust
+        #     horizontal_fraction = 0.01  # Adjust as needed
+
+        #     # Calculate key points
+        #     #total_interval = x2 - x1
+        #     total_interval = 0
+        #     horizontal_end = x1 + horizontal_fraction * total_interval
+
+        #     if x1 <= x < horizontal_end:
+        #         # Initial horizontal segment at y1
+        #         return y1
+        #     elif horizontal_end <= x <= x2:
+        #         # Linear decrease from y1 to y2
+        #         t = (x - horizontal_end) / (x2 - horizontal_end)
+        #         return y1 + (y2 - y1) * t
+        #     else:
+        #         return None
+        # else:
+        #     return None
+
+    def drop_function(x):
+        if x1 <= x <= x2:
+            return y2 
+        else:
+            return None
+        
     def straight_increase_function(x):
         if x1 <= x <= x2:
             horizontal_fraction = 0.01  # Adjust as needed
@@ -1161,6 +1131,40 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         else:
             return None
 
+    def smooth_exponential_decrease_function(x):
+        # Only define behavior in the interval [x1, x2]
+        if x1 <= x <= x2:
+            # We want the function to rapidly drop from y1 at x1 and approach y2 as x approaches x2.
+            # Let's choose k so that at x2 we're close to y2, say within 1%:
+            # exp(-k*(x2-x1)) = 0.01 -> -k*(x2-x1)=ln(0.01) -> k = -ln(0.01)/(x2-x1)
+            # ln(0.01) ~ -4.60517, so k ≈ 4.6/(x2-x1).
+            # You can adjust this factor (4.6) if you want a different "steepness".
+            if x2 > x1:  
+                k = 25 / (x2 - x1)
+            else:
+                # Avoid division by zero if times are equal
+                k = 1.0
+
+            return y2 + (y1 - y2)*math.exp(-k*(x - x1))
+        else:
+            return None
+
+    def smooth_exponential_increase_function(x):
+        # Similar logic but reversed to create a curve that starts low and rises up.
+        if x1 <= x <= x2:
+            if x2 > x1:
+                #k = 4.6 / (x2 - x1)
+                k = 25 / (x2 - x1)
+            else:
+                k = 1.0
+
+            # For an "increase", you can simply flip the logic:
+            # Start at y1 and approach y2 from below using a mirrored exponential shape:
+            # y(x) = y1 + (y2 - y1)*(1 - exp(-k*(x - x1)))
+            return y1 + (y2 - y1)*(1 - math.exp(-k*(x - x1)))
+        else:
+            return None
+    
     def step_function(x):
         if x1 <= x <= x2:
 
@@ -1255,6 +1259,76 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         else:
             return None
     
+    def partial_exponential_transition_function(x):
+        vertical_fraction = 0.15
+        flatten_fraction = 0.05
+        horizontal_fraction = 0.01  # New parameter to mimic the original horizontal pause
+
+        if x1 <= x <= x2:
+            total_length = x2 - x1
+            x_horizontal_end = x1 + horizontal_fraction * total_length
+            x_mid = x1 + vertical_fraction * total_length
+
+            # Determine y_mid
+            delta = 0.1 * (y1 - y2)
+            y_mid = y2 + delta
+
+            # Phase 1: Horizontal portion at the start
+            if x < x_horizontal_end:
+                # For a tiny fraction of the interval, just stay at y1
+                return y1
+
+            # Phase 2: Linear descent (or ascent) from y1 to y_mid by x_mid
+            # After the horizontal segment, we have a smaller effective linear portion
+            # That goes from (x_horizontal_end, y1) to (x_mid, y_mid)
+            # Adjust the linear interpolation to start from x_horizontal_end instead of x1
+            if x_horizontal_end <= x <= x_mid:
+                # Avoid division by zero if vertical_fraction and horizontal_fraction overlap significantly
+                if x_mid == x_horizontal_end:
+                    return y_mid
+                t = (x - x_horizontal_end) / (x_mid - x_horizontal_end)
+                return y1 + (y_mid - y1)*t
+
+            # Phase 3: Exponential tail from x_mid to x2
+            if x > x_mid:
+                if x2 == x_mid:
+                    return y_mid
+                k = -math.log(flatten_fraction)/(x2 - x_mid)
+                return y2 + (y_mid - y2)*math.exp(-k*(x - x_mid))
+
+        else:
+            return None
+    
+
+    def straight_increase_function_factory(x1, x2, y1, y2, fraction=0.001):
+        def arc_func(x):
+            if x < x1 or x > x2:
+                return None
+                
+            x_cut = x1 + fraction*(x2 - x1)
+            if x <= x_cut:
+                # short horizontal portion
+                return y1
+            else:
+                # gentle slope from x_cut..x2
+                slope_span = (x2 - x_cut)
+                t = (x - x_cut) / slope_span
+                return y1 + (y2 - y1)*t
+        return arc_func
+
+
+    def straight_decrease_function_factory(x1, x2, y1, y2, fraction=0.001):
+        def arc_func(x):
+            if x < x1 or x > x2:
+                return None
+            x_cut = x1 + fraction*(x2 - x1)
+            if x <= x_cut:
+                return y1
+            else:
+                slope_span = x2 - x_cut
+                t = (x - x_cut)/slope_span
+                return y1 + (y2 - y1)*t
+        return arc_func
 
 
    
@@ -1270,12 +1344,20 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         # Existing code for other arcs
         if arc in['Step-by-Step Increase', 'Step-by-Step Decrease']:
             #return step_function
-            #return smooth_step_function
-            return exponential_step_function
+            return smooth_step_function
         elif arc in ['Straight Increase']:
+            #return drop_function
+            #return smooth_drop_function
+            #return straight_increase_function
             return smooth_exponential_increase_function
+            #return partial_exponential_transition_function
+            #return straight_increase_function_factory(x1, x2, y1, y2, fraction=0.001)
         elif arc in ['Straight Decrease']:
+            #return straight_decrease_function
+            #return smooth_exponential_decrease_function
+            #return partial_exponential_transition_function
             return smooth_exponential_decrease_function
+            #return straight_decrease_function_factory(x1, x2, y1, y2, fraction=0.001)
         elif arc in ['Linear Increase','Linear Decrease','Gradual Increase', 'Gradual Decrease', 'Linear Flat']:
             return linear_function
         elif arc in ['Concave Down, Increase', 'Rapid-to-Gradual Increase']:
@@ -1295,6 +1377,9 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             raise ValueError(f"{arc} Interpolation method not supported")
     
 
+
+      
+   
 
     
 # Master function to evaluate the emotional score for any given plot point number

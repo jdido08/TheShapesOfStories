@@ -13,6 +13,13 @@ import copy
 from scipy.interpolate import CubicSpline
 import json
 import os
+import re
+import math
+import numpy as np
+from shapely.geometry import Polygon
+from shapely.affinity import rotate as shapely_rotate
+import shapely.affinity
+from gi.repository import Pango, PangoCairo
 
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
@@ -670,18 +677,22 @@ def calculate_arc_length(arc_x_values, arc_y_values):
     return total_length
 
 def get_average_char_width(pangocairo_context, font_desc, sample_text=None):
+    """
+    Helper to measure average char width for the entire text.
+    This is unchanged from your original approach.
+    """
     layout = Pango.Layout.new(pangocairo_context)
     layout.set_font_description(font_desc)
 
-    if sample_text is None or sample_text == "":
-        sample_text = (
-            "Nervous. First Day. Office. Challenges. Potential."
-        )
+    if not sample_text:
+        sample_text = "This is a default sample text"
     layout.set_text(sample_text, -1)
     total_width = layout.get_pixel_size()[0]
+    # Subtract spaces for more accurate measure, or leave them in
     num_chars = len(sample_text.replace(" ", ""))
-    average_char_width = total_width / num_chars
-    return average_char_width
+    if num_chars <= 0:
+        num_chars = 1
+    return total_width / num_chars
 
 def estimate_characters_fit(arc_length, average_char_width, average_rotation_angle=0, spacing=1.0):
     rotation_adjustment = 1 + (abs(math.sin(math.radians(average_rotation_angle))) * 0.1)
@@ -833,13 +844,35 @@ Output ONLY the updated description that is a COMPLETE NARRATIVE UNIVERSE unto i
 
     return response_text, chat_messages
 
-def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
-    total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
-    cumulative_curve_lengths = np.insert(np.cumsum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))), 0, 0)
+def draw_text_on_curve(
+    cr, 
+    x_values_scaled, 
+    y_values_scaled, 
+    text, 
+    pangocairo_context, 
+    font_desc, 
+    all_rendered_boxes
+):
+    """
+    Draws 'text' along the curve defined by (x_values_scaled, y_values_scaled).
+    This version places entire words at once, preventing mid-word breaks.
+    """
 
+    # 1) Compute total curve length and the cumulative length at each vertex
+    total_curve_length = np.sum(
+        np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))
+    )
+    cumulative_curve_lengths = np.insert(
+        np.cumsum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))), 
+        0, 
+        0
+    )
+
+    # We'll move along the curve from start to finish
     idx_on_curve = 0
     distance_along_curve = 0
 
+    # A helper function to get tangent angle at a curve index
     def get_tangent_angle(x_vals, y_vals, idx):
         if idx == 0:
             dx = x_vals[1] - x_vals[0]
@@ -850,101 +883,119 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
         else:
             dx = x_vals[idx + 1] - x_vals[idx - 1]
             dy = y_vals[idx + 1] - y_vals[idx - 1]
-        angle = math.atan2(dy, dx)
-        return angle
+        return math.atan2(dy, dx)
 
-    import re
+    # 2) Split the text into “phrases” (by period or end of string)
+    #    Then we’ll split each phrase into words below
     phrases = re.findall(r'.+?(?:\. |$)', text)
-    phrases = [phrase for phrase in phrases if phrase.strip()]
+    # Filter out empty ones
+    phrases = [p.strip() for p in phrases if p.strip()]
 
-    char_positions = []
-    rendered_boxes = []
+    # We’ll track whether all text fit
     all_text_fits = True
 
+    # 3) For each phrase, place it word by word
     for phrase in phrases:
-        temp_char_positions = []
-        temp_rendered_boxes = []
+        words = phrase.split()
+        # Save the initial position in case the entire phrase won't fit
         saved_idx_on_curve = idx_on_curve
         saved_distance_along_curve = distance_along_curve
         phrase_fits = True
 
-        for char in phrase:
+        for word in words:
+            # Measure the bounding box of the entire word
             layout = Pango.Layout.new(pangocairo_context)
             layout.set_font_description(font_desc)
-            layout.set_text(char, -1)
-            char_width, char_height = layout.get_pixel_size()
+            layout.set_text(word, -1)
+            word_width, word_height = layout.get_pixel_size()
 
+            # (Optional) Add a bit of spacing after the word
+            spacing_after_word = 5  # pixels
+
+            # 4) Walk along the curve until we find a place to fit this word
             while idx_on_curve < len(cumulative_curve_lengths) - 1:
-                segment_start_distance = cumulative_curve_lengths[idx_on_curve]
-                segment_end_distance = cumulative_curve_lengths[idx_on_curve + 1]
-                segment_distance = segment_end_distance - segment_start_distance
+                seg_start = cumulative_curve_lengths[idx_on_curve]
+                seg_end   = cumulative_curve_lengths[idx_on_curve + 1]
+                seg_len   = seg_end - seg_start
 
-                if segment_distance == 0:
+                if seg_len == 0:
                     idx_on_curve += 1
                     continue
 
-                ratio = (distance_along_curve - segment_start_distance) / segment_distance
+                # ratio of how far we are along this segment
+                ratio = (distance_along_curve - seg_start) / seg_len
 
                 if ratio < 0 or ratio > 1:
+                    # We are beyond this segment’s bounds, move to the next
                     idx_on_curve += 1
                     continue
 
-                x = x_values_scaled[idx_on_curve] + ratio * (x_values_scaled[idx_on_curve + 1] - x_values_scaled[idx_on_curve])
-                y = y_values_scaled[idx_on_curve] + ratio * (y_values_scaled[idx_on_curve + 1] - y_values_scaled[idx_on_curve])
+                # 5) Interpolate the point at this ratio
+                x = x_values_scaled[idx_on_curve] + ratio * (
+                    x_values_scaled[idx_on_curve + 1] 
+                    - x_values_scaled[idx_on_curve]
+                )
+                y = y_values_scaled[idx_on_curve] + ratio * (
+                    y_values_scaled[idx_on_curve + 1] 
+                    - y_values_scaled[idx_on_curve]
+                )
+
+                # 6) Determine the angle so the text follows the path
                 angle = get_tangent_angle(x_values_scaled, y_values_scaled, idx_on_curve)
 
+                # Build a shapely polygon for the bounding box
+                # Center the text on (x, y)
                 box = Polygon([
-                    (-char_width / 2, -char_height / 2),
-                    (char_width / 2, -char_height / 2),
-                    (char_width / 2, char_height / 2),
-                    (-char_width / 2, char_height / 2)
+                    (-word_width / 2, -word_height / 2),
+                    ( word_width / 2, -word_height / 2),
+                    ( word_width / 2,  word_height / 2),
+                    (-word_width / 2,  word_height / 2),
                 ])
 
-                rotated_box = shapely_rotate(box, angle * (180 / math.pi), origin=(0, 0), use_radians=False)
+                # Rotate around (0, 0), then translate
+                rotated_box    = shapely_rotate(box, angle * 180.0 / math.pi, origin=(0,0))
                 translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
 
-                # Check overlap
-                for other_box in rendered_boxes + all_rendered_boxes:
-                    if translated_box.intersects(other_box):
-                        distance_along_curve += 1
+                # 7) Check collisions with previously rendered boxes
+                collision_found = False
+                for existing_box in all_rendered_boxes:
+                    if translated_box.intersects(existing_box):
+                        collision_found = True
                         break
+
+                if collision_found:
+                    # If collisions, nudge forward along the curve and try again
+                    distance_along_curve += 1
                 else:
-                    temp_char_positions.append((x, y, angle, char, char_width, char_height))
-                    temp_rendered_boxes.append(translated_box)
-                    rendered_boxes.append(translated_box)
+                    # We can place the word here
+                    # Save the bounding box, then draw
                     all_rendered_boxes.append(translated_box)
 
-                    distance_along_curve += char_width
+                    cr.save()
+                    cr.translate(x, y)
+                    cr.rotate(angle)
+                    cr.translate(-word_width / 2, -word_height / 2)
+                    PangoCairo.show_layout(cr, layout)
+                    cr.restore()
+
+                    # Advance along the curve by the word width + spacing
+                    distance_along_curve += (word_width + spacing_after_word)
                     break
             else:
-                # No space left on the curve
+                # If we finish the while-loop with no break, it means 
+                # we couldn’t place the current word anywhere.
                 phrase_fits = False
                 break
 
-        if phrase_fits:
-            char_positions.extend(temp_char_positions)
-        else:
-            # rollback
-            idx_on_curve = saved_idx_on_curve
-            distance_along_curve = saved_distance_along_curve
-            rendered_boxes = rendered_boxes[:len(rendered_boxes) - len(temp_rendered_boxes)]
-            all_rendered_boxes = all_rendered_boxes[:len(all_rendered_boxes) - len(temp_rendered_boxes)]
-            all_text_fits = False
+        # If the current phrase couldn't fit, roll back to saved positions
+        if not phrase_fits:
+            idx_on_curve            = saved_idx_on_curve
+            distance_along_curve    = saved_distance_along_curve
+            all_text_fits           = False
             break
 
-    # Render characters
-    for x, y, angle, char, char_width, char_height in char_positions:
-        cr.save()
-        cr.translate(x, y)
-        cr.rotate(angle)
-
-        layout = PangoCairo.create_layout(cr)
-        layout.set_font_description(font_desc)
-        layout.set_text(char, -1)
-        cr.translate(-char_width / 2, -char_height / 2) 
-        PangoCairo.show_layout(cr, layout)
-        cr.restore()
-
+    # 8) Once we’ve attempted to place everything, decide if the curve
+    #    is too short, too long, or “correct”
     average_char_width = get_average_char_width(pangocairo_context, font_desc, text)
     remaining_curve_length = total_curve_length - distance_along_curve
 
@@ -956,7 +1007,6 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
         curve_length_status = "curve_correct_length"
 
     return curve_length_status
-
 
 
 #### THE OLD STORY FUNCTION CODE ###
@@ -1014,46 +1064,14 @@ def scale_y_values(y_values, new_min, new_max):
 
 def get_component_arc_function(x1, x2, y1, y2, arc):
 
-    def exponential_step_function(x):
-        # 1) If out of range, return None
-        if not (x1 <= x <= x2):
-            return None
-        
-        # 2) Decide how many steps you want
-        num_steps = int(math.ceil(x2 - x1))
-        print(num_steps, " ", x2, " - ", x1)
-        if num_steps < 1:
-            num_steps = 1
-        
-        
-        # 3) We create the sub-intervals
-        x_edges = np.linspace(x1, x2, num_steps + 1)  # e.g. [x1, x1+1, x1+2, ..., x2]
-        # total change in y is (y2 - y1)
-        dy = (y2 - y1) / num_steps
-        
-        # 4) Find which step i such that x_edges[i] <= x <= x_edges[i+1]
-        # e.g. loop or use a quick search:
-        for i in range(num_steps):
-            start = x_edges[i]
-            end   = x_edges[i+1]
-            
-            if start <= x <= end:
-                # y_base is the bottom of step i
-                y_base = y1 + i * dy
-                
-                # now define an exponential from y_base up to y_base + dy
-                # choose a k (steepness)
-                k = 15  # or 10, or something user-chosen
-                # map x into [0..1] for exponential
-                alpha = (x - start) / (end - start)  # 0 to 1
-                # standard increase formula:
-                local_y = y_base + dy * (1 - math.exp(-k * alpha))
-                return local_y
-        
-        # If x somehow equals x2 exactly, let's ensure we return y2
-        return y2
-
-
+    # def smooth_step_function(x):
+    #     if x1 <= x <= x2:
+    #         x_center = (x1 + x2) / 2
+    #         k = (x2 - x1) / 10  # Adjust k for smoothness; smaller k means steeper transition
+    #         transition = 1 / (1 + np.exp(-(x - x_center) / k))
+    #         return y1 + (y2 - y1) * transition
+    #     else:
+    #         return None
 
     def smooth_step_function(x):
         if x1 <= x <= x2:
@@ -1092,40 +1110,15 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         else:
             return None
 
-    def smooth_exponential_decrease_function(x):
-        # Only define behavior in the interval [x1, x2]
+    def smooth_drop_function(x):
         if x1 <= x <= x2:
-            # We want the function to rapidly drop from y1 at x1 and approach y2 as x approaches x2.
-            # Let's choose k so that at x2 we're close to y2, say within 1%:
-            # exp(-k*(x2-x1)) = 0.01 -> -k*(x2-x1)=ln(0.01) -> k = -ln(0.01)/(x2-x1)
-            # ln(0.01) ~ -4.60517, so k ≈ 4.6/(x2-x1).
-            # You can adjust this factor (4.6) if you want a different "steepness".
-            if x2 > x1:  
-                k = 15 / (x2 - x1)
-            else:
-                # Avoid division by zero if times are equal
-                k = 1.0
-
-            return y2 + (y1 - y2)*math.exp(-k*(x - x1))
+            x_center = x1 + (x2 - x1) / 2
+            k = (x2 - x1) / 10
+            transition = 1 / (1 + np.exp(-(x - x_center) / k))
+            return y1 + (y2 - y1) * transition
         else:
             return None
 
-    def smooth_exponential_increase_function(x):
-        # Similar logic but reversed to create a curve that starts low and rises up.
-        if x1 <= x <= x2:
-            if x2 > x1:
-                #k = 4.6 / (x2 - x1)
-                k = 15 / (x2 - x1)
-            else:
-                k = 1.0
-
-            # For an "increase", you can simply flip the logic:
-            # Start at y1 and approach y2 from below using a mirrored exponential shape:
-            # y(x) = y1 + (y2 - y1)*(1 - exp(-k*(x - x1)))
-            return y1 + (y2 - y1)*(1 - math.exp(-k*(x - x1)))
-        else:
-            return None
-    
     def straight_decrease_function(x):
         if x1 <= x <= x2:
             # Parameters to adjust
@@ -1145,7 +1138,34 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
                 return None
         else:
             return None
- 
+
+        if x1 <= x <= x2:
+            # Parameters to adjust
+            horizontal_fraction = 0.01  # Adjust as needed
+
+            # Calculate key points
+            #total_interval = x2 - x1
+            total_interval = 0
+            horizontal_end = x1 + horizontal_fraction * total_interval
+
+            if x1 <= x < horizontal_end:
+                # Initial horizontal segment at y1
+                return y1
+            elif horizontal_end <= x <= x2:
+                # Linear decrease from y1 to y2
+                t = (x - horizontal_end) / (x2 - horizontal_end)
+                return y1 + (y2 - y1) * t
+            else:
+                return None
+        else:
+            return None
+
+    def drop_function(x):
+        if x1 <= x <= x2:
+            return y2 
+        else:
+            return None
+        
     def straight_increase_function(x):
         if x1 <= x <= x2:
             horizontal_fraction = 0.01  # Adjust as needed
@@ -1161,6 +1181,39 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         else:
             return None
 
+    def smooth_exponential_decrease_function(x):
+        # Only define behavior in the interval [x1, x2]
+        if x1 <= x <= x2:
+            # We want the function to rapidly drop from y1 at x1 and approach y2 as x approaches x2.
+            # Let's choose k so that at x2 we're close to y2, say within 1%:
+            # exp(-k*(x2-x1)) = 0.01 -> -k*(x2-x1)=ln(0.01) -> k = -ln(0.01)/(x2-x1)
+            # ln(0.01) ~ -4.60517, so k ≈ 4.6/(x2-x1).
+            # You can adjust this factor (4.6) if you want a different "steepness".
+            if x2 > x1:  
+                k = 4.6 / (x2 - x1)
+            else:
+                # Avoid division by zero if times are equal
+                k = 1.0
+
+            return y2 + (y1 - y2)*math.exp(-k*(x - x1))
+        else:
+            return None
+
+    def smooth_exponential_increase_function(x):
+        # Similar logic but reversed to create a curve that starts low and rises up.
+        if x1 <= x <= x2:
+            if x2 > x1:
+                k = 4.6 / (x2 - x1)
+            else:
+                k = 1.0
+
+            # For an "increase", you can simply flip the logic:
+            # Start at y1 and approach y2 from below using a mirrored exponential shape:
+            # y(x) = y1 + (y2 - y1)*(1 - exp(-k*(x - x1)))
+            return y1 + (y2 - y1)*(1 - math.exp(-k*(x - x1)))
+        else:
+            return None
+    
     def step_function(x):
         if x1 <= x <= x2:
 
@@ -1255,7 +1308,45 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         else:
             return None
     
+    def partial_exponential_transition_function(x):
+        vertical_fraction = 0.15
+        flatten_fraction = 0.05
+        horizontal_fraction = 0.01  # New parameter to mimic the original horizontal pause
 
+        if x1 <= x <= x2:
+            total_length = x2 - x1
+            x_horizontal_end = x1 + horizontal_fraction * total_length
+            x_mid = x1 + vertical_fraction * total_length
+
+            # Determine y_mid
+            delta = 0.1 * (y1 - y2)
+            y_mid = y2 + delta
+
+            # Phase 1: Horizontal portion at the start
+            if x < x_horizontal_end:
+                # For a tiny fraction of the interval, just stay at y1
+                return y1
+
+            # Phase 2: Linear descent (or ascent) from y1 to y_mid by x_mid
+            # After the horizontal segment, we have a smaller effective linear portion
+            # That goes from (x_horizontal_end, y1) to (x_mid, y_mid)
+            # Adjust the linear interpolation to start from x_horizontal_end instead of x1
+            if x_horizontal_end <= x <= x_mid:
+                # Avoid division by zero if vertical_fraction and horizontal_fraction overlap significantly
+                if x_mid == x_horizontal_end:
+                    return y_mid
+                t = (x - x_horizontal_end) / (x_mid - x_horizontal_end)
+                return y1 + (y_mid - y1)*t
+
+            # Phase 3: Exponential tail from x_mid to x2
+            if x > x_mid:
+                if x2 == x_mid:
+                    return y_mid
+                k = -math.log(flatten_fraction)/(x2 - x_mid)
+                return y2 + (y_mid - y2)*math.exp(-k*(x - x_mid))
+
+        else:
+            return None
 
    
     if x1 == x2:
@@ -1270,12 +1361,17 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         # Existing code for other arcs
         if arc in['Step-by-Step Increase', 'Step-by-Step Decrease']:
             #return step_function
-            #return smooth_step_function
-            return exponential_step_function
+            return smooth_step_function
         elif arc in ['Straight Increase']:
-            return smooth_exponential_increase_function
+            return drop_function
+            #return smooth_drop_function
+            #return straight_increase_function
+            #return smooth_exponential_increase_function
+            #return partial_exponential_transition_function
         elif arc in ['Straight Decrease']:
-            return smooth_exponential_decrease_function
+            return straight_decrease_function
+            #return smooth_exponential_decrease_function
+            #return partial_exponential_transition_function
         elif arc in ['Linear Increase','Linear Decrease','Gradual Increase', 'Gradual Decrease', 'Linear Flat']:
             return linear_function
         elif arc in ['Concave Down, Increase', 'Rapid-to-Gradual Increase']:
@@ -1295,6 +1391,9 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             raise ValueError(f"{arc} Interpolation method not supported")
     
 
+
+      
+   
 
     
 # Master function to evaluate the emotional score for any given plot point number
@@ -1420,17 +1519,6 @@ def transform_story_data(data, num_points):
         arc_x_values = x_values[non_none_positions]
         arc_y_values = y_values[non_none_positions]
 
-        
-        #1/12/2024 -- testing to see if I can help produce smoother arcs
-        # if(story_component_arc == 'Straight Increase' or story_component_arc == 'Straight Decrease'):
-        #     pts = list(zip(arc_x_values, arc_y_values))
-        #     smoothed_pts = chaikin_curve(pts, iterations=1)
-        #     arc_x_values_smoothed, arc_y_values_smoothed = zip(*smoothed_pts)
-
-        #     arc_x_values = np.array(arc_x_values_smoothed)
-        #     arc_y_values = np.array(arc_y_values_smoothed)
-
-
         # Handle specific arcs if necessary
         # if story_component_arc in ['Straight Increase', 'Straight Decrease']:
         #     if non_none_positions.size > 1:
@@ -1497,23 +1585,3 @@ def place_text_centered(cr, text, font_size_px,
     # 4) Show the layout
     PangoCairo.show_layout(cr, layout)
     cr.restore()
-
-
-def chaikin_curve(points, iterations=1):
-    """
-    points is a list of (x, y) tuples.
-    """
-    for _ in range(iterations):
-        new_points = []
-        for i in range(len(points) - 1):
-            p1 = points[i]
-            p2 = points[i+1]
-            # Add two new points 1/4 and 3/4 along the edge
-            q = (0.75*p1[0] + 0.25*p2[0], 0.75*p1[1] + 0.25*p2[1])
-            r = (0.25*p1[0] + 0.75*p2[0], 0.25*p1[1] + 0.75*p2[1])
-            new_points.append(q)
-            new_points.append(r)
-        # Add final point
-        new_points.append(points[-1])
-        points = new_points
-    return points

@@ -1,14 +1,20 @@
 Update:
 - different size canvas is the future; people can mix and match
 - pastel colors to begin with 
-- on canvas
+- on canvas -- done 
     - top; author, year of book
     - bottom: shapes of stories branding 
 - need to:
     - refine logic for generating text; if outside acceptable range then quick so I can mannually adjust
     - refine logic for generate arc text 
     - refine logic for creating smoother curves without truncations 
-    
+
+
+Website:
+- About
+- Story Walls
+    - with templates
+- Shop/Explore 
 
 
 
