@@ -430,17 +430,18 @@ def create_shape_single_pass(story_data,
                 if target_chars < 5:
                     continue
 
+                lower_bound = target_chars - 3
+                upper_bound = target_chars + 3
+
                 # Generate descriptors (call your GPT logic)
                 descriptors_text, chat_messages = generate_descriptors(
                     title=title,
                     component_description=description,
                     story_data=story_data,
-                    desired_length=target_chars
+                    desired_length=lower_bound
                 )
 
                 actual_chars = len(descriptors_text)
-                lower_bound = target_chars - 3
-                upper_bound = target_chars + 3
                 valid_descriptor = False
                 max_attempts = 5
                 attempt = 1
@@ -450,7 +451,7 @@ def create_shape_single_pass(story_data,
                 else:
                     while not valid_descriptor and attempt <= max_attempts:
                         descriptors_text, chat_messages = adjust_descriptors(
-                            desired_length=target_chars,
+                            desired_length=lower_bound,
                             actual_length=actual_chars,
                             chat_messages=chat_messages
                         )
@@ -824,7 +825,7 @@ Output ONLY the updated description that is a COMPLETE NARRATIVE UNIVERSE unto i
         model="gpt-4o",
         messages=chat_messages,
         max_tokens=int(desired_length * 5),
-        temperature=0.7
+        temperature=0.4
     )
 
     response_text = completion.choices[0].message.content.strip()
@@ -1021,7 +1022,6 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
         
         # 2) Decide how many steps you want
         num_steps = int(math.ceil(x2 - x1))
-        print(num_steps, " ", x2, " - ", x1)
         if num_steps < 1:
             num_steps = 1
         

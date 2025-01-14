@@ -8,7 +8,7 @@ story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/stor
 
 create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_old_man_and_the_sea.json',
                 num_points=500, #number of points in the line 
-                line_type = 'line', #values line or char
+                line_type = 'char', #values line or char
                 line_thickness = 10, #only used if line_type = line
                 line_color = (0, 0, 0), #only used if line_type = line
                 font_style="Sans", #only used if line_type set to char
