@@ -27,7 +27,7 @@ with open("config.yaml", 'r') as stream:
     client = OpenAI(api_key=OPENAI_KEY)
 
 def create_shape(story_data_path,
-                x_delta = 0.015,
+                num_points = 500,
                 font_style="Sans",
                 font_size=72,
                 font_color = (0, 0, 0), #default to black
@@ -49,7 +49,6 @@ def create_shape(story_data_path,
                 height_in_inches = 15,
                 wrap_in_inches=1.5,
                 recursive_mode = True,
-                recursive_loops = 500,
                 output_format="png"):
     
 
@@ -87,13 +86,11 @@ def create_shape(story_data_path,
             story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{story_shape_font}.png'
 
     status = "processing"
-    story_data['status'] = status
     count = 1
-    print("starting...")
     # while status == "processing":
-    for i in range(recursive_loops):
+    for i in range(1000):
         # print(story_data['story_components'][1]['modified_end_time'])
-        story_data = transform_story_data(story_data, x_delta)
+        story_data = transform_story_data(story_data, num_points)
 
         story_data, status = create_shape_single_pass(
                     story_data=story_data, 
@@ -127,7 +124,6 @@ def create_shape(story_data_path,
 
         count = count + 1
         if status == "completed":
-            story_data['status'] = status
             break
         #print(story_data['story_components'][1]['modified_end_time'])
 
@@ -486,7 +482,6 @@ def create_shape_single_pass(story_data,
                 all_rendered_boxes
             )
 
-            #print(curve_length_status)
             # Check if curve too short/long, do your recursion logic...
             if curve_length_status == "curve_too_short":
                 # Attempt adjusting via CubicSpline
@@ -509,10 +504,6 @@ def create_shape_single_pass(story_data,
                 new_x = x_og[-1] + (x_og[1] - x_og[0])
                 new_y = float(cs(new_x))
 
-                # print(new_x, " , ", new_y)
-                # print(old_max_y, " , ", old_min_y)
-
-                #normal mode
                 if (new_x >= old_min_x and new_x <= old_max_x 
                     and new_y >= old_min_y and new_y <= old_max_y
                     and recursive_mode):
@@ -525,13 +516,11 @@ def create_shape_single_pass(story_data,
                         surface.write_to_png(story_shape_path)
                     return story_data, "processing"
 
-                #this really only works if like this was suppose to be the last story segment
-                # we hit x max and want to extend y
-                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,3) != round(y_og[-1],3))):
+                elif ((new_x >= old_max_x or new_x <= old_min_x) and recursive_mode):
                     new_x = x_og[-1]
-                    
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
+
 
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
@@ -539,9 +528,7 @@ def create_shape_single_pass(story_data,
                         surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 
-                #we hit y max / min and need to extend x
-                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
-                    
+                elif ((new_y >= old_max_y or new_y <= old_min_y) and recursive_mode):
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
@@ -557,63 +544,20 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
-                   
-                    status = "curve too short but can't change due to constraints"
-                    print(status)
+                    status = "curve too long but can't change due to constraints"
 
-            #curve is too long so need to shorten it
             elif curve_length_status == "curve_too_long":
-
-                #doing - 10 is super janky; the problem is that num a points is fixed so if you make arc length smaller but keep number of points the same then decreasing arc like becomes hard
-                #an alternative apprach is instead of defining num of point you could define x_delta size and infer num of points
-                original_arc_end_time_index_length = len(original_arc_end_time_values) - 5
-                original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 5
-                
-                print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length])
-
-                #check if last values of arc segments is the global max; if it's the global max then shouldn't touch unless the second to last is the same value then you can shorten it
-                #normal mode can decrease everything 
-                if (original_arc_end_time_values[-1] > old_min_x 
-                    and original_arc_end_time_values[-1] < old_max_x
-                    and original_arc_end_emotional_score_values[-1] > old_min_y
-                    and original_arc_end_emotional_score_values[-1] < old_max_y
+                if (original_arc_end_time_values[-1] != old_min_x 
+                    and original_arc_end_time_values[-1] != new_max_x
+                    and original_arc_end_emotional_score_values[-1] != old_min_y
+                    and original_arc_end_emotional_score_values[-1] != old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode):
                     
-                    component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
-                    component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
-                    
-                    if output_format == "svg":
-                        surface.flush()   # flush the partial drawing, but do *not* finalize!
-                    else:
-                        surface.write_to_png(story_shape_path)
-                    return story_data, "processing"
-                
-                #cant touch x 
-                elif ((original_arc_end_time_values[-1] == old_min_x or original_arc_end_time_values[-1] == old_max_x)
-                    and original_arc_end_emotional_score_values[-1] > old_min_y
-                    and original_arc_end_emotional_score_values[-1] < old_max_y
-                    and len(component['arc_x_values']) > 1 and recursive_mode 
-                    and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)):
-
+                    original_arc_end_time_values.pop()
+                    original_arc_end_emotional_score_values.pop()
                     component['modified_end_time'] = original_arc_end_time_values[-1]
-                    component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
-
-                    if output_format == "svg":
-                        surface.flush()   # flush the partial drawing, but do *not* finalize!
-                    else:
-                        surface.write_to_png(story_shape_path)
-                    return story_data, "processing"
-                
-                #cant touch y
-                elif ((original_arc_end_emotional_score_values[-1] == old_min_y or original_arc_end_emotional_score_values[-1] == old_max_y)
-                    and original_arc_end_time_values[-1] > old_min_x 
-                    and original_arc_end_time_values[-1] < old_max_x
-                    and len(component['arc_x_values']) > 1 and recursive_mode):
-
-                    print("hey")
-                    component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
-
+                    
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
@@ -625,7 +569,7 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
-                    status = "curve too long but can't change due to constraints"
+                    status = "curve too short but can't change due to constraints"
 
             elif curve_length_status == "curve_correct_length":
                 if output_format == "svg":
@@ -759,7 +703,6 @@ def calculate_average_rotation_angle(x_values, y_values):
 
 def generate_descriptors(title, author, component_description, story_data, desired_length):
     story_dict = copy.deepcopy(story_data)
-    # Clean up story data as before
     del story_dict['x_values']
     del story_dict['y_values']
     for component in story_dict['story_components']:
@@ -768,53 +711,68 @@ def generate_descriptors(title, author, component_description, story_data, desir
         if 'arc_y_values' in component:
             del component['arc_y_values']
 
-    # Build previous arc texts more concisely
-    existing_arc_texts = "\n".join(
-        component.get('arc_text', '') 
-        for component in story_dict['story_components'] 
-        if 'arc_text' in component
-    )
-    
-    if existing_arc_texts:
-        existing_arc_texts = f"Previous descriptions:\n{existing_arc_texts}"
+    existing_arc_texts = ""
+    for component in story_dict['story_components']:
+        if 'arc_text' in component:
+            if(existing_arc_texts == ""):
+                existing_arc_texts = """Pay special attention to the `arc_text` of previous story components to maintain continuity and avoid repeating words.
+
+**Previous `arc_text`s:**
+
+"""
+            existing_arc_texts = existing_arc_texts + " " + component['arc_text']
 
     system_message = {
         "role": "system",
-        "content": """You are a master of concise storytelling, skilled at distilling narrative moments into powerful, precise descriptions. 
-Your specialty is creating memorable, distinctive descriptors that capture the essence of story segments."""
+        "content": "You are an expert storyteller. Your task is to provide a list of concise keywords or phrases that represent and describe story segments effectively."
     }
 
     user_message = {
         "role": "user",
-        "content": f"""Create a {desired_length}-character description for this segment of {author}'s "{title}": {component_description}
+        "content": f"""
+Generate a succinct, concise, and stylized description for the following segment of {author}'s {title}: {component_description}.
 
-Story Context:
+Use the structured data below to understand how this segment fits into the larger narrative. {existing_arc_texts}
+
+Your description should:
+
+- Be exactly {desired_length} characters long.
+- Consist of keywords or phrases that best represent and describe this story segment.
+- Help observers identify this particular story segment.
+- Include elements such as:
+  1. Iconic phrases or popular quotes from the story segment.
+  2. Names or descriptions of important or iconic characters involved or introduced in that part of the story.
+  3. Names or descriptions of significant events that occur during the segment.
+  4. Names or descriptions of notable inanimate objects that play a role in the story segment.
+  5. Names or descriptions of key settings where the story segment takes place.
+  6. Descriptive phrases of the story segment.
+
+- After generating your output, verify that it is EXACTLY the specified length.
+
+- Avoid using words or phrases that have already appeared in previous `arc_text`s, unless necessary for coherence. Use synonyms or alternative expressions to keep the narrative fresh.
+
+- Ensure the description continues the flow of the overall story, connecting smoothly with previous segments.
+
+- List the keywords/phrases in chronological order.
+
+- Capitalize all important words in the keywords/phrases, except for unimportant words such as articles, conjunctions, and prepositions.
+
+- Include spaces within keywords or phrases as needed, and include a space after the punctuation that separates keywords/phrases.
+
+- Use only periods followed by a space (". ") to separate keywords or phrases —no commas or semicolons.
+
+- Do not include any quotation marks ("") in the outputs.
+
+- Punctuation and spaces are included and count towards the total character limit.**
+
+- Punctuation (like periods) is included in the character count.
+
+- You MUST count each character, including spaces and punctuation, to ensure exact match to the specified length.
+
+
+Here's structured data providing more context on the entire story:
 {story_dict}
 
-{existing_arc_texts}
-
-Format Requirements:
-1. EXACTLY {desired_length} characters (including spaces and punctuation)
-2. Separate phrases with ". " (period + space)
-3. Capitalize significant words
-4. No quotes, commas, or semicolons
-
-Content Guidelines:
-- Include iconic quotes
-- Name key characters
-- Describe pivotal events
-- Mention important objects
-- Reference specific settings
-- Use vivid descriptive phrases
-
-Maintain uniqueness by:
-- Using fresh vocabulary (avoid words from previous descriptions)
-- Adding new story elements
-- Following chronological order
-- Creating standalone value
-
-Example format:
-First Significant Phrase. Another Key Moment. Final Important Event.
 """
     }
 
@@ -828,27 +786,40 @@ First Significant Phrase. Another Key Moment. Final Important Event.
     )
 
     response_text = completion.choices[0].message.content.strip()
-    chat_messages.append({"role": "assistant", "content": response_text})
+    data = {"role":"assistant", "content":response_text}
+    chat_messages.append(data)
 
     return response_text, chat_messages
 
 def adjust_descriptors(desired_length, actual_length, chat_messages):
     user_message = {
         "role": "user",
-        "content": f"""Revise the description to be EXACTLY {desired_length} characters (current: {actual_length}).
+        "content": f"""
+The previous description was {actual_length} characters long but needs to be adjusted to exactly {desired_length} characters.
 
-Key Requirements:
-1. Length: Exactly {desired_length} characters
-2. Format: Phrases separated by ". "
-3. Style: Capitalize significant words
+CRITICAL DESCRIPTOR GENERATION GUIDELINES:
 
-Focus on:
-- Creating a completely new description
-- Capturing the core moment
-- Using fresh language
-- Maintaining independence from other segments
+Your task is to create a COMPLETELY UNIQUE segment description that:
+- STANDS ENTIRELY ON ITS OWN
+- CONTAINS NO REFERENCE to previous story segments
+- INTRODUCES NEW NARRATIVE ELEMENTS
+- CAPTURES THE ESSENCE of this specific moment WITHOUT relying on prior context
 
-Think of this as a standalone snapshot that must convey the full impact of this moment without external context.
+Key Principles:
+- ZERO CONTINUITY with previous descriptions
+- INDEPENDENT narrative snapshot
+- FRESH perspective for EACH story segment
+- ZERO character or event callbacks
+
+REQUIREMENTS:
+- Exactly {desired_length} characters long
+- Each description is a SELF-CONTAINED narrative fragment
+- Use ENTIRELY NEW descriptive language
+- AVOID any linguistic or thematic echoes from previous segments
+
+Think of each descriptor as a STANDALONE HAIKU of the moment - capturing its UNIQUE EMOTIONAL and NARRATIVE CORE without external references.
+
+Output ONLY the updated description that is a COMPLETE NARRATIVE UNIVERSE unto itself.
 """
     }
 
@@ -862,7 +833,8 @@ Think of this as a standalone snapshot that must convey the full impact of this 
     )
 
     response_text = completion.choices[0].message.content.strip()
-    chat_messages.append({"role": "assistant", "content": response_text})
+    assistant_message = {"role": "assistant", "content": response_text}
+    chat_messages.append(assistant_message)
 
     return response_text, chat_messages
 
@@ -1327,7 +1299,8 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             raise ValueError(f"{arc} Interpolation method not supported")
     
 
-  
+
+    
 # Master function to evaluate the emotional score for any given plot point number
 def get_story_arc(x, functions_list):
     for func in functions_list:
@@ -1337,7 +1310,7 @@ def get_story_arc(x, functions_list):
     return None  # Return None if x is outside the range of all functions
 
 
-def transform_story_data(data, x_delta):
+def transform_story_data(data, num_points):
     # Convert JSON to DataFrame
     try:
         df = pd.json_normalize(
@@ -1411,8 +1384,7 @@ def transform_story_data(data, x_delta):
         )
         story_arc_functions_list.append(component_arc_function)
 
-    num_points = int((max(x_scale) - min(x_scale)) / x_delta)
-    #print(num_points)
+    # Get final values
     x_values = np.linspace(min(x_scale), max(x_scale), num_points)  # 1000 points for smoothness
 
     # Ensure x_values includes all x1 and x2 values

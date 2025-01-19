@@ -1,13 +1,39 @@
+1/16/2025 Update:
+_______
+- update logic around arc descriptions; probably switch to use claude and change prompt
+- figure out colors 
+- figure out fonts 
+________
+
+- try things on 10 different books 
+
+______
+
+- generate a ton 6x6 
+- order prototype 
+
+
+
+
+
+
+
+
+
+
+
 Update:
 - different size canvas is the future; people can mix and match
 - pastel colors to begin with 
 - on canvas -- done 
-    - top; author, year of book
-    - bottom: shapes of stories branding 
+    - top; author, year of book -- done
+    - bottom: shapes of stories branding -- done
 - need to:
-    - refine logic for generating text; if outside acceptable range then quick so I can mannually adjust
+    - refine logic for generating text; if outside acceptable range then quick so I can mannually adjust --> done
     - refine logic for generate arc text 
-    - refine logic for creating smoother curves without truncations 
+    - refine logic for creating smoother curves without truncations -- done
+
+
 
 
 Website:

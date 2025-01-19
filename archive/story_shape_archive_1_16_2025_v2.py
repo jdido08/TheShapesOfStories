@@ -27,7 +27,7 @@ with open("config.yaml", 'r') as stream:
     client = OpenAI(api_key=OPENAI_KEY)
 
 def create_shape(story_data_path,
-                x_delta = 0.015,
+                num_points = 500,
                 font_style="Sans",
                 font_size=72,
                 font_color = (0, 0, 0), #default to black
@@ -87,13 +87,12 @@ def create_shape(story_data_path,
             story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{story_shape_font}.png'
 
     status = "processing"
-    story_data['status'] = status
     count = 1
     print("starting...")
     # while status == "processing":
     for i in range(recursive_loops):
         # print(story_data['story_components'][1]['modified_end_time'])
-        story_data = transform_story_data(story_data, x_delta)
+        story_data = transform_story_data(story_data, num_points)
 
         story_data, status = create_shape_single_pass(
                     story_data=story_data, 
@@ -127,7 +126,6 @@ def create_shape(story_data_path,
 
         count = count + 1
         if status == "completed":
-            story_data['status'] = status
             break
         #print(story_data['story_components'][1]['modified_end_time'])
 
@@ -566,10 +564,9 @@ def create_shape_single_pass(story_data,
 
                 #doing - 10 is super janky; the problem is that num a points is fixed so if you make arc length smaller but keep number of points the same then decreasing arc like becomes hard
                 #an alternative apprach is instead of defining num of point you could define x_delta size and infer num of points
-                original_arc_end_time_index_length = len(original_arc_end_time_values) - 5
-                original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 5
+                original_arc_end_time_index_length = len(original_arc_end_time_values) - 10
+                original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 10
                 
-                print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length])
 
                 #check if last values of arc segments is the global max; if it's the global max then shouldn't touch unless the second to last is the same value then you can shorten it
                 #normal mode can decrease everything 
@@ -610,7 +607,6 @@ def create_shape_single_pass(story_data,
                     and original_arc_end_time_values[-1] < old_max_x
                     and len(component['arc_x_values']) > 1 and recursive_mode):
 
-                    print("hey")
                     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
 
@@ -1337,7 +1333,7 @@ def get_story_arc(x, functions_list):
     return None  # Return None if x is outside the range of all functions
 
 
-def transform_story_data(data, x_delta):
+def transform_story_data(data, num_points):
     # Convert JSON to DataFrame
     try:
         df = pd.json_normalize(
@@ -1411,8 +1407,9 @@ def transform_story_data(data, x_delta):
         )
         story_arc_functions_list.append(component_arc_function)
 
-    num_points = int((max(x_scale) - min(x_scale)) / x_delta)
-    #print(num_points)
+    # Get final values
+    
+    
     x_values = np.linspace(min(x_scale), max(x_scale), num_points)  # 1000 points for smoothness
 
     # Ensure x_values includes all x1 and x2 values

@@ -7,7 +7,7 @@ summaries_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summa
 story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data'
 
 create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_old_man_and_the_sea.json',
-                num_points=500, #number of points in the line 
+                x_delta=0.015, #number of points in the line 
                 line_type = 'char', #values line or char
                 line_thickness = 10, #only used if line_type = line
                 line_color = (0, 0, 0), #only used if line_type = line
@@ -29,6 +29,7 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 height_in_inches = 6, #design width size
                 wrap_in_inches=1.5,  # for canvas print outs 
                 recursive_mode = True, #if you want to recurisvely generate story
+                recursive_loops = 50, #the number of iterations 
                 output_format="png") #options png or svg
 
 #notes:
