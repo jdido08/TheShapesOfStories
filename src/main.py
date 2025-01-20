@@ -17,6 +17,7 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 background_type='solid', #values solid or transparent
                 background_value= '#001F3F', #only used if background_type = solid
                 has_title = "YES", #values YES or NO
+                title_text = "", #optinal if left blank then will use story title as default
                 title_font_style = "Sans", #only used if has_title = "YES"
                 title_font_size=24, #only used if has_title = "YES"
                 title_font_color = '#D4AF37', #only used if has_title = "YES"

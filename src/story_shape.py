@@ -48,6 +48,7 @@ def create_shape(story_data_path,
                 background_type='solid', 
                 background_value=(1, 1, 1), 
                 has_title = "NO", #values YES or NO
+                title_text = "", #optionl if left blank then title used 
                 title_font_style = "Sans",
                 title_font_size=96,
                 title_font_color = (0, 0, 0),#default to black
@@ -125,6 +126,7 @@ def create_shape(story_data_path,
                     background_type=background_type, 
                     background_value=background_value, 
                     has_title = has_title,
+                    title_text=title_text,
                     title_font_style=title_font_style,
                     title_font_size=title_font_size,
                     title_font_color = title_font_color,
@@ -180,6 +182,7 @@ def create_shape_single_pass(story_data,
                 background_type='solid', 
                 background_value=(1, 1, 1), 
                 has_title = "NO",
+                title_text = "",
                 title_font_style = "Sans",
                 title_font_size=96,
                 title_font_color = (0, 0 , 0), #default to black
@@ -241,6 +244,11 @@ def create_shape_single_pass(story_data,
     total_height_px = int(total_height_in * dpi)
 
 
+    #SETUP FONTS
+    # Prepare for text on arcs
+    from gi.repository import Pango
+    font_size_for_300dpi = font_size * (300 / 96)
+    font_desc = Pango.FontDescription(f"{font_style} {font_size_for_300dpi}")
    
 
     # Create a Cairo surface and context
@@ -301,7 +309,9 @@ def create_shape_single_pass(story_data,
     y_range = y_max - y_min
 
    # 3) If we have a title, measure its pixel height
-    title_text = story_data.get('title', '')
+    if(title_text == ""):
+        title_text = story_data.get('title', '')
+
     measured_title_height = 0
 
     if has_title == "YES":
@@ -369,22 +379,19 @@ def create_shape_single_pass(story_data,
         cr.stroke()
 
             # Respect output_format here
-        if output_format == "svg":
-            surface.finish()
-        else:
-            surface.write_to_png(story_shape_path)
-        return story_data, "completed"
+        
 
     elif line_type == "char":
         from scipy.interpolate import CubicSpline
         import numpy as np
-
-        font_size_for_300dpi = font_size * (300 / 96)
         import copy
+        
+        
 
-        # Prepare for text on arcs
-        from gi.repository import Pango
-        font_desc = Pango.FontDescription(f"{font_style} {font_size_for_300dpi}")
+        # # Prepare for text on arcs
+        # from gi.repository import Pango
+        # font_size_for_300dpi = font_size * (300 / 96)
+        # font_desc = Pango.FontDescription(f"{font_style} {font_size_for_300dpi}")
         arc_sample_text = ""
 
         all_rendered_boxes = []
@@ -661,89 +668,88 @@ def create_shape_single_pass(story_data,
 
             component['status'] = status
 
-        # Once arcs are fully drawn, we place the title in the reserved space at bottom
-        # (instead of top).
-        # 6) Now place the title, below that gap
-        if has_title == "YES":
-            
-            final_layout = PangoCairo.create_layout(cr)
-            final_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
-            final_layout.set_font_description(final_desc)
-            final_layout.set_text(title_text, -1)
-
-            # the top edge of the title band is at:
-            title_band_top = margin_y + drawable_height + gap_above_title
-
-            # place text at (title_x, title_y)
-            title_x = margin_x
-            title_y = title_band_top
-
-            cr.move_to(title_x, title_y)
-
-            cr.set_source_rgb(*title_font_color)
-            cr.move_to(title_x, title_y)
-            PangoCairo.show_layout(cr, final_layout)
+    # Once arcs are fully drawn, we place the title in the reserved space at bottom
+    # (instead of top).
+    # # 6) Now place the title, below that gap
+    if has_title == "YES":
         
+        final_layout = PangoCairo.create_layout(cr)
+        final_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
+        final_layout.set_font_description(final_desc)
+        final_layout.set_text(title_text, -1)
+
+        # the top edge of the title band is at:
+        title_band_top = margin_y + drawable_height + gap_above_title
+
+        # place text at (title_x, title_y)
+        title_x = margin_x
+        title_y = title_band_top
+
+        cr.move_to(title_x, title_y)
+
+        cr.set_source_rgb(*title_font_color)
+        cr.move_to(title_x, title_y)
+        PangoCairo.show_layout(cr, final_layout)
+    
 
 
-        # MAKE NOTES ON TOP AND BOTTOM OF CANVAS -- only applies when wrap_in_inches > 0
-        cr.restore()  # <== restore out of that translation
+    # MAKE NOTES ON TOP AND BOTTOM OF CANVAS -- only applies when wrap_in_inches > 0
+    cr.restore()  # <== restore out of that translation
 
-        if wrap_in_inches > 0:
+    if wrap_in_inches > 0:
 
-            author = story_data.get('author','')
-            year = story_data.get('year', '')
-            if(author == '' and year == ''):
-                author_year = ""
-            elif(author == '' and year != ''):
-                author_year = year 
-            elif(author != '' and year == ''):
-                author_year = author
-            elif(author != '' and year != ''):
-                author_year = author + ", " + year
-            else:
-                author_year = ""
-
-            top_wrap_h = design_offset_y  # from y=0 to design_offset_y
-            # The center x is half the total width
-            x_top_center = total_width_px / 2
-            # The center y is half the top_wrap_h
-            y_top_center = top_wrap_h / 2
-
-            place_text_centered(cr,
-                                text=author_year,
-                                font_size_px=scaled_title_size,
-                                font_face = font_style,
-                                x_center=x_top_center,
-                                y_center=y_top_center,
-                                rotation_degrees=0,
-                                color= title_font_color)
-
-            # 3) Place text on bottom edge, fully centered
-            bottom_wrap_y = design_offset_y + design_height
-            bottom_wrap_h = total_height_px - bottom_wrap_y
-            x_bottom_center = total_width_px / 2
-            y_bottom_center = bottom_wrap_y + (bottom_wrap_h / 2)
-
-            place_text_centered(cr,
-                                text="THE SHAPES OF STORIES, LLC",
-                                font_size_px=font_size_for_300dpi,
-                                x_center=x_bottom_center,
-                                y_center=y_bottom_center,
-                                rotation_degrees=0,
-                                color=(0,0,0))
-
-        
-        # 7) Save final image
-        if output_format == "svg":
-            surface.finish()
+        author = story_data.get('author','')
+        year = story_data.get('year', '')
+        if(author == '' and year == ''):
+            author_year = ""
+        elif(author == '' and year != ''):
+            author_year = year 
+        elif(author != '' and year == ''):
+            author_year = author
+        elif(author != '' and year != ''):
+            author_year = author + ", " + year
         else:
-            surface.write_to_png(story_shape_path)
+            author_year = ""
 
-        return story_data, "completed"
+        top_wrap_h = design_offset_y  # from y=0 to design_offset_y
+        # The center x is half the total width
+        x_top_center = total_width_px / 2
+        # The center y is half the top_wrap_h
+        y_top_center = top_wrap_h / 2
 
+        place_text_centered(cr,
+                            text=author_year,
+                            font_size_px=scaled_title_size,
+                            font_face = font_style,
+                            x_center=x_top_center,
+                            y_center=y_top_center,
+                            rotation_degrees=0,
+                            color= title_font_color)
+
+        # 3) Place text on bottom edge, fully centered
+        bottom_wrap_y = design_offset_y + design_height
+        bottom_wrap_h = total_height_px - bottom_wrap_y
+        x_bottom_center = total_width_px / 2
+        y_bottom_center = bottom_wrap_y + (bottom_wrap_h / 2)
+
+        place_text_centered(cr,
+                            text="THE SHAPES OF STORIES, LLC",
+                            font_size_px=font_size_for_300dpi,
+                            x_center=x_bottom_center,
+                            y_center=y_bottom_center,
+                            rotation_degrees=0,
+                            color=(0,0,0))
+
+    
+    # 7) Save final image
+    if output_format == "svg":
+        surface.finish()
     else:
-        print("line_type:", line_type, " is not valid. Needs to be 'line' or 'char'.")
+        surface.write_to_png(story_shape_path)
+
+    return story_data, "completed"
+
+    
 
 
 def calculate_arc_length(arc_x_values, arc_y_values):
