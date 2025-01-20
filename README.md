@@ -1,3 +1,8 @@
+1/20/2025:
+- support title for line
+- support hex colors
+
+
 1/19/2025 Updates:
 1. Determineing story_data is probably better off creating a model like o1 (some reasoning model)
     - refine story data prompt + code/logic for processing 

@@ -64,6 +64,14 @@ def create_shape(story_data_path,
                 output_format="png"):
     
 
+    #convert hex colors to (x,y,z) foramt
+    font_color = hex_to_rgb(font_color)
+    line_color = hex_to_rgb(line_color)
+    title_font_color = hex_to_rgb(title_font_color)
+    border_color = hex_to_rgb(border_color)
+    background_value = hex_to_rgb(background_value)
+
+
     with open(story_data_path, 'r', encoding='utf-8') as file:
         story_data = json.load(file)
         if 'story_plot_data' in story_data:
@@ -254,8 +262,8 @@ def create_shape_single_pass(story_data,
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
     elif background_type == 'solid':
-        r, g, b = background_value
-        cr.set_source_rgb(r, g, b)
+        print(background_value)
+        cr.set_source_rgb(*background_value)
         cr.paint()
     else:
         print("background_type:", background_type, "is not valid (must be 'transparent' or 'solid').")
@@ -709,7 +717,7 @@ def create_shape_single_pass(story_data,
                                 x_center=x_top_center,
                                 y_center=y_top_center,
                                 rotation_degrees=0,
-                                color=(0,0,0))
+                                color= title_font_color)
 
             # 3) Place text on bottom edge, fully centered
             bottom_wrap_y = design_offset_y + design_height
@@ -1585,3 +1593,25 @@ def chaikin_curve(points, iterations=1):
         new_points.append(points[-1])
         points = new_points
     return points
+
+
+def hex_to_rgb(hex_color):
+    """
+    Convert a hex color string to an RGB tuple normalized to [0, 1].
+
+    Args:
+        hex_color (str): Hex color string (e.g., '#001F3F').
+
+    Returns:
+        tuple: Normalized RGB tuple (e.g., (0.0, 0.12156862745098039, 0.24705882352941178)).
+    """
+    # Remove '#' if present
+    hex_color = hex_color.lstrip('#')
+    
+    # Convert hex to integer values for RGB
+    r = int(hex_color[0:2], 16) / 255.0  # Red
+    g = int(hex_color[2:4], 16) / 255.0  # Green
+    b = int(hex_color[4:6], 16) / 255.0  # Blue
+    
+    return (r, g, b)
+

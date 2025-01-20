@@ -396,8 +396,8 @@ def create_story_data_v2(input_path, output_path):
 
 
 
-input_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_great_gatsby.json'
-output_path = '//Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/'
-create_story_data_v2(input_path, output_path)
+# input_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_great_gatsby.json'
+# output_path = '//Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/'
+# create_story_data_v2(input_path, output_path)
 
 
