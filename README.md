@@ -1,3 +1,30 @@
+1/19/2025 Updates:
+1. Determineing story_data is probably better off creating a model like o1 (some reasoning model)
+    - refine story data prompt + code/logic for processing 
+    - these changes are needed giving we are going to use a reasoning model
+    - i think a reasoning model is going to work better for a complex task like this
+2. Figure out colors / font styling 
+    - figure out story font
+    - figure out story colors 
+        - 3 colors:
+            1. arc + title 
+            2. background 
+            3. border 
+    - need a prompt to figure these things out 
+3. Figure out way to feed in story data from excel sheet to create story plot 
+
+
+Workflow:
+1. Create prompt for o1
+2. manually copy and paste prompt into o1 
+3. copy and paste json into vs code
+4. process json
+5. generate shape
+6. manually inspect shape / make changes 
+7. ask AI to inspect shape (NEED PROMPT -- probably use o1 again)
+
+
+
 1/16/2025 Update:
 _______
 - update logic around arc descriptions; probably switch to use claude and change prompt

@@ -207,39 +207,49 @@ Now, let's format this analysis into the required JSON structure.
 </example>
 """
 
-    # Make the API call
-    message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=1000,
-        temperature=0,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": examples_section
-                    },
-                    {
-                        "type": "text",
-                        "text": user_message
-                    }
-                ]
-            },
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "<json_output></json_output>"
-                    }
-                ]
-            }
-        ]
-    )
+    copy_and_paste = f"""
+    {user_message}
 
-    #return json 
-    return message.content[0].text
+    EXAMPLE:
+    {examples_section}
+
+    """
+
+    print(copy_and_paste)
+
+    # # Make the API call
+    # message = client.messages.create(
+    #     model="claude-3-5-sonnet-20241022",
+    #     max_tokens=1000,
+    #     temperature=0,
+    #     messages=[
+    #         {
+    #             "role": "user",
+    #             "content": [
+    #                 {
+    #                     "type": "text",
+    #                     "text": examples_section
+    #                 },
+    #                 {
+    #                     "type": "text",
+    #                     "text": user_message
+    #                 }
+    #             ]
+    #         },
+    #         {
+    #             "role": "assistant",
+    #             "content": [
+    #                 {
+    #                     "type": "text",
+    #                     "text": "<json_output></json_output>"
+    #                 }
+    #             ]
+    #         }
+    #     ]
+    # )
+
+    # #return json 
+    # return message.content[0].text
 
 # Example usage:
 # response = analyze_story("Homer", "The Odyssey", "In The Odyssey...")
@@ -353,6 +363,41 @@ def create_story_data(input_path, output_path):
 
     return story_plot_data
 
-# input_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/the_old_man_and_the_sea_composite_data.json'
-# output_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/'
-# create_story_data(input_path, output_path)
+def create_story_data_v2(input_path, output_path):
+
+    with open(input_path, 'r', encoding='utf-8') as file:
+        story_data = json.load(file)
+        print(story_data)
+    
+
+    story_plot_data = story_data
+    #story_plot_data = json.loads(story_plot_data)
+    story_validity = validate_story_arcs(story_plot_data)
+    story_plot_data["type"] = "book"
+    # story_data["author"] = author_name
+    # story_data["year"] = year
+    # story_plot_data['summary'] = story_summary
+    # story_plot_data['story_summary_source'] = story_summary_source
+    story_plot_data['shape_validity'] = story_validity
+    story_data = {'story_plot_data': story_plot_data, **story_data} #add it so story_plot_data appears at the top
+    
+
+    for component in story_plot_data["story_components"]:
+        component['modified_end_time'] = component['end_time']
+        component['modified_end_emotional_score'] = component['end_emotional_score']
+    
+    output_path = output_path
+    title = story_data['title'].lower().replace(' ', '_')
+    output_path = os.path.join(output_path, f"{title}.json")
+    with open(output_path, 'w') as json_file:
+        json.dump(story_plot_data, json_file, indent=4)
+
+    return story_plot_data
+
+
+
+input_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_great_gatsby.json'
+output_path = '//Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/'
+create_story_data_v2(input_path, output_path)
+
+
