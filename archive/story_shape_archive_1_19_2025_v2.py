@@ -780,71 +780,66 @@ import copy
 # Initialize Anthropic client
 anthropic = Anthropic()
 
-
 def generate_descriptors(title, author, component_description, story_data, desired_length):
-    # Keep relevant story context
-    current_index = next((i for i, comp in enumerate(story_data['story_components']) 
-                         if comp['description'] == component_description), None)
-    
-    context = {
-        'current_segment': component_description,
-        'previous_segment': story_data['story_components'][current_index - 1]['description'] 
-                          if current_index > 0 else None,
-        'next_segment': story_data['story_components'][current_index + 1]['description'] 
-                       if current_index < len(story_data['story_components']) - 1 else None
-    }
+    story_dict = copy.deepcopy(story_data)
+    # Clean up story data as before
+    del story_dict['x_values']
+    del story_dict['y_values']
+    for component in story_dict['story_components']:
+        if 'arc_x_values' in component:
+            del component['arc_x_values']
+        if 'arc_y_values' in component:
+            del component['arc_y_values']
 
     existing_arc_texts = "\n".join(
         component.get('arc_text', '') 
-        for component in story_data['story_components'] 
+        for component in story_dict['story_components'] 
         if 'arc_text' in component
     )
     
     if existing_arc_texts:
         existing_arc_texts = f"Previous descriptions:\n{existing_arc_texts}"
 
-    prompt = f"""Generate EXACTLY {desired_length}-character story descriptors for this segment of {author}'s "{title}".
+    prompt = f"""Create specific, concrete descriptors for this segment of {author}'s "{title}".
 
-SEGMENT TO DESCRIBE:
-{component_description}
+Segment to describe: {component_description}
 
-STRICT REQUIREMENTS:
-1. LENGTH: EXACTLY {desired_length} characters (including all spaces and periods)
-2. SOURCE: ONLY use elements explicitly mentioned in the segment description above
-3. FORMAT: If multiple phrases, each one ends with ". " except the last phrase, which ends with just "." and no space
+Your task: Create descriptors totaling EXACTLY {desired_length} characters that capture KEY SPECIFIC story elements:
+- Named characters and what they're doing
+- Specific locations or settings
+- Actual events or actions
+- Physical objects or items
+- Specific numbers or time periods
+- Direct story quotes (converted to statements)
 
-PHRASE CONSTRUCTION:
-- Use 1-4 words per phrase
-- Single words must be specific and impactful (e.g., "Sharks." "Bleeding." "Exhausted.")
-- Prioritize nouns and active verbs
-- Include specific numbers, measurements, or quotes when present
+Format:
+- Total length: Exactly {desired_length} characters (including spaces and punctuation)
+- Separate phrases with ". " (period + space)
+- Capitalize important words
+- End with a period
+- No quotes, commas, or semicolons
 
-CONTENT MUST BE:
-- Directly from the provided segment description
-- Specific and concrete (no abstract concepts)
-- Different from previous segments:
+CRITICAL: 
+- Use SPECIFIC details from the story, not abstract concepts
+- Each phrase should reference actual story elements
+- Avoid generic terms like "Hope" "Struggle" "Journey" unless paired with specific details
+- Include numbers, names, and concrete details when possible
+
+For example, instead of:
+"Hope Rises. Spirit Strong."
+
+Write:
+"84 Days No Fish. Manolin Brings Food. Santiago Dreams Lions."
+
+Previous descriptions used:
 {existing_arc_texts}
 
-SEGMENT CONTEXT (for avoiding repetition):
-Previous: {context['previous_segment']}
-Next: {context['next_segment']}
+Story context:
+{story_dict}
 
-EXAMPLES:
-Segment text: "Santiago hooks an enormous marlin, generating excitement."
-Good: "Huge Marlin Strikes. Line Tension. Hook Set."
-Bad: "Hope Rises." (too abstract, not from text)
+Respond with only the description text, no explanation."""
 
-Segment text: "The sharks attack relentlessly, destroying his catch."
-Good: "Sharks Attack. Fish Torn. Blood Spreads."
-Bad: "Battle Rages." (too vague, missing specific details)
-
-Segment text: "Santiago prays silently for strength."
-Good: "Silent Prayer."
-Bad: "Hope Rises." (too vague)
-
-Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation."""
-
-    #print(prompt)
+    print(prompt)
     response = client.messages.create(
         model="claude-3-sonnet-20240229",
         max_tokens=desired_length * 5,
@@ -858,37 +853,28 @@ Respond with ONLY the descriptor text, exactly {desired_length} characters. No e
 def adjust_descriptors(desired_length, actual_length, chat_messages):
     previous_attempt = chat_messages[-1]["content"]
     
-    prompt = f"""Revise the story descriptors to be EXACTLY {desired_length} characters while maintaining accuracy.
+    prompt = f"""Revise this story segment description to be EXACTLY {desired_length} characters long.
 
-Current text ({actual_length} characters):
+Previous attempt ({actual_length} characters):
 {previous_attempt}
 
-ADJUSTMENT RULES:
-1. If too long ({actual_length} > {desired_length}):
-   - Remove least essential details first
-   - Shorten phrases while keeping key nouns/verbs
-   - Combine similar phrases
-   - Consider using impactful single words
+Requirements:
+1. EXACTLY {desired_length} characters (including spaces and punctuation)
+2. End with a period
+3. Separate phrases with ". "
+4. Capitalize important words
+5. Maintain the same story events and emotional tone
+6. Keep similar level of specific detail
 
-2. If too short ({actual_length} < {desired_length}):
-   - Add specific details from the segment
-   - Expand existing phrases with more detail
-   - Break longer phrases into smaller ones
-   - Add new phrases using unused details
+You can:
+- Adjust phrase lengths
+- Use synonyms
+- Reorder information
+- Add or remove details while keeping core events
+- Break up or combine phrases
 
-3. ALWAYS:
-   - Keep strongest story elements
-   - Use only details from original segment
-   - Maintain proper spacing and punctuation
-   - End phrases with ". " (except last with ".")
-   - Avoid repetition with other segments
+Respond with only the revised description, no additional commentary."""
 
-Previous conversation context:
-{chat_messages[0]['content']}
-
-Respond with ONLY the revised text, exactly {desired_length} characters."""
-
-    #print(prompt)
     response = client.messages.create(
         model="claude-3-sonnet-20240229",
         max_tokens=desired_length * 5,
@@ -898,8 +884,6 @@ Respond with ONLY the revised text, exactly {desired_length} characters."""
 
     response_text = response.content[0].text.strip()
     return response_text, chat_messages + [{"role": "user", "content": prompt}, {"role": "assistant", "content": response_text}]
-
-
 
 
 def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):

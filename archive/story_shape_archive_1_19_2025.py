@@ -19,23 +19,12 @@ gi.require_version('Pango', '1.0')
 gi.require_version('PangoCairo', '1.0')
 from gi.repository import Pango, PangoCairo
 
-import anthropic
-import yaml
 
-# Load config and create client
+# Load API key from config
 with open("config.yaml", 'r') as stream:
     config = yaml.safe_load(stream)
-    anthropic_key = config['anthropic_key']
-
-client = anthropic.Anthropic(
-    api_key=anthropic_key,
-)
-
-# # Load API key from config
-# with open("config.yaml", 'r') as stream:
-#     config = yaml.safe_load(stream)
-#     OPENAI_KEY = config['openai_key_vonnegutgraphs']
-#     client = OpenAI(api_key=OPENAI_KEY)
+    OPENAI_KEY = config['openai_key_vonnegutgraphs']
+    client = OpenAI(api_key=OPENAI_KEY)
 
 def create_shape(story_data_path,
                 x_delta = 0.015,
@@ -447,8 +436,7 @@ def create_shape_single_pass(story_data,
 
                 lower_bound = target_chars - 3
                 upper_bound = target_chars + 3
-                #llm_target_chars = target_chars - 3
-                llm_target_chars = target_chars
+                llm_target_chars = target_chars - 3
 
                 # Generate descriptors (call your GPT logic)
                 descriptors_text, chat_messages = generate_descriptors(
@@ -481,7 +469,6 @@ def create_shape_single_pass(story_data,
 
                 component['arc_text'] = descriptors_text
                 component['actual_arc_text_chars'] = len(descriptors_text)
-            
             else:
                 descriptors_text = component['arc_text']
                 component['actual_arc_text_chars'] = len(descriptors_text)
@@ -579,10 +566,10 @@ def create_shape_single_pass(story_data,
 
                 #doing - 10 is super janky; the problem is that num a points is fixed so if you make arc length smaller but keep number of points the same then decreasing arc like becomes hard
                 #an alternative apprach is instead of defining num of point you could define x_delta size and infer num of points
-                original_arc_end_time_index_length = len(original_arc_end_time_values) - 3
-                original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 3
+                original_arc_end_time_index_length = len(original_arc_end_time_values) - 5
+                original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 5
                 
-                #print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length])
+                print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length])
 
                 #check if last values of arc segments is the global max; if it's the global max then shouldn't touch unless the second to last is the same value then you can shorten it
                 #normal mode can decrease everything 
@@ -590,9 +577,7 @@ def create_shape_single_pass(story_data,
                     and original_arc_end_time_values[-1] < old_max_x
                     and original_arc_end_emotional_score_values[-1] > old_min_y
                     and original_arc_end_emotional_score_values[-1] < old_max_y
-                    and len(component['arc_x_values']) > 1 and recursive_mode
-                    and original_arc_end_time_index_length >= 0 
-                    and original_arc_end_emotional_score_index_length >= 0):
+                    and len(component['arc_x_values']) > 1 and recursive_mode):
                     
                     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
@@ -608,8 +593,7 @@ def create_shape_single_pass(story_data,
                     and original_arc_end_emotional_score_values[-1] > old_min_y
                     and original_arc_end_emotional_score_values[-1] < old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode 
-                    and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)
-                    and original_arc_end_emotional_score_index_length >= 0):
+                    and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)):
 
                     component['modified_end_time'] = original_arc_end_time_values[-1]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
@@ -624,10 +608,9 @@ def create_shape_single_pass(story_data,
                 elif ((original_arc_end_emotional_score_values[-1] == old_min_y or original_arc_end_emotional_score_values[-1] == old_max_y)
                     and original_arc_end_time_values[-1] > old_min_x 
                     and original_arc_end_time_values[-1] < old_max_x
-                    and len(component['arc_x_values']) > 1 and recursive_mode
-                    and original_arc_end_time_index_length >= 0):
+                    and len(component['arc_x_values']) > 1 and recursive_mode):
 
-                    #print("hey")
+                    print("hey")
                     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
 
@@ -774,133 +757,114 @@ def calculate_average_rotation_angle(x_values, y_values):
     average_angle = sum(angles) / len(angles)
     return average_angle
 
-from anthropic import Anthropic
-import copy
-
-# Initialize Anthropic client
-anthropic = Anthropic()
-
-
 def generate_descriptors(title, author, component_description, story_data, desired_length):
-    # Keep relevant story context
-    current_index = next((i for i, comp in enumerate(story_data['story_components']) 
-                         if comp['description'] == component_description), None)
-    
-    context = {
-        'current_segment': component_description,
-        'previous_segment': story_data['story_components'][current_index - 1]['description'] 
-                          if current_index > 0 else None,
-        'next_segment': story_data['story_components'][current_index + 1]['description'] 
-                       if current_index < len(story_data['story_components']) - 1 else None
-    }
+    story_dict = copy.deepcopy(story_data)
+    # Clean up story data as before
+    del story_dict['x_values']
+    del story_dict['y_values']
+    for component in story_dict['story_components']:
+        if 'arc_x_values' in component:
+            del component['arc_x_values']
+        if 'arc_y_values' in component:
+            del component['arc_y_values']
 
+    # Build previous arc texts more concisely
     existing_arc_texts = "\n".join(
         component.get('arc_text', '') 
-        for component in story_data['story_components'] 
+        for component in story_dict['story_components'] 
         if 'arc_text' in component
     )
     
     if existing_arc_texts:
         existing_arc_texts = f"Previous descriptions:\n{existing_arc_texts}"
 
-    prompt = f"""Generate EXACTLY {desired_length}-character story descriptors for this segment of {author}'s "{title}".
+    system_message = {
+        "role": "system",
+        "content": """You are a master of concise storytelling, skilled at distilling narrative moments into powerful, precise descriptions. 
+Your specialty is creating memorable, distinctive descriptors that capture the essence of story segments."""
+    }
 
-SEGMENT TO DESCRIBE:
-{component_description}
+    user_message = {
+        "role": "user",
+        "content": f"""Create a {desired_length}-character description for this segment of {author}'s "{title}": {component_description}
 
-STRICT REQUIREMENTS:
-1. LENGTH: EXACTLY {desired_length} characters (including all spaces and periods)
-2. SOURCE: ONLY use elements explicitly mentioned in the segment description above
-3. FORMAT: If multiple phrases, each one ends with ". " except the last phrase, which ends with just "." and no space
+Story Context:
+{story_dict}
 
-PHRASE CONSTRUCTION:
-- Use 1-4 words per phrase
-- Single words must be specific and impactful (e.g., "Sharks." "Bleeding." "Exhausted.")
-- Prioritize nouns and active verbs
-- Include specific numbers, measurements, or quotes when present
-
-CONTENT MUST BE:
-- Directly from the provided segment description
-- Specific and concrete (no abstract concepts)
-- Different from previous segments:
 {existing_arc_texts}
 
-SEGMENT CONTEXT (for avoiding repetition):
-Previous: {context['previous_segment']}
-Next: {context['next_segment']}
+Format Requirements:
+1. EXACTLY {desired_length} characters (including spaces and punctuation)
+2. Separate phrases with ". " (period + space)
+3. Capitalize significant words
+4. No quotes, commas, or semicolons
 
-EXAMPLES:
-Segment text: "Santiago hooks an enormous marlin, generating excitement."
-Good: "Huge Marlin Strikes. Line Tension. Hook Set."
-Bad: "Hope Rises." (too abstract, not from text)
+Content Guidelines:
+- Include iconic quotes
+- Name key characters
+- Describe pivotal events
+- Mention important objects
+- Reference specific settings
+- Use vivid descriptive phrases
 
-Segment text: "The sharks attack relentlessly, destroying his catch."
-Good: "Sharks Attack. Fish Torn. Blood Spreads."
-Bad: "Battle Rages." (too vague, missing specific details)
+Maintain uniqueness by:
+- Using fresh vocabulary (avoid words from previous descriptions)
+- Adding new story elements
+- Following chronological order
+- Creating standalone value
 
-Segment text: "Santiago prays silently for strength."
-Good: "Silent Prayer."
-Bad: "Hope Rises." (too vague)
+Example format:
+First Significant Phrase. Another Key Moment. Final Important Event.
+"""
+    }
 
-Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation."""
+    chat_messages = [system_message, user_message]
 
-    #print(prompt)
-    response = client.messages.create(
-        model="claude-3-sonnet-20240229",
-        max_tokens=desired_length * 5,
-        temperature=0.3,
-        messages=[{"role": "user", "content": prompt}]
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        messages=chat_messages,
+        max_tokens=int(desired_length * 5),
+        temperature=0.3
     )
 
-    response_text = response.content[0].text.strip()
-    return response_text, [{"role": "user", "content": prompt}, {"role": "assistant", "content": response_text}]
+    response_text = completion.choices[0].message.content.strip()
+    chat_messages.append({"role": "assistant", "content": response_text})
+
+    return response_text, chat_messages
 
 def adjust_descriptors(desired_length, actual_length, chat_messages):
-    previous_attempt = chat_messages[-1]["content"]
-    
-    prompt = f"""Revise the story descriptors to be EXACTLY {desired_length} characters while maintaining accuracy.
+    user_message = {
+        "role": "user",
+        "content": f"""Revise the description to be EXACTLY {desired_length} characters (current: {actual_length}).
 
-Current text ({actual_length} characters):
-{previous_attempt}
+Key Requirements:
+1. Length: Exactly {desired_length} characters
+2. Format: Phrases separated by ". "
+3. Style: Capitalize significant words
 
-ADJUSTMENT RULES:
-1. If too long ({actual_length} > {desired_length}):
-   - Remove least essential details first
-   - Shorten phrases while keeping key nouns/verbs
-   - Combine similar phrases
-   - Consider using impactful single words
+Focus on:
+- Creating a completely new description
+- Capturing the core moment
+- Using fresh language
+- Maintaining independence from other segments
 
-2. If too short ({actual_length} < {desired_length}):
-   - Add specific details from the segment
-   - Expand existing phrases with more detail
-   - Break longer phrases into smaller ones
-   - Add new phrases using unused details
+Think of this as a standalone snapshot that must convey the full impact of this moment without external context.
+"""
+    }
 
-3. ALWAYS:
-   - Keep strongest story elements
-   - Use only details from original segment
-   - Maintain proper spacing and punctuation
-   - End phrases with ". " (except last with ".")
-   - Avoid repetition with other segments
+    chat_messages.append(user_message)
 
-Previous conversation context:
-{chat_messages[0]['content']}
-
-Respond with ONLY the revised text, exactly {desired_length} characters."""
-
-    #print(prompt)
-    response = client.messages.create(
-        model="claude-3-sonnet-20240229",
-        max_tokens=desired_length * 5,
-        temperature=0.3,
-        messages=[{"role": "user", "content": prompt}]
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        messages=chat_messages,
+        max_tokens=int(desired_length * 5),
+        temperature=0.3
     )
 
-    response_text = response.content[0].text.strip()
-    return response_text, chat_messages + [{"role": "user", "content": prompt}, {"role": "assistant", "content": response_text}]
+    response_text = completion.choices[0].message.content.strip()
+    chat_messages.append({"role": "assistant", "content": response_text})
 
-
-
+    return response_text, chat_messages
 
 def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
     total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
