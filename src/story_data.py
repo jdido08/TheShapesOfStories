@@ -14,7 +14,7 @@ def analyze_story(author_name, story_title, protagonist, story_summary):
     )
 
     # The user_message includes placeholders that will be replaced by the function arguments
-    user_message = f"""You are a world-class literary scholar and expert in story analysis. Your task is to analyze a story through the emotional journey of {protagonist_name}. Please carefully read and analyze the following story summary:
+    user_message = f"""You are a world-class literary scholar and expert in story analysis. Your task is to analyze a story through the emotional journey of {protagonist}. Please carefully read and analyze the following story summary:
 
 <author_name>
 {author_name}
@@ -344,15 +344,14 @@ def create_story_data(input_path="", author_name="", year="", protagonist="", ou
     story_plot_data['summary'] = story_summary
     story_plot_data['story_summary_source'] = story_summary_source
     story_plot_data['shape_validity'] = story_validity
-    story_data = {'story_plot_data': story_plot_data, **story_data} #add it so story_plot_data appears at the top
-    
+    #story_data = {'story_plot_data': story_plot_data, **story_data} #add it so story_plot_data appears at the top
 
     for component in story_plot_data["story_components"]:
         component['modified_end_time'] = component['end_time']
         component['modified_end_emotional_score'] = component['end_emotional_score']
     
     output_path = output_path
-    title = story_data['title'].lower().replace(' ', '_') + "_" + story_data['protagonist'].lower().replace(' ', '_')
+    title = story_plot_data['title'].lower().replace(' ', '_') + "_" + story_plot_data['protagonist'].lower().replace(' ', '_')
     output_path = os.path.join(output_path, f"{title}.json")
     with open(output_path, 'w') as json_file:
         json.dump(story_plot_data, json_file, indent=4)
@@ -366,5 +365,8 @@ def create_story_data(input_path="", author_name="", year="", protagonist="", ou
 
 
 
-
-create_story_data('/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json', '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/')
+#for running one off - remember to comment out when not using 
+create_story_data(
+    input_path='/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json',
+    protagonist="Jay Gatsby",
+    output_path= '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/')
