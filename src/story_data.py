@@ -242,9 +242,7 @@ The descriptions in the example output demonstrate the minimum expected level of
     #return json 
     return message.content[0].text
 
-# Example usage:
-# response = analyze_story("Homer", "The Odyssey", "In The Odyssey...")
-# print(response)
+
 
 
 def validate_story_arcs(data): #data should be json object
@@ -302,7 +300,7 @@ def num_tokens_from_string(string: str, model: str) -> int:
     return num_tokens
 
 
-def create_story_data(input_path="", author_name="", year="", protagonist="", output_path=""):
+def create_story_data(input_path="", author="", year="", protagonist="", output_path=""):
 
     with open(input_path, 'r', encoding='utf-8') as file:
         story_data = json.load(file)
@@ -311,8 +309,8 @@ def create_story_data(input_path="", author_name="", year="", protagonist="", ou
     story_title = story_data['title']
     print("Creating story data for ", story_title)
 
-    if author_name == "":
-        author_name = story_data['openlib']['author_name'][0]
+    if author == "":
+        author = story_data['openlib']['author_name'][0]
     
     if year == "":
         year = story_data['openlib']['publishing']['first_publish_year']
@@ -335,16 +333,16 @@ def create_story_data(input_path="", author_name="", year="", protagonist="", ou
                 story_summary_source = summary_source
     
     #print(story_summary_source)
-    story_plot_data = analyze_story(author_name, story_title, protagonist, story_summary)
+    story_plot_data = analyze_story(author, story_title, protagonist, story_summary)
     story_plot_data = json.loads(story_plot_data)
     story_validity = validate_story_arcs(story_plot_data)
     story_plot_data["type"] = "book"
-    story_data["author"] = author_name
-    story_data["year"] = year
+    story_plot_data["author"] = author
+    story_plot_data["year"] = year
     story_plot_data['summary'] = story_summary
     story_plot_data['story_summary_source'] = story_summary_source
     story_plot_data['shape_validity'] = story_validity
-    #story_data = {'story_plot_data': story_plot_data, **story_data} #add it so story_plot_data appears at the top
+   
 
     for component in story_plot_data["story_components"]:
         component['modified_end_time'] = component['end_time']
@@ -365,8 +363,3 @@ def create_story_data(input_path="", author_name="", year="", protagonist="", ou
 
 
 
-#for running one off - remember to comment out when not using 
-create_story_data(
-    input_path='/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json',
-    protagonist="Jay Gatsby",
-    output_path= '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/')

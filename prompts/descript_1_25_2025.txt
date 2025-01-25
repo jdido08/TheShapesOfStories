@@ -1,0 +1,104 @@
+    f"""Generate EXACTLY {desired_length}-character descriptors for this segment of {author}'s "{title}". Focus on concrete elements that {protagonist} encounters, does, or experiences in this specific segment (segment {current_index + 1} of {total_segments}).
+
+SEGMENT TO DESCRIBE:
+{component_description}
+
+STRICT REQUIREMENTS:
+1. LENGTH: EXACTLY {desired_length} characters (including spaces and periods)
+2. SOURCE: ONLY use elements explicitly mentioned in the segment above
+3. FORMAT: Phrases end with ". " except last phrase ends with "."
+4. NEVER mention {protagonist} by name
+5. NARRATIVE FLOW: Your text must connect naturally with other segments to tell one continuous journey
+
+NARRATIVE CONTEXT:
+Previous: {context['previous_segment']}
+Next: {context['next_segment']}
+
+CONTENT REQUIREMENTS:
+1. 1. USE ONLY elements from the summary segment e.g.:
+   - Places, settings, environments
+   - Actions, movements, activities
+   - People, interactions
+   - Objects, possessions, belongings
+   - Events, occurrences
+   - Direct quotes (exactly as written)
+   - Physical/emotional states (if explicitly stated)
+   - Time elements
+   - Reactions/responses from others
+   - Specific numbers/measurements
+
+2. CONSTRUCT phrases that:
+    - Use 1-4 words
+    - End with ". " (final phrase ends ".")
+    - Reflect actual and important summary content
+    - Use key nouns and active verbs
+    - Stay unique from previous segments i.e. 
+
+3. NEVER:
+   - Name protagonist
+   - Add unmentioned details
+   - Use abstractions/metaphors
+   - Include content from other segments
+   - Use generic descriptions
+
+Previous segments:
+{existing_arc_texts}
+
+EXAMPLES FROM VARIOUS STORIES:
+"The protagonist climbs the tower stairs, heart pounding. At the top, they find the old astronomer's workshop abandoned - tables covered in star charts, a brass telescope pointing skyward, and a leather-bound journal open to a page marked 'The Comet Returns'. Through the window, red light streams in as the predicted celestial body fills the evening sky."
+Good: "Tower Stairs. Abandoned Workshop. The Comet Returns."
+Bad: "Discovery Made." (too abstract, ignores specific details)
+
+"After discovering her family's debts, the merchant's daughter takes over the trading business. She spends months studying the ledgers, negotiating with creditors, and sailing with the merchant fleet. Her efforts pay off when she secures a lucrative contract with the spice traders."
+Good: "Studying Ledgers. Merchant Fleet. Spice Contract."
+Bad: "Business Success." (too generic, misses key details)
+
+"The general reads the battlefield report, hands trembling. Two thousand soldiers lost. In his tent, surrounded by maps marked with failed strategies, he writes letters to families. Outside, flags lower as the sun sets on the bloodiest day of the campaign."
+Good: "Battle Report. Two Thousand Lost. Writing Letters. Flags Lower."
+Bad: "Sad General. War is Hard." (misses specifics, uses generic emotions)
+
+
+Respond with ONLY the descriptor text, exactly {desired_length} characters."""
+    #print(prompt)
+    response = client.messages.create(
+        model="claude-3-sonnet-20240229",
+        max_tokens=desired_length * 5,
+        temperature=0.3,
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    response_text = response.content[0].text.strip()
+    return response_text, [{"role": "user", "content": prompt}, {"role": "assistant", "content": response_text}]
+
+def adjust_descriptors(desired_length, actual_length, chat_messages):
+    previous_attempt = chat_messages[-1]["content"]
+    
+    prompt = f"""Revise the story descriptors to be EXACTLY {desired_length} characters while maintaining accuracy.
+
+Current text ({actual_length} characters):
+{previous_attempt}
+
+ADJUSTMENT RULES:
+1. If too long ({actual_length} > {desired_length}):
+   - Remove least essential details first
+   - Shorten phrases while keeping key nouns/verbs
+   - Combine similar phrases
+   - Consider using impactful single words
+
+2. If too short ({actual_length} < {desired_length}):
+   - Add specific details from the segment
+   - Expand existing phrases with more detail
+   - Break longer phrases into smaller ones
+   - Add new phrases using unused details
+
+3. ALWAYS:
+   - Keep strongest story elements
+   - Use only details from original segment
+   - Maintain proper spacing and punctuation
+   - End phrases with ". " (except last with ".")
+   - Avoid repetition with other segments
+
+Previous conversation context:
+{chat_messages[0]['content']}
+
+Respond with ONLY the revised text, exactly {desired_length} characters."""

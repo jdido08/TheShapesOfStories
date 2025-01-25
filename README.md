@@ -1,4 +1,5 @@
 1/24/2025:
+- need to add author to story data
 - add protogonst to the story_data file name 
 - have option to for setting wrap inches color -- i think we should set it as border colorS --> DONE
 - add protogonst to story shape -- bottom right corner 
