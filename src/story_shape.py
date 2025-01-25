@@ -84,19 +84,10 @@ def create_shape(story_data_path,
     #get title 
     path_title = story_data['title'].lower().replace(' ', '_')
     path_size = f'{width_in_inches}x{height_in_inches}'
+    path_protagonist= story_data['protagonist'].lower().replace(' ', '_')
     
-    if title_text == "":
-        path_title_text = "with_title"
-    else:
-        path_title_text = "no_title"
 
-    if wrap_in_inches > 0:
-        path_canvas = "canvas"
-    else:
-        path_canvas = "no_canvas"
-
-
-    check_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{path_title}_{path_size}.json'
+    check_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{path_title}_{path_protagonist}_{path_size}.json'
     #check if specific file exists for story + size and if it does exist use it
     if os.path.exists(check_path):
         story_data_path = check_path
@@ -106,13 +97,25 @@ def create_shape(story_data_path,
                 story_data = story_data['story_plot_data']
 
     #create story_shape_path
+
     story_shape_title = story_data['title'].lower().replace(' ', '_')
     story_shape_size = f'{width_in_inches}x{height_in_inches}'
+    story_shape_protagonist = story_data['protagonist'].lower().replace(' ', '_')
+
+    if title_text == "":
+        path_title_text = "with_title"
+    else:
+        path_title_text = "no_title"
+
+    if wrap_in_inches > 0:
+        path_canvas = "wrapped_in_" + str(wrap_in_inches) + "inches"
+    else:
+        path_canvas = "no_wrapped"
 
     if output_format == "svg":
-        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{path_title_text}_{path_canvas}.svg'
+        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_size}_{path_canvas}_{line_type}_{path_title_text}.svg'
     elif output_format == "png":
-        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{path_title_text}_{path_canvas}.png'
+        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_size}_{path_canvas}_{line_type}_{path_title_text}.png'
    
     status = "processing"
     story_data['status'] = status
@@ -189,7 +192,8 @@ def create_shape(story_data_path,
     story_data['border_color'] = border_color
     new_title = story_data['title'].lower().replace(' ', '_')
     new_size = f'{width_in_inches}x{height_in_inches}'
-    new_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{new_title}_{new_size}.json'
+    new_protagonist = story_data['protagonist'].lower().replace(' ', '_')
+    new_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{new_title}_{new_protagonist}_{new_size}.json'
     with open(new_path, 'w', encoding='utf-8') as file:
         json.dump(story_data, file, ensure_ascii=False, indent=4)
 
