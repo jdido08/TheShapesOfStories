@@ -1,0 +1,107 @@
+{
+    "title": "The Great Gatsby",
+    "type": "book",
+    "author": "F. Scott Fitzgerald",
+    "year": "1925",
+    "protagonist": "Nick Carraway",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "#N/A",
+            "end_emotional_score": 2,
+            "arc": "#N/A",
+            "modified_end_time": 0,
+            "modified_end_emotional_score": 2
+        },
+        {
+            "end_time": 15,
+            "description": "Nick arrives in New York, reconnects with Daisy and Tom at their mansion, and is disturbed by their carelessness and purposelessness. He leaves feeling disgusted and unsettled by their shallow lifestyle.",
+            "end_emotional_score": -2,
+            "arc": "Linear Decrease",
+            "modified_end_time": 16.168614357262094,
+            "modified_end_emotional_score": -2.311630495269879,
+            "target_arc_text_chars": 50,
+            "arc_text": "Nick Arrives NYC. Reconnects Daisy, Tom's Mansion.",
+            "actual_arc_text_chars": 50,
+            "status": "All phrases fit exactly on the curve."
+        },
+        {
+            "end_time": 30,
+            "description": "Nick observes Gatsby for the first time, then attends one of Gatsby’s lavish parties. He is amazed by the grandeur and becomes intrigued by Gatsby’s mysterious persona, experiencing a lift in spirits.",
+            "end_emotional_score": 1,
+            "arc": "Step-by-Step Increase",
+            "modified_end_time": 41.79465776293831,
+            "modified_end_emotional_score": 0.9998158722589197,
+            "target_arc_text_chars": 43,
+            "arc_text": "Gatsby Observed. Lavish Party. Grandeur Awes.",
+            "actual_arc_text_chars": 45,
+            "status": "All phrases fit exactly on the curve."
+        },
+        {
+            "end_time": 50,
+            "description": "Nick learns about Gatsby’s underworld connections (Meyer Wolfsheim) and helps orchestrate Gatsby’s reunion with Daisy. Although unsettled by parts of Gatsby’s past, he remains neutral overall as he becomes more involved in their affairs.",
+            "end_emotional_score": 1,
+            "arc": "Linear Flat",
+            "modified_end_time": 50.9766277128539,
+            "modified_end_emotional_score": 1.0000219155093804,
+            "target_arc_text_chars": 7,
+            "arc_text": "Past Tie.",
+            "actual_arc_text_chars": 9,
+            "status": "All phrases fit exactly on the curve."
+        },
+        {
+            "end_time": 80,
+            "description": "Nick witnesses the tense confrontation between Tom and Gatsby at the Plaza and the tragic death of Myrtle. Horrified by the growing chaos and violence, he becomes increasingly disillusioned.",
+            "end_emotional_score": -4,
+            "arc": "Rapid-to-Gradual Decrease",
+            "modified_end_time": 77.47913188652423,
+            "modified_end_emotional_score": -3.9715718180821917,
+            "target_arc_text_chars": 61,
+            "arc_text": "Tense Plaza Confrontation. Myrtle's Tragic Death. Chaos Grows.",
+            "actual_arc_text_chars": 62,
+            "status": "All phrases fit exactly on the curve."
+        },
+        {
+            "end_time": 100,
+            "description": "In the aftermath of Gatsby’s murder, Nick arranges the funeral, only to find that almost no one attends. Disgusted by the careless Buchanans and the empty values of the East, he decides to return to the Midwest, ending the story in disillusionment.",
+            "end_emotional_score": -5.5,
+            "arc": "Linear Decrease",
+            "modified_end_time": 100,
+            "modified_end_emotional_score": -5.5,
+            "target_arc_text_chars": 27,
+            "arc_text": "Gatsby's Murder. Midwest.",
+            "actual_arc_text_chars": 25,
+            "status": "All phrases fit exactly on the curve."
+        }
+    ],
+    "summary": "In the spring, Nick Carraway, a young, moral, and conservative young man from the Midwest, has come to New York to learn the bond business and to escape the confining small town environment of his youth. He rents a small bungalow on West Egg, next door to the mansion of Jay Gatsby and across the bay from the home of his cousin, Daisy Buchanan. Shortly after his arrival, Daisy invites him to come for dinner with her, her husband, Tom, and her friend, Jordan Baker. When he arrives at their home, Nick is amazed at the size of it; he is also amazed at the purposelessness of their lives. Daisy, always dressed in white, seems to float about without a serious thought or any ability to plan anything meaningful; Jordan is no better. Tom seems to care only about his polo ponies and his mistress. When he leaves the Buchanan's, Nick feels disgusted and unsettled by what he has seen. When he arrives home, he spies his neighbor, Jay Gatsby, for the first time. He is standing out back, looking across the bay with his hands outstretched towards a green light at the end of some dock in East Egg. In July, Nick finds himself on the train into the city with Tom Buchanan. When they stop near the Valley of Ashes, Tom insists that the two of them get off the train so that he can introduce Nick to his mistress, Myrtle Wilson. It is decided that they will all go in to the city and have a party at Myrtle's apartment, which Tom keeps for their affair. Nick tries to get out of it, but Tom is insistent that he joins in the fun. Several people come to the party, and it gets out of hand with too much liquor being served. Even the moral Nick admits he has too much to drink. It is Tom and Myrtle, however, who seem the most inebriated. When she taunts her lover by shouting Daisy's name to him, he hits her and breaks her nose. Nick is repulsed by the violence. Later in the month, Jay Gatsby sends his chauffeur over to Nick's house with an invitation for him to attend a party the next Saturday night. Nick accepts and arrives at the party with great curiosity. He is amazed at the lavishness he sees. A full bar, with a brass rail, has been set up, and the back yard has been turned into a ballroom, complete with orchestra. Nick carefully surveys the crowd, trying to find the host, whom he has never met. He wanders through the house, encountering several strange characters including a drunken man in the library whom he calls \"Owl Eyes.\" Not finding his host, however, he is relieved to see Jordan Baker. They spend most of the evening together. At one point, as they are seated at a table, they are joined by a young man in his thirties. He seems to recognize Nick, and they discover that they were in the same division in the army. When the newcomer asks Nick to take a hydroplane flight with him the next day, he discovers he is talking to his host and neighbor, Jay Gatsby. Nick had imagined him to be much older. Not long after Nick's first experience at a Gatsby party, his host comes for a visit in order to take Nick into New York for lunch. It is obvious that Gatsby has something on his mind. During their journey, he gives Nick information about his past, trying to impress him by saying he won war medals and attended Oxford. He also reveals that he has a favor to ask of Nick, but says that Jordan Baker will tell him what it is. Nick is a bit miffed, for he cannot understand why Gatsby does not just ask himself, and he does not want to spend his evening with Jordan discussing Gatsby. At lunch, Nick is horrified to learn that Gatsby's other guest is Meyer Wolfsheim, the man who fixed the World Series in 1919. He is also horrified that his host slips away without saying a word of good-bye when they bump into Tom Buchanan. Nick departs and goes to meet Jordan Baker for tea. She tells him that Gatsby's request is for Nick to invite his cousin Daisy over to his house and invite Gatsby as well. Daisy, however, is not to know that Gatsby is coming. Jordan then tells Nick that Daisy had dated Gatsby when she was eighteen and he was a soldier stationed in Louisville. When he received orders to leave Louisville and go to Europe to fight in the war, Daisy planned to run away and marry him, but her parents stopped her. For awhile, she remained faithful to Gatsby; soon, however, she tired of waiting and began to date Tom Buchanan, a wealthy young man from a socially prominent family in Chicago. Before long, she accepted his proposal of marriage and wrote Gatsby a letter to end their relationship. On the day of the tea to be held at Nick's bungalow, a very nervous Gatsby arrives, worried that Daisy will not come. When she drives up in her convertible, Gatsby can hardly stand it; in fact, he runs out of Nick's house to gain control and to allow Daisy to come inside. He then comes from the back to ring the front doorbell. The first few minutes are very awkward, but the two of them are soon talking about old times. Gatsby insists that he take Daisy on a tour of his house and asks Nick to come along. Gatsby seems to rejudge the value of everything in his house according to Daisy's reaction to it. He simply cannot believe that after all these years of waiting and planning his dream girl is actually in his home. Nick interrupts the normal narrative of the story to give some background information on Gatsby. He was born as James Gatz to poor farmers in North Dakota. At the early age of sixteen, he decides he wants more out of life and leaves home. When he sees a yacht docked out from the beach, it is a symbol to him of the wealthy existence he desires. He rows a borrowed boat out to the yacht and introduces himself to Dan Cody, a fabulously wealthy man given to wild parties and excessive drink. Cody is impressed with the intelligence and determination of the young lad and takes him on as his assistant and protector. From that point forward, James Gatz leaves his real world behind and fabricates his dream world in which he is Jay Gatsby. When he winds up as a soldier, stationed in Louisville, Daisy becomes part of that dream existence. In reality, the dream is beginning to break up for Gatsby even though he is not aware of it. When Tom brings Daisy to Gatsby's next party, she finds the whole affair to be gaudy and ugly, with women who drink too much and men who are too familiar. Her only pleasures at the party are spending a little time with Gatsby and watching a lovely movie star. She immediately judges this West Egg crowd to be crass; however, when Tom criticizes the party and the guests, Daisy finds herself defending the host, even claiming the people at the party are more interesting than their own friends. She also defends Gatsby, telling Tom that he has made his money from owning a chain of drug stores. When all the guests, including Daisy, have gone home, Gatsby asks Nick to stay for awhile and talk. He is miserable because he feels Daisy has not had a good time. Gatsby's long-held dream is being challenged by reality. Since Daisy is now a part of his life, Gatsby no longer has to throw his extravagant parties in hopes of attracting her attention. It is never clear to what degree the two of them are involved, but Gatsby dismisses his entire staff of servants to prevent gossip, for Daisy often comes to his house. When Daisy invites Nick and Gatsby over for lunch, Daisy gives Gatsby a kiss on the mouth the minute that Tom walks out of the room. Before long, Tom realizes that there is something going on between Gatsby and his wife and is totally outraged. As a result, he agrees to go into the city, as Daisy has suggested; he is ready for a confrontation with Gatsby. On the way into town, Tom insists upon driving Gatsby's yellow car, which he calls a circus wagon. Since the car is low on fuel, he stops at Wilson's garage and learns that Wilson has found out that Myrtle is having an affair and is planning to move his wife and him out of town. The news is almost more than Tom can bear; within the last couple of hours, he has learned that his wife is having an affair with a \"clown\" and that his mistress is moving away. Myrtle, who has been locked away upstairs, is equally panicked. When she looks out and sees Tom, she thinks it may be for the last time. When she spies Jordan Baker, who is riding with Tom, Myrtle thinks it is Tom's wife and is insanely jealous. The mood of the story is definitely intensifying towards the climax of the plot. Daisy, Tom, Nick, Jordan, and Gatsby rent a suite at the Plaza Hotel. It is like a small party, reminiscent of the one held in Myrtle's apartment and almost as violent. Tom immediately begins to verbally attack Gatsby, questioning his past and his involvement with Daisy. Gatsby stands up to Tom, saying that Daisy does not love him and has never loved him. Gatsby even makes Daisy say the same words to Tom, but she says them without sincerity. In the end, she confesses that she has loved Tom in the past and asks Gatsby why it is not good enough that she loves him in the present. Gatsby's dream, however, does not allow for Tom to be in the picture; he wants to blot out the last five years and recreate them in his own image. Daisy is unwilling to do this; as a result, Tom is the victor. It is obvious that Daisy will not leave Tom and the security and status that he offers in order to go with the vulgar Gatsby, who is only a trifling plaything to her. When forced to choose between her husband and her temporary lover, the choice is easy for the golden girl. On the way back to the Eggs, Daisy asks Gatsby if she can drive his car in order to calm her nerves. When the car approaches the Valley of Ashes, Myrtle sees it and thinks that Tom is inside. She runs toward the car, waving her hands and hoping to see him before Wilson moves her away. When Daisy sees the woman, it is too late. She hits Myrtle, but keeps on driving, even though Gatsby tells her to stop. In the end, he pulls the emergency brake to halt the car and takes the driver's seat. He has already decided that he will take the blame for hitting Myrtle if it is ever discovered; Daisy must be protected. When Tom, Nick, and Jordan reach the accident, Tom is curious enough to stop. When he learns that Myrtle has been killed by a new, yellow car, he is crushed and infuriated. He believes that it is Gatsby who has killed his mistress and kept on going. This eventful day is a turning point for Nick; ironically, it is also his thirtieth birthday. He finally sees the shallowness and carelessness of Daisy, Tom, and all the wealthy Easterners. As a result, he decides he does not want to spend the rest of his life in New York, married to some woman like Jordan Baker. He will move back to the Midwest and marry the girl back home. He knows for sure he has made the right decision when he learns that it was Daisy who was driving the car and never stopped and when Gatsby is needlessly shot by Wilson, who thinks Gatsby is his wife's lover and murderer. Daisy does not even call to express her sorrow or send flowers to the funeral. In fact, no one other than the hired help comes to Gatsby's funeral except for Nick, Gatsby's father , and \"Owl Eyes\" from Gatsby's parties. It is a sad ending to a tragic life; but Nick knows that the ostentatious Gatsby, because of the purity of his dream and his devotion to it, is better than the \"whole damn lot\" of the Buchanans and their likes from East Egg.",
+    "story_summary_source": "thebestnotes",
+    "shape_validity": "valid",
+    "status": "completed",
+    "font_size": 8,
+    "font_style": "Playfair Display",
+    "font_color": [
+        0.12156862745098039,
+        0.25882352941176473,
+        0.3176470588235294
+    ],
+    "line_thickness": 10,
+    "title_font_size": 24,
+    "title_font_style": "Playfair Display",
+    "title_font_color": [
+        0.12156862745098039,
+        0.25882352941176473,
+        0.3176470588235294
+    ],
+    "background_color": [
+        0.8862745098039215,
+        0.788235294117647,
+        0.5725490196078431
+    ],
+    "border_thickness": 60,
+    "border_color": [
+        0.5725490196078431,
+        0.4980392156862745,
+        0.30196078431372547
+    ]
+}

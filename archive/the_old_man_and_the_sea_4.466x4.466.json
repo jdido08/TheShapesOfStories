@@ -1,0 +1,88 @@
+{
+    "title": "The Old Man and the Sea",
+    "protagonist": "Santiago",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "#N/A",
+            "end_emotional_score": -3,
+            "arc": "#N/A",
+            "modified_end_time": 0,
+            "modified_end_emotional_score": -3
+        },
+        {
+            "end_time": 15,
+            "description": "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and determination. Though living in poverty and having lost his young assistant Manolin to another boat, he remains 'cheerful and undefeated,' finding comfort in his friendship with the boy and his memories of Africa.",
+            "end_emotional_score": -2,
+            "arc": "Gradual Increase",
+            "modified_end_time": 18.807615230460854,
+            "modified_end_emotional_score": -1.7461589846359307,
+            "target_arc_text_chars": 12,
+            "arc_text": "Santiago. Hope.",
+            "actual_arc_text_chars": 15,
+            "status": "All phrases fit exactly on the curve."
+        },
+        {
+            "end_time": 30,
+            "description": "Santiago ventures far into the Gulf, feeling optimistic about his chances. His deep connection with nature and sympathetic observations of the sea creatures reveal his hopeful state of mind as he searches for his catch.",
+            "end_emotional_score": 0,
+            "arc": "Linear Increase",
+            "modified_end_time": 30.75150300601375,
+            "modified_end_emotional_score": 0.11253083735391364,
+            "target_arc_text_chars": 11,
+            "arc_text": "Gulf Odyssey.",
+            "actual_arc_text_chars": 13,
+            "status": "All phrases fit exactly on the curve."
+        },
+        {
+            "end_time": 45,
+            "description": "The old man hooks an enormous marlin, generating excitement and hope. His initial struggle with the fish fills him with determination and respect for his worthy opponent.",
+            "end_emotional_score": 4,
+            "arc": "Straight Increase",
+            "modified_end_time": 45.33066132264009,
+            "modified_end_emotional_score": 3.9999999999999982,
+            "target_arc_text_chars": 31,
+            "arc_text": "Enormous Catch. Battle of Wills.",
+            "actual_arc_text_chars": 32,
+            "status": "All phrases fit exactly on the curve."
+        },
+        {
+            "end_time": 60,
+            "description": "During the prolonged battle with the marlin, Santiago endures physical hardships including hunger, thirst, and injuries. Despite his suffering, his determination remains strong, though tempered by growing exhaustion.",
+            "end_emotional_score": 1,
+            "arc": "Gradual Decrease",
+            "modified_end_time": 59.919839679358724,
+            "modified_end_emotional_score": 1.0163934426267573,
+            "target_arc_text_chars": 18,
+            "arc_text": "Enduring Trials.",
+            "actual_arc_text_chars": 16
+        },
+        {
+            "end_time": 75,
+            "description": "Santiago finally kills the marlin in a moment of triumph, though tinged with regret for having to slay something he considers his brother. His victory brings both pride and melancholy.",
+            "end_emotional_score": 5,
+            "arc": "Straight Increase",
+            "modified_end_time": 75,
+            "modified_end_emotional_score": 5
+        },
+        {
+            "end_time": 90,
+            "description": "The sharks' relentless attacks on his prize fish lead to increasing despair as Santiago fights a losing battle to preserve his catch, eventually left with nothing but a skeleton.",
+            "end_emotional_score": -6,
+            "arc": "Step-by-Step Decrease",
+            "modified_end_time": 90,
+            "modified_end_emotional_score": -6
+        },
+        {
+            "end_time": 100,
+            "description": "Exhausted and defeated, Santiago returns home with only the skeleton of his great fish. Though physically broken, he finds some solace in Manolin's loyalty and the promise of fishing together again, ending with dreams of his youth and the lions on the beach.",
+            "end_emotional_score": -2,
+            "arc": "Gradual Increase",
+            "modified_end_time": 100,
+            "modified_end_emotional_score": -2
+        }
+    ],
+    "summary": "There is an old fisherman in Cuba, Santiago, who has gone eighty-four days without a catch. He is \"thin and gaunt with deep wrinkles in the back of his neck,...and his hands had deep-creased scars from handling heavy fish on the cords. But none of these scars were fresh. They were as old as erosions in a fishless desert\" . Santiago's lack of success, though, does not destroy his spirit, as his \"cheerful and undefeated\" eyes show . He has a single friend, a boy named Manolin, who helped him during the first forty days of his dryspell. After forty days, though, Manolin's parents decided the old man was unlucky and ordered their son to join another boat. Despite this, the boy helps the old man to bring in his empty boat every day. Santiago tells Manolin that tomorrow he will go out far in the Gulf to fish. The two gather Santiago's things from his boat and go to the old man's house. His house is very simple with a bed, table, and chair on a dirt floor. The two friends speak for a while, then Manolin leaves briefly to get food. Santiago falls asleep. When Manolin returns, he wakes Santiago. The two eat the food the boy has brought. During the course of the meal, the boy realizes the squalor in which the old man lives and reminds himself to bring the old man a shirt, shoes, a jacket, and a blanket for the coming winter. Manolin and Santiago talk baseball for a while, and the boy then leaves to be woken in the morning by the old man. Santiago sleeps. Santiago dreams of Africa, where he traveled as a shipmate in his youth. \"He lived along that coast now every night and in his dreams he heard the surf roar and saw the native boats come riding through it....He dreamed of places now and lions on the beach\" . The old man wakes and retrieves the boy from his house. The two take the old man's supplies from his shack to his boat and enjoy coffee at an early morning place that serves fisherman. The boy leaves to fetch the sardines for the old man. When he returns, he wishes the old man luck, and Santiago goes out to sea. Santiago leaves shore early in the morning, before sunrise. \"He knew he was going far out and he left the smell of the land behind and rowed out into the clean early morning smell of the ocean\" . Soon, Santiago rows over the \"great well,\" a sudden drop of seven hundred fathoms where shrimp, bait fish, and squid congregate. Moving along, Santiago spots flying fish and birds, expressing great sympathy for the latter. As he queries, \"Why did they make birds so delicate and fine as those sea swallows when the ocean can be so cruel? She is kind and very beautiful. But she can be so cruel....\" . Santiago keeps pressing out, past the great well where he has been recently unsuccessful. Santiago sees a man-of-war bird overhead and notices that the bird has spied something in the water. The old man follows near the bird, and drops his own lines into the area, hoping to capture the fish the bird has seen. There is a large school of dolphin traveling fast, too fast for either the bird or Santiago to capture. Santiago moves on, hoping to catch a stray or perhaps even discover a marlin tracking the school. He catches a small tuna after not too long and then feels a bite on one of his deeper lines. The first bite is hard, and the stick to which the line is connected drops sharply. The next tug is more tentative, but Santiago knows exactly what it is. \"One hundred fathoms down a marlin was eating the sardines that covered the point and the shank of the hook where the hand-forged hook projected from the head of the small tuna\" . Encouraged by a bite at so deep a depth so far out in the Gulf, Santiago reasons that the fish much be very large. The marlin nibbles around the hook for some time, refusing to take the bait fully. Santiago speaks aloud, as if to cajole the fish into accepting the bait. He says, \"Come on....Make another turn. Just smell them. Aren't they lovely? Eat them good now and then there is the tuna. Hard and cold and lovely. Don't be shy fish. Eat them\" . After many false bites, the marlin finally takes the tuna and pulls out a great length of line. Santiago waits a bit for the marlin to swallow the hook and then pulls hard on the line to bring the marlin up to the surface. The fish is strong, though, and does not come up. Instead, he swims away, dragging the old man and his skiff along behind. Santiago wishes he had Manolin with him to help. As the sun goes down, the marlin continues on in the same direction, and Santiago loses sight of land altogether. Expressing his resolve, Santiago says, \"Fish,...I'll stay with you until I am dead\" . He expresses ambivalence over whether he wants the fish to jump, wanting to end the struggle as quickly as possible but worrying that the hook might slip out of the fish's mouth. Echoing his former resolve though with less certainty, Santiago says, \"Fish,...I love you and respect you very much. But I will kill you dead before this day ends\" . A small bird land on the boat, and while Santiago is speaking to the bird, the marlin lurches forward and pulls the old man down, cutting his hand. Lowering his hand to water to clean it, Santiago notices that the marlin has slowed down. He decides to eat a tuna he has caught in order to give him strength for his ordeal. As he is cutting the fish, though, his left hand cramps. \"What kind of hand is that,\" Santiago says, \"Cramp then if you want. Make yourself into a claw. It will do you no good\" . The old man eats the tuna, hoping it will renew his strength and help release his hand. Just then, the marlin comes out of the water quickly and descends into the water again. Santiago is amazed by its size, two feet longer than the skiff. He realizes that the marlin could destroy the boat if he wanted to and says, \"...hank God, they are not as intelligent as we who kill them; although they are more noble and more able\" . Santiago says prayers to assuage his worried heart, and settles into the chase once again. As the sun sets, Santiago thinks back to triumphs of his past in order to give himself more confidence in the present. He remembers a great arm-wrestling match he had at a tavern in Casablanca. It had lasted a full day and a night, but Santiago, El Campeon as he was known then, eventually won. \"He decided that he could beat anyone if he wanted to badly enough and he decided that it was bad for his right hand for fishing\" . He tried to wrestle with his left hand but it was a traitor then as it had been now. Recalling his exhaustion, Santiago decides that he must sleep some if he is to kill the marlin. He cuts up the dolphin he has caught to prevent spoiling, and eats some of it before contriving a way to sleep. Santiago wraps the line around himself and leans against the bow to anchor himself, leaving his left hand on the rope to wake him if the marlin lurches. Soon, the old man is asleep, dreaming of a school of porpoises, his village house, and finally of the lions of his youth on the African beach. Santiago is awoken by the line rushing furiously through his right hand. The marlin leaps out of the water and it is all the old man can do to hold onto the line, now cutting his hand badly and dragging him down to the bottom of the skiff. Santiago finds his balance, though, and realizes that the marlin has filled the air sacks on his back and cannot go deep to die. The marlin will circle and then the endgame will begin. At sunrise, the marlin begins a large circle. Santiago holds the line strongly, pulling it in slowly as the marlin goes round. At the third turn, Santiago sees the fish and is amazed by its size. He readies the harpoon and pulls the line in more. The marlin tries desperately to pull away. Santiago, no longer able to speak for lack of water, thinks, \"You are killing me, fish....But you have a right to. Never have I seen a greater, or more beautiful, or a calmer or more noble thing than you, brother. Come on and kill me. I do not care who kills you\" . This marlin continues to circle, coming closer and pulling out. At last it is next to the skiff, and Santiago drove his harpoon into the marlin's chest. \"Then the fish came alive, with his death in him, and rose high out of the water showing all his great length and width and all his power and his beauty\" . It crashed into the sea, blinding Santiago with a shower of sea spray. With the glimpse of vision he had, Santiago saw the slain beast laying on its back, crimson blood disseminating into the azure water. Seeing his prize, Santiago says, \"I am a tired old man. But I have killed this fish which is my brother and now I must do the slave work\" . Having killed the Marlin, Santiago lashes its body alongside his skiff. He pulls a line through the marlin's gills and out its mouth, keeping its head near the bow. \"I want to see him, he thought, and to touch and to feel him. He is my fortune, he thought\" . Having secured the marlin to the skiff, Santiago draws the sail and lets the trade wind push him toward the southwest. An hour after Santiago killed the marlin, a mako shark appears. It had followed the trail of blood the slain marlin left in its wake. As the shark approaches the boat, Santiago prepares his harpoon, hoping to kill the shark before it tears apart the marlin. \"The shark's head was out of water and his back was coming out and the old man could hear the noise of skin and flesh ripping on the big fish when he rammed the harpoon down onto the shark's head\" . The dead shark slowly sinks into the deep ocean water. Two hours later, two shovel-nosed sharks arrive at the skiff. After losing his harpoon to the mako, Santiago fastens his knife to the end of the oar and now wields this against the sharks. He kills the first shark easily, but while he does this, the other shark is ripping at the marlin underneath the boat. Santiago lets go of the sheet to swing broadside and reveal the shark underneath. After some struggle, he kills this shark as well. Santiago apologizes to the fish for the mutilation he has suffered. He admits, \"I shouldn't have gone out so far, fish....Neither for you nor for me. I am sorry, fish\" . Tired and losing hope, Santiago sits and waits for the next attacker, a single shovel-nosed shark. The old man succeeds in killing the fish but breaks his knife blade in the process. More sharks appear at sunset and Santiago only has a club with which to beat them away. He does not kill the sharks, but damages them enough to prevent their return. Santiago then looks forward to nightfall as he will be able to see the lights of Havana, guiding him back to land. He regrets not having cleaved off the marlin's sword to use as a weapon when he had the knife and apologizes again to the fish. At around ten o'clock, he sees the light of Havana and steers toward it. In the night, the sharks return. \"y midnight he fought and this time he knew the fight was useless. They came in a pack and he could only see the lines in the water their fins made and their phosphorescence as they threw themselves on the fish\" . He clubs desperately at the fish, but the club was soon taken away by a shark. Santiago grabs the tiller and attacks the sharks until the tiller breaks. \"That was the last shark of the pack that came. There was nothing more for them to eat\" . Santiago \"sailed lightly now and he had no thoughts nor any feelings of any kind\" . He concentrates purely on steering homewards and ignores the sharks that came to gnaw on the marlin's bones. When he arrives at the harbor, everyone is asleep. Santiago steps out of the boat, carrying the mast back to his shack. \"He started to climb again and at the top he fell and lay for some time with the mast across his shoulder. He tried to get up. But it was too difficult and he sat there with the mast on his shoulder and looked at the road\" . When he finally arose, he had to sit five times before reaching home. Arriving at his shack, Santiago collapsed on his bed and fell asleep. Manolin arrives at the shack while Santiago is still asleep. The boy leaves quickly to get some coffee for Santiago, crying on his way to the Terrace. Manolin sees fisherman gathered around the skiff, measuring the marlin at eighteen feet long. When Manolin returns to the shack, Santiago is awake. The two speak for a while, and Manolin says, \"Now we will fish together again,\" To which Santiago replies, \"No. I am not lucky. I am not lucky anymore\" . Manolin objects, \"The hell with luck....I'll bring the luck with me\" . Santiago acquiesces and Manolin leaves to fetch food and a shirt. That afternoon there are tourists on the Terrace. A female tourist sees the skeleton of the marlin moving in the tide. Not recognizing the skeleton, she asks the waiter what it is. He responds in broken English \"eshark,\" thinking she wants to know what happened. She comments to her partner that she didn't know sharks had such beautiful tails. Meanwhile, back in Santiago's shack, the old man \"was still sleeping on his face and the boy was sitting by him watching him. The old man was dreaming about lions\" .",
+    "story_summary_source": "gradesaver",
+    "shape_validity": "valid"
+}

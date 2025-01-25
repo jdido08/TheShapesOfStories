@@ -1,3 +1,22 @@
+1/24/2025:
+- add protogonst to the story_data file name 
+- have option to for setting wrap inches color -- i think we should set it as border colorS --> DONE
+- add protogonst to story shape -- bottom right corner 
+- download all font that could be used to computer
+- make the title font bold 
+- refine descriptors prompt to not use protoganist name 
+- need to come up with some sort of multiple color scheme - should have different colors for different protoganst at least 
+
+1/21/2024:
+- font's not working for story data
+    - get claude to pick font's invididually 
+    - make sure fotn is installed 
+- need to use o1 for story data and need to emphasize that descriptions should be of real things 
+    - maybe not -- im going back and changing prompt. I want to make sure descriptiosn have details from the summary
+    - I also want to provide more guidance on dividng up major peices. 
+- have option to for setting wrap inches color -- i think we should set it as border colorS
+
+
 1/20/2025:
 - support title for line
 - support hex colors

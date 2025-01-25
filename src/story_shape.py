@@ -39,7 +39,7 @@ client = anthropic.Anthropic(
 
 def create_shape(story_data_path,
                 x_delta = 0.015,
-                font_style="Sans",
+                font_style="",
                 font_size=72,
                 font_color = (0, 0, 0), #default to black
                 line_type = 'char',
@@ -49,17 +49,19 @@ def create_shape(story_data_path,
                 background_value=(1, 1, 1), 
                 has_title = "NO", #values YES or NO
                 title_text = "", #optionl if left blank then title used 
-                title_font_style = "Sans",
+                title_font_style = "",
                 title_font_size=96,
                 title_font_color = (0, 0, 0),#default to black
                 title_padding = 20,
                 gap_above_title = 20,
+                protagonist_text = "",
                 border = False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
                 width_in_inches = 15,
                 height_in_inches = 15,
                 wrap_in_inches=1.5,
+                wrap_background_color = (0,0,0),
                 recursive_mode = True,
                 recursive_loops = 500,
                 output_format="png"):
@@ -71,6 +73,7 @@ def create_shape(story_data_path,
     title_font_color = hex_to_rgb(title_font_color)
     border_color = hex_to_rgb(border_color)
     background_value = hex_to_rgb(background_value)
+    wrap_background_color = hex_to_rgb(wrap_background_color)
 
 
     with open(story_data_path, 'r', encoding='utf-8') as file:
@@ -81,6 +84,18 @@ def create_shape(story_data_path,
     #get title 
     path_title = story_data['title'].lower().replace(' ', '_')
     path_size = f'{width_in_inches}x{height_in_inches}'
+    
+    if title_text == "":
+        path_title_text = "with_title"
+    else:
+        path_title_text = "no_title"
+
+    if wrap_in_inches > 0:
+        path_canvas = "canvas"
+    else:
+        path_canvas = "no_canvas"
+
+
     check_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{path_title}_{path_size}.json'
     #check if specific file exists for story + size and if it does exist use it
     if os.path.exists(check_path):
@@ -93,19 +108,12 @@ def create_shape(story_data_path,
     #create story_shape_path
     story_shape_title = story_data['title'].lower().replace(' ', '_')
     story_shape_size = f'{width_in_inches}x{height_in_inches}'
-    
-    if line_type == "line":
-        if output_format == "svg":
-            story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{line_thickness}.svg'
-        elif output_format == "png":
-            story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{line_thickness}.png'
-    else:
-        story_shape_font = font_style.lower().replace(' ', '_') + "_" + str(font_size)
-        if output_format == "svg":
-            story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{story_shape_font}.svg'
-        elif output_format == "png":
-            story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{story_shape_font}.png'
 
+    if output_format == "svg":
+        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{path_title_text}_{path_canvas}.svg'
+    elif output_format == "png":
+        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_size}_{line_type}_{path_title_text}_{path_canvas}.png'
+   
     status = "processing"
     story_data['status'] = status
     count = 1
@@ -132,12 +140,14 @@ def create_shape(story_data_path,
                     title_font_color = title_font_color,
                     title_padding = title_padding,
                     gap_above_title = gap_above_title,
+                    protagonist_text = protagonist_text,
                     border = border,
                     border_thickness=border_thickness,
                     border_color=border_color,
                     width_in_inches=width_in_inches,
                     height_in_inches=height_in_inches,
                     wrap_in_inches=wrap_in_inches,
+                    wrap_background_color = wrap_background_color,
                     story_shape_path=story_shape_path,
                     recursive_mode=recursive_mode,
                     output_format = output_format)
@@ -165,7 +175,18 @@ def create_shape(story_data_path,
         if 'arc_y_values' in component:
             del component['arc_y_values']
 
+
     #set new path
+    story_data['font_size'] = font_size
+    story_data['font_style'] = font_style
+    story_data['font_color'] = font_color
+    story_data['line_thickness'] = line_thickness
+    story_data['title_font_size'] = title_font_size
+    story_data['title_font_style'] = title_font_style
+    story_data['title_font_color'] = title_font_color
+    story_data['background_color'] = background_value
+    story_data['border_thickness'] = border_thickness
+    story_data['border_color'] = border_color
     new_title = story_data['title'].lower().replace(' ', '_')
     new_size = f'{width_in_inches}x{height_in_inches}'
     new_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{new_title}_{new_size}.json'
@@ -173,7 +194,7 @@ def create_shape(story_data_path,
         json.dump(story_data, file, ensure_ascii=False, indent=4)
 
 def create_shape_single_pass(story_data, 
-                font_style="Sans",
+                font_style="",
                 font_size=72,
                 font_color = (0, 0, 0), #default to black
                 line_type = 'char',
@@ -183,17 +204,19 @@ def create_shape_single_pass(story_data,
                 background_value=(1, 1, 1), 
                 has_title = "NO",
                 title_text = "",
-                title_font_style = "Sans",
+                title_font_style = "",
                 title_font_size=96,
                 title_font_color = (0, 0 , 0), #default to black
                 title_padding = 20,
                 gap_above_title = 20,
+                protagonist_text = "",
                 border=False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
                 width_in_inches = 15,
                 height_in_inches = 15,
                 wrap_in_inches=1.5,
+                wrap_background_color = (0,0,0),
                 story_shape_path = "test",
                 recursive_mode = True,
                 output_format = "png"):
@@ -263,28 +286,59 @@ def create_shape_single_pass(story_data,
     from gi.repository import Pango, PangoCairo
     pangocairo_context = PangoCairo.create_context(cr)
 
-    # Set background according to specified type
-    if background_type == 'transparent':
-        cr.set_source_rgba(0, 0, 0, 0)
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.paint()
-        cr.set_operator(cairo.OPERATOR_OVER)
-    elif background_type == 'solid':
-        print(background_value)
-        cr.set_source_rgb(*background_value)
-        cr.paint()
-    else:
-        print("background_type:", background_type, "is not valid (must be 'transparent' or 'solid').")
-
-    # Now translate so (0,0) is at the main design top-left
+    # Calculate dimensions
     design_offset_x = wrap_in_inches * dpi
     design_offset_y = wrap_in_inches * dpi
-    cr.save()
-    cr.translate(design_offset_x, design_offset_y)
-
-    # The actual design is 15" × 15"
     design_width = int(width_in_inches * dpi)
     design_height = int(height_in_inches * dpi)
+
+    # Paint wrap areas
+    if wrap_in_inches > 0:
+        cr.save()
+        cr.set_source_rgb(*wrap_background_color)
+        
+        # Top wrap area
+        cr.rectangle(0, 0, total_width_px, wrap_in_inches * dpi)
+        cr.fill()
+        
+        # Bottom wrap area
+        bottom_y = total_height_px - (wrap_in_inches * dpi)
+        cr.rectangle(0, bottom_y, total_width_px, wrap_in_inches * dpi)
+        cr.fill()
+        
+        # Left wrap area
+        cr.rectangle(0, wrap_in_inches * dpi, wrap_in_inches * dpi, height_in_inches * dpi)
+        cr.fill()
+        
+        # Right wrap area
+        right_x = total_width_px - (wrap_in_inches * dpi)
+        cr.rectangle(right_x, wrap_in_inches * dpi, wrap_in_inches * dpi, height_in_inches * dpi)
+        cr.fill()
+        
+        cr.restore()
+
+        # Now translate for main design
+        cr.save()
+        cr.translate(design_offset_x, design_offset_y)
+    else:
+        
+        # Now translate for main design
+        cr.save()
+        cr.translate(design_offset_x, design_offset_y)
+
+    # Paint main background
+    if background_type == 'transparent':
+        cr.rectangle(0, 0, design_width, design_height)
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.fill()
+        cr.set_operator(cairo.OPERATOR_OVER)
+    elif background_type == 'solid':
+        cr.rectangle(0, 0, design_width, design_height)
+        cr.set_source_rgb(*background_value)
+        cr.fill()
+    
+
 
     if border:
         cr.save()
@@ -668,29 +722,59 @@ def create_shape_single_pass(story_data,
 
             component['status'] = status
 
-    # Once arcs are fully drawn, we place the title in the reserved space at bottom
-    # (instead of top).
-    # # 6) Now place the title, below that gap
     if has_title == "YES":
-        
+        # -- Prepare the title layout --
         final_layout = PangoCairo.create_layout(cr)
+        scaled_title_size = title_font_size * (300 / 96)
         final_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
         final_layout.set_font_description(final_desc)
         final_layout.set_text(title_text, -1)
 
-        # the top edge of the title band is at:
+        # Measure the title's bounding box
+        title_text_width, title_text_height = final_layout.get_pixel_size()
+
+        # The top of the "title band" area
         title_band_top = margin_y + drawable_height + gap_above_title
 
-        # place text at (title_x, title_y)
+        # Left-aligned X for the title
         title_x = margin_x
+        # Put the title’s top bounding box at 'title_band_top'
         title_y = title_band_top
 
+        # Draw the title at bottom-left
         cr.move_to(title_x, title_y)
-
         cr.set_source_rgb(*title_font_color)
-        cr.move_to(title_x, title_y)
         PangoCairo.show_layout(cr, final_layout)
-    
+
+        # ------------------------------------------------
+        # Draw the protagonist name at bottom-right
+        # ------------------------------------------------
+        if protagonist_text == "":
+            protagonist_text = story_data.get('protagonist', '')
+
+        if protagonist_text:
+            # Prepare protagonist layout
+            prot_layout = PangoCairo.create_layout(cr)
+            # Reuse the *same* font description as the title so styling is consistent
+            prot_layout.set_font_description(font_desc)
+            prot_layout.set_text(protagonist_text, -1)
+
+            # Measure the protagonist text
+            prot_text_width, prot_text_height = prot_layout.get_pixel_size()
+
+            # The bottom edge of the title box is:
+            title_bottom_line = title_y + title_text_height
+
+            # Position the protagonist text so that its *bottom* aligns with the title’s bottom
+            # i.e., top of its bounding box = (title_bottom_line - protagonist box’s height)
+            prot_y = title_bottom_line - prot_text_height
+
+            # Right‐align X so the right edge is near (margin_x + drawable_width)
+            prot_x = margin_x + drawable_width - prot_text_width
+
+            cr.move_to(prot_x, prot_y)
+            cr.set_source_rgb(*font_color)
+            PangoCairo.show_layout(cr, prot_layout)
 
 
     # MAKE NOTES ON TOP AND BOTTOM OF CANVAS -- only applies when wrap_in_inches > 0
@@ -740,7 +824,7 @@ def create_shape_single_pass(story_data,
                             rotation_degrees=0,
                             color=(0,0,0))
 
-    
+
     # 7) Save final image
     if output_format == "svg":
         surface.finish()
