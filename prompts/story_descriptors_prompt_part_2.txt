@@ -1,0 +1,61 @@
+Please carefully evaluate the story component below, then identify key words and/or phrases that best represent and describe the plot of the story component.Note that:
+1. The key words/phrases could be popular quotes, characters, events, objects, settings of the story component plot
+2. All key words/phrases should be listed in chronological order
+3. No key word/phrase should contain the name of the story or the name of the main protagonist
+4. Each key word/phrase must end with some punctation e.g. period ("."), exclamation point ("!"), question mark ("?"), or an ellipsis ("...")
+5. The total length of characters of all key words/phrases for a story component should be around provided chars_capacity number
+
+Please output your response like the JSON examples below. Note that the "descriptors" field is where the key words/phrases are listed. 
+Example 1:
+{
+  "end_time": 20,
+  "description": "Cinderella suffers under her stepfamily, feeling emotionally stagnant and unhappy.",
+  "end_emotional_score": -5,
+  "arc": "Linear Flat",
+  "chars_capacity": 30,
+  "descriptors": [
+    "Stepmother.",
+    "Stepsisters.",
+    "Chores."
+  ]
+}
+
+Example 2: 
+{
+  "end_time": 50,
+  "description": "Meeting her Fairy Godmother, Cinderella experiences a step-by-step uplift in spirits.",
+  "end_emotional_score": -1,
+  "arc": "Step-by-Step Increase",
+  "chars_capacity": 57,
+  "descriptors": [
+    "Fairy Godmother.",
+    "Bibbidi-Bobbidi-Boo.",
+    "Pumpkin Carriage."
+  ]
+}
+
+Example 3:
+{
+  "end_time": 20,
+  "description": "Scrooge is bitter, miserly and uncaring towards others on Christmas Eve.",
+  "end_emotional_score": -3,
+  "arc": "Linear Flat",
+  "chars_capacity": 11,
+  "descriptors": [
+    "Bah Humbug."
+  ]
+}
+
+Example 4:
+{
+  "end_time": 90,
+  "description": "Seeing his own grave, Scrooge is terrified and desperate to change his fate.",
+  "end_emotional_score": -6,
+  "arc": "S-Curve Decrease",
+  "chars_capacity": 35,
+  "descriptors": [
+    "Yet to Come.",
+    "Pawn Shop.",
+    "Gravestone."
+  ]
+}

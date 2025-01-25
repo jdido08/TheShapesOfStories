@@ -1,0 +1,183 @@
+Please identify key words and/or phrases that best represent and describe each story component.
+
+The key words/phrases should help observers identify this particular story segment. Key words and/or phrases should be:
+1. Iconic phrases or popular quotes from the story segment.
+2. Names or descriptions of important or iconic characters involved in that part of the story.
+3. Names or descriptions of significant events that occur during the segment.
+4. Names or descriptions of notable inanimate objects that play a role in the story segment.
+5. Names or descriptions of key settings where the story segment takes place.
+6. Descriptive phrases of the story segment
+Note that:
+- all key words/phrases should be listed in chronological order
+- no key words/phrases should contain the name of the story or the name of the main protagonist
+
+Please output your response like the JSON examples below. Note that:
+- "descriptors" field is where the key words/phrases are listed. 
+- all key words/phrases end with some punctation e.g. period ("."), exclamation point ("!"), question mark ("?"), or an ellipsis ("...").
+
+
+
+Cinderella Example:
+{
+  "title": "Cinderella",
+  "protagonist": "Cinderella",
+  "story_components": [
+    {
+      "end_time": 0,
+      "description": "#N/A",
+      "end_emotional_score": -5,
+      "arc": "#N/A",
+      "descriptors": [
+        "#N/A"
+      ]
+    },
+    {
+      "end_time": 20,
+      "description": "Cinderella suffers under her stepfamily, feeling emotionally stagnant and unhappy.",
+      "end_emotional_score": -5,
+      "arc": "Linear Flat",
+      "descriptors": [
+        "Stepmother.",
+        "Stepsisters.",
+        "Chores."
+      ]
+    },
+    {
+      "end_time": 50,
+      "description": "Meeting her Fairy Godmother, Cinderella experiences a step-by-step uplift in spirits.",
+      "end_emotional_score": -1,
+      "arc": "Step-by-Step Increase",
+      "descriptors": [
+        "Fairy Godmother.",
+        "Bibbidi-Bobbidi-Boo.",
+        "Pumpkin Carriage."
+      ]
+    },
+    {
+      "end_time": 75,
+      "description": "Her joy at the ball peaks but fades as midnight approaches.",
+      "end_emotional_score": 5,
+      "arc": "Rapid-to-Gradual Increase",
+      "descriptors": [
+        "Royal Ball.",
+        "Prince Charming."
+      ]
+    },
+    {
+      "end_time": 80,
+      "description": "The enchantment's abrupt end plunges her back into despair.",
+      "end_emotional_score": -3,
+      "arc": "Straight Decrease",
+      "descriptors": [
+        "The Stroke of Midnight.",
+        "Glass Slipper."
+      ]
+    },
+    {
+      "end_time": 100,
+      "description": "The prince's search and their reunion lift Cinderella to peak happiness.",
+      "end_emotional_score": 10,
+      "arc": "Gradual-to-Rapid Increase",
+      "descriptors": [
+        "Search for Love.",
+        "The Shoe Fits.",
+        "Happily Ever After."
+      ]
+    }
+  ]
+}
+
+A Christmas Carol Story Example:
+{
+  "title": "A Christmas Carol",
+  "protagonist": "Ebenezer Scrooge",
+  "story_components": [
+    {
+      "end_time": 0,
+      "description": "#N/A",
+      "end_emotional_score": -3,
+      "arc": "#N/A",
+      "descriptors": [
+        "#N/A"
+      ]
+    },
+    {
+      "end_time": 20,
+      "description": "Scrooge is bitter, miserly and uncaring towards others on Christmas Eve.",
+      "end_emotional_score": -3,
+      "arc": "Linear Flat",
+      "descriptors": [
+        "Bah!",
+        "Humbug!"
+      ]
+    },
+    {
+      "end_time": 30,
+      "description": "Scrooge is visited by the ghost of Jacob Marley.",
+      "end_emotional_score": -4,
+      "arc": "S-Curve Decrease",
+      "descriptors": [
+        "Marley."
+      ]
+    },
+    {
+      "end_time": 50,
+      "description": "Scrooge is forced to confront his past thanks to the Ghost of Christmas Past, causing sadness and regret.",
+      "end_emotional_score": -1,
+      "arc": "Gradual-to-Rapid Increase",
+      "descriptors": [
+        "Past.",
+        "Fezziwig.",
+        "Belle."
+      ]
+    },
+    {
+      "end_time": 65,
+      "description": "Scrooge sees joy around him with the Ghost of Christmas Present but also suffering, moving him with pity and concern.",
+      "end_emotional_score": 3,
+      "arc": "Linear Increase",
+      "descriptors": [
+        "Present.",
+        "Cratchit.",
+        "Tiny Tim.",
+        "Games."
+      ]
+    },
+    {
+      "end_time": 70,
+      "description": "Ghost of Christmas Present shows Scrooge two starved children, Ignorance and Want, living under his coat",
+      "end_emotional_score": -3,
+      "arc": "Gradual-to-Rapid Decrease",
+      "descriptors": [
+        "Ignorance.",
+        "Want."
+      ]
+    },
+    {
+      "end_time": 90,
+      "description": "Seeing his own grave, Scrooge is terrified and desperate to change his fate.",
+      "end_emotional_score": -6,
+      "arc": "S-Curve Decrease",
+      "descriptors": [
+        "Yet to Come.",
+        "Pawn Shop.",
+        "Gravestone... "
+      ]
+    },
+    {
+      "end_time": 100,
+      "description": "Scrooge wakes up overjoyed at having a second chance and keeps his promise to honor Christmas.",
+      "end_emotional_score": 9,
+      "arc": "Rapid-to-Gradual Increase",
+      "descriptors": [
+        "Awake.",
+        "Joy.",
+        "Merry Christmas!",
+        "Turkey.",
+        "Pay Raise.",
+        "Party.",
+        "God bless us, Every one!"
+      ]
+    }
+  ]
+}

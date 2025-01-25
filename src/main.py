@@ -1,0 +1,39 @@
+from story_shape import create_shape
+import json
+
+#input path should be composite data
+summaries_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries'
+story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data'
+
+create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_great_gatsby.json',
+                x_delta=0.015, #number of points in the line 
+                line_type = 'char', #values line or char
+                line_thickness = 10, #only used if line_type = line
+                line_color = '#1F4534', #only used if line_type = line
+                font_style="Cormorant Garamond", #only used if line_type set to char
+                font_size= 8, #only used if line_type set to char
+                font_color = '#1F4534', #only used if line_type set to char
+                background_type='solid', #values solid or transparent
+                background_value= '#F7E6C4', #only used if background_type = solid
+                has_title = "YES", #values YES or NO
+                title_text = "", #optinal if left blank then will use story title as default
+                title_font_style = "Cormorant Garamond", #only used if has_title = "YES"
+                title_font_size=24, #only used if has_title = "YES"
+                title_font_color = '#1F4534', #only used if has_title = "YES"
+                title_padding = 0, #extra padding in pixels between bottom and title
+                gap_above_title=20, #padding in pixels between title and story shape
+                protagonist_text = "", #if you leave blank will include protognaist name in lower right corner; can get rid of by just setting to " ", only works if has title is true
+                border=True, #True or False
+                border_thickness=60, #only applicable if border is set to True
+                border_color='#D4B682', #only applicable if border is set to True
+                width_in_inches = 6,  #design width size
+                height_in_inches = 6, #design width size
+                wrap_in_inches=1.5,  # for canvas print outs 
+                wrap_background_color = '#D4B682', #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
+                recursive_mode = True, #if you want to recurisvely generate story
+                recursive_loops = 500, #the number of iterations 
+                output_format="png") #options png or svg
+
+#notes:
+#15x15 -- font_size = 72
+

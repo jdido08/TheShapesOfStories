@@ -1,0 +1,48 @@
+Story Styling Guide Request:
+For "{STORY_TITLE}" by {AUTHOR}, please provide a visual styling guide that will work effectively both as digital art and as physical wall art.
+
+1. Color Palette:
+   Please provide hex codes and explanations for:
+
+   - Background Color that:
+     * Captures the story's primary mood and setting
+     * Works well in both digital displays and physical prints
+     * Maintains its impact under various lighting conditions
+
+   - Font Color that:
+     * Maintains strong readability against the background (minimum 4.5:1 contrast ratio)
+     * Reflects key themes or symbolic elements from the story
+     * Creates visual impact both on screens and in physical form
+
+   - Border Color that:
+     * Should be a darker shade of the background color
+     * Provides subtle depth and framing
+     * Enhances the visual composition without competing with the content
+
+2. Typography:
+   Recommend a single typeface that:
+   * Captures the story's period and emotional tone
+   * Maintains clarity at different viewing distances
+   * Reflects the story's pacing and weight
+   * Works well in flowing, curved layouts
+
+Please explain how each choice connects to specific themes, motifs, or elements from the story.
+
+Example response for The Old Man and the Sea:
+Background: #1B4B6F (Deep Sea Blue)
+- Evokes the depth of the Caribbean Sea
+- Deep enough to suggest isolation while maintaining richness in various lighting
+
+Font Color: #E2D5C3 (Weathered Bone White)
+- Contrast ratio: 7.8:1 (excellent readability)
+- References weathered fishing boats, sun-bleached bones, and Santiago's endurance
+- Maintains clarity in both digital and printed forms
+
+Border: #123247 (Darkened Sea Blue)
+- Deeper shade that frames without overwhelming
+- Creates subtle depth that enhances both digital and physical displays
+
+Font: Crimson Pro
+- Balances maritime strength with quiet dignity
+- Clean letterforms that remain legible when flowing along curves
+- Suggests traditional craftsmanship while maintaining modern clarity
