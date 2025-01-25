@@ -4,7 +4,7 @@ import tiktoken
 import json 
 import os 
 
-def analyze_story(author_name, story_title, protagonist_name, story_summary):
+def analyze_story(author_name, story_title, protagonist, story_summary):
     with open("config.yaml", 'r') as stream:
         config = yaml.safe_load(stream)
         anthropic_key = config['anthropic_key']
@@ -24,9 +24,9 @@ def analyze_story(author_name, story_title, protagonist_name, story_summary):
 {story_title}
 </story_title>
 
-<protagonist_name>
-{protagonist_name}
-</protagonist_name>
+<protagonist>
+{protagonist}
+</protagonist>
 
 <story_summary>
 {story_summary}
@@ -34,9 +34,9 @@ def analyze_story(author_name, story_title, protagonist_name, story_summary):
 
 ## Framework Overview:
 1. Story Timeline: The narrative is viewed on a scale from 0 to 100, representing the percentage of progress through the story.
-2. Story Components: The story is segmented into components defined by {protagonist_name}'s emotional journey.
+2. Story Components: The story is segmented into components defined by {protagonist}'s emotional journey.
 3. Continuity: Each story component starts where the previous one ended, ensuring a seamless emotional journey.
-4. Emotional Arcs: {protagonist_name}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
+4. Emotional Arcs: {protagonist}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
 
 
 ## Emotional Arcs
@@ -64,11 +64,11 @@ def analyze_story(author_name, story_title, protagonist_name, story_summary):
 ## Analysis Guidelines
 
 ### Analysis Steps:
-1. Understand {protagonist_name}'s starting position in the story.
+1. Understand {protagonist}'s starting position in the story.
    - Identify their initial circumstances and relationships
    - Look for early indicators of their emotional state
    - Note their primary motivations and desires
-2. Segment the story into components based on major changes in {protagonist_name}'s emotions.
+2. Segment the story into components based on major changes in {protagonist}'s emotions.
    - The number of components should be determined by the natural transitions in their emotional state
    - Most stories will naturally fall into 4-8 components, though shorter or longer stories may fall outside this range
    - Each significant change in their emotional state should mark the start of a new component
@@ -76,10 +76,10 @@ def analyze_story(author_name, story_title, protagonist_name, story_summary):
    - Components can vary in length based on the pace of emotional change
    - Avoid over-segmentation: only create new components for meaningful shifts in emotional state
 3. Identify the emotional scores of each story component.
-   - Scores must be whole numbers between -10 and +10 that reflect {protagonist_name}'s emotional state as evidenced in the story summary
+   - Scores must be whole numbers between -10 and +10 that reflect {protagonist}'s emotional state as evidenced in the story summary
    - Score changes must match the selected arc type
 4. For each story component:
-   - Identify the portion of the story summary that shows {protagonist_name}'s experience
+   - Identify the portion of the story summary that shows {protagonist}'s experience
    - Focus on events and details that reveal their emotional state
    - Note their actions, reactions, and key interactions
    - Use these details to write a description that centers on their journey
@@ -89,7 +89,7 @@ After your analysis, provide the final output in the following JSON format:
 
 {{
     "title": "Story Title",
-    "protagonist": "{protagonist_name}",
+    "protagonist": "Protagonist",
     "story_components": [
         {{
             "end_time": 0,
@@ -108,16 +108,16 @@ After your analysis, provide the final output in the following JSON format:
 
 ### Story Component Description Guidelines:
 - Each description must be derived directly from the provided story summary
-- Center the description on {protagonist_name}'s experience and perspective
-- Describe events primarily in terms of their impact on {protagonist_name}
+- Center the description on {protagonist}'s experience and perspective
+- Describe events primarily in terms of their impact on {protagonist}
 - Include their actions, reactions, and emotional responses
 - Detail settings as they relate to their experience
-- Include other characters mainly through their interaction with or impact on {protagonist_name}
+- Include other characters mainly through their interaction with or impact on {protagonist}
 - Quote or closely paraphrase passages that reveal their emotional state
 - Include sensory details that contribute to understanding their experience
 
 ### Initial Emotional Score Guidelines:
-- Carefully examine how {protagonist_name} is first presented in the story
+- Carefully examine how {protagonist} is first presented in the story
 - Look for descriptive words indicating their initial emotional state
 - Consider their starting circumstances and relationships
 
@@ -144,9 +144,9 @@ Charles Perrault
 <story_title>
 Cinderella at the Ball
 </story_title>
-<protagonist_name>
+<protagonist>
 Cinderella
-</protagonist_name>
+</protagonist>
 <story_summary>
 Heartbroken and alone after being mocked and denied attendance by her stepfamily, Cinderella weeps in the garden until her Fairy Godmother appears. Through magical transformations, she provides Cinderella with a splendid carriage, resplendent gown, and delicate glass slippers, warning her to return before midnight. At the grand royal ball, Cinderella's kindness, modesty, and radiant beauty immediately enchant the Prince, who spends the entire evening dancing with her. Each moment increases her joy, until the clock strikes midnight. She flees in panic, losing a glass slipper on the palace steps. The Prince, determined to find her, searches the kingdom with the slipper until he reaches her home. When the slipper fits perfectly, they joyfully marry, with Cinderella's inner goodness finally rewarded.
 </story_summary>
@@ -309,6 +309,7 @@ def create_story_data(input_path="", author_name="", year="", protagonist="", ou
     
     
     story_title = story_data['title']
+    print("Creating story data for ", story_title)
 
     if author_name == "":
         author_name = story_data['openlib']['author_name'][0]
@@ -366,4 +367,4 @@ def create_story_data(input_path="", author_name="", year="", protagonist="", ou
 
 
 
-#create_story_data('/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json', '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/')
+create_story_data('/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json', '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/')
