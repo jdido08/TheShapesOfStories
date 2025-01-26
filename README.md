@@ -1,3 +1,12 @@
+1/16/2025:
+- need better handling for story shape descriptors
+- explicit checks for character names
+- if len is materially off then just restart 
+- change adjust descriptors 
+
+- make character text font bigger own parameter 
+
+
 1/24/2025:
 - need to add author to story data
 - add protogonst to the story_data file name 

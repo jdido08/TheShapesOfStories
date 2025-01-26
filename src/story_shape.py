@@ -451,7 +451,6 @@ def create_shape_single_pass(story_data,
         # font_size_for_300dpi = font_size * (300 / 96)
         # font_desc = Pango.FontDescription(f"{font_style} {font_size_for_300dpi}")
         arc_sample_text = ""
-
         all_rendered_boxes = []
         status = "completed"
 
@@ -518,10 +517,19 @@ def create_shape_single_pass(story_data,
                 if target_chars < 5:
                     continue
 
-                lower_bound = target_chars - 3
-                upper_bound = target_chars + 3
+                # lower_bound = target_chars - 3
+                # upper_bound = target_chars + 3
                 #llm_target_chars = target_chars - 2
-                llm_target_chars = target_chars
+                if index == 1:
+                    llm_target_chars = target_chars
+                else:
+                    llm_target_chars = target_chars - (story_data['story_components'][index - 1]['actual_arc_text_chars'] - story_data['story_components'][index - 1]['target_arc_text_chars_with_net'] )
+                    
+                component['target_arc_text_chars_with_net'] = llm_target_chars
+                llm_bias_adjustment = (-2) #I NOTICED THAT LLM USUALLY PRODUCE LONGER CHAR OUTPUTS SO ADDING ADJUSTMENT HERE
+                llm_target_chars = llm_target_chars + llm_bias_adjustment
+                lower_bound = component['target_arc_text_chars_with_net'] - 3
+                upper_bound = component['target_arc_text_chars_with_net'] + 3
 
                 # Generate descriptors (call your GPT logic)
                 descriptors_text, chat_messages = generate_descriptors(
@@ -561,7 +569,7 @@ def create_shape_single_pass(story_data,
                             attempt += 1
 
                           
-
+                
                 component['arc_text'] = descriptors_text
                 component['actual_arc_text_chars'] = len(descriptors_text)
             
@@ -569,7 +577,9 @@ def create_shape_single_pass(story_data,
                 descriptors_text = component['arc_text']
                 component['actual_arc_text_chars'] = len(descriptors_text)
 
+
             arc_sample_text += " " + descriptors_text
+            
 
             # Draw text on curve
             curve_length_status = draw_text_on_curve(
