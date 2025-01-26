@@ -948,27 +948,34 @@ def generate_descriptors(title, author, protagonist, component_description, stor
 
 Story Segment Description: "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and optimism. His friendship with Manolin provides comfort and support, though the boy has been forced to work on another boat. His determination remains strong as he prepares for a new day of fishing, finding peace in his dreams of Africa and its lions."
 Potential Phases: "84 Days. No Fish. Unlucky. Optimist. Manolin Friendship. Preps for Fishing. Dreams of Africa."
+Example 37-character OUTPUT: "84 Days. No Fish. Manolin Friendship."
 
 Story Segment Description: "Gatsby stands alone in his garden, reaching out towards the green light across the bay, embodying his yearning for Daisy. His elaborate mansion and lavish parties serve as carefully orchestrated attempts to attract her attention, revealing both his hope and desperation. When he finally arranges to meet Nick, his neighbor and Daisy's cousin, Gatsby's carefully constructed facade begins to show cracks of vulnerability as he seeks a way to reconnect with his lost love"
 Potential Phases: "Alone in Garden. Green Light. Yearning for Daisy. Lost Love."
+Example 32-character OUTPUT: "Green Light. Yearning for Daisy."
 
 Story Segment Description: "During the prolonged struggle with the marlin, Santiago endures physical pain and isolation, his hand cramping and cuts deepening. Yet his determination never wavers, drawing strength from memories of his past triumphs. He develops a profound respect for the marlin, calling it his brother while maintaining his resolve to prevail."
 Potential Phases: "Struggle with Marlin. Pain. Hand Camps. Deep Cuts. Respect for Marlin. Brother. Unwavering Resolve."
+Example 82-character OUTPUT: "Struggle with Marlin. Hand Camps. Deep Cuts. Respect. Brother. Unwavering Resolve."
 
 Story Segment Description: "Juliet awakens to find Romeo dead beside her, having poisoned himself in the belief she was dead. In her final moments, she experiences complete despair, attempting to die by kissing his poisoned lips before ultimately using his dagger to join him in death, unable to conceive of life without him.
 Potential Phases: "Awake. Romeo Dead. Despair. Kisses Poisoned Lips. Suicide by Dagger. Reunited in Death."
+Example 8-character OUTPUT: "Suicide."
 
 Story Segment Description: "The death of his beloved friend Patroclos shatters Achilles's world, transforming his anger at Agamemnon into consuming grief and rage against Hector. His emotional state plummets as he learns of Patroclos's death and the loss of his armor, driving him to a state of vengeful fury."
 Potential Phases: "Patroclos Dies. Grief. Rage for Hector. Vengeful Fury."
+Example 21-character OUTPUT: "Patroclos Dies. Rage."
 
 Story Segment Description: "Gatsby's world crumbles during the confrontation at the Plaza Hotel. His desperate attempt to claim Daisy fails as she cannot deny her love for Tom, shattering his dream of recreating the past. His devotion to Daisy remains unchanged even after the accident with Myrtle, as he takes the blame and stands watch outside her house, clinging to the last remnants of his fantasy despite its obvious collapse."
 Potential Phases: "Plaza Hotel. Daisy Loves Tom. Shattered Dream. Stand Watch Outside. Clings to Fantasy."
+Example 48-character OUTPUT: "Plaza Hotel. Daisy Chooses Tom. Myrtle Accident."
 
 Story Segment Description: "Gatsby's tragic end comes as he waits faithfully for a call from Daisy that never arrives, still believing in the possibility of their future together. His death at Wilson's hands is made more poignant by Daisy's complete absence - she doesn't even send flowers to his funeral. The empty funeral, attended only by Nick, Gatsby's father, and one former party guest, serves as the final testament to the hollow nature of Gatsby's dream and the society he tried to join."
 Potential Phases: "Waits for Call. Daisy Never Arrives. Killed by Wilson. No Flowers. Empty Funeral."
+Example 66-character OUTPUT: "Waits for Daisy Call. Killed by Wilson. No Flowers. Empty Funeral."
 
 Note about Examples:
-The Potential Phases shown are just examples of phrases for the given Story Segment Description. The actual output will be determined by LENGTH requirement. 
+The Potential Phases shown are just examples of phrases for the given Story Segment Description. The actual output will be determined by exact character LENGTH requirement as demonstrated by the example outputs. . 
 
 
 
