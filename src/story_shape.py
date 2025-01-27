@@ -526,7 +526,7 @@ def create_shape_single_pass(story_data,
                     llm_target_chars = target_chars - (story_data['story_components'][index - 1]['actual_arc_text_chars'] - story_data['story_components'][index - 1]['target_arc_text_chars_with_net'] )
                     
                 component['target_arc_text_chars_with_net'] = llm_target_chars
-                llm_bias_adjustment = (-2) #I NOTICED THAT LLM USUALLY PRODUCE LONGER CHAR OUTPUTS SO ADDING ADJUSTMENT HERE
+                llm_bias_adjustment = (-4) #I NOTICED THAT LLM USUALLY PRODUCE LONGER CHAR OUTPUTS SO ADDING ADJUSTMENT HERE
                 llm_target_chars = llm_target_chars + llm_bias_adjustment
                 lower_bound = component['target_arc_text_chars_with_net'] - 3
                 upper_bound = component['target_arc_text_chars_with_net'] + 3

@@ -1,8 +1,13 @@
 1/16/2025:
 - need better handling for story shape descriptors
-- explicit checks for character names
-- if len is materially off then just restart 
+- 
+
 - change adjust descriptors 
+- ideas for story segment descriptors:
+    - net char adjuster
+    - llm bias adjustment 
+    - explicit checks for character names
+    - if len is materially off then just restart 
 
 - make character text font bigger own parameter 
 

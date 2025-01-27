@@ -6,7 +6,7 @@ import json
 summaries_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries'
 story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data'
 
-create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/romeo_and_juliet_romeo.json',
+create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/romeo_and_juliet_juliet.json',
                 x_delta=0.015, #number of points in the line 
                 line_type = 'char', #values line or char
                 line_thickness = 10, #only used if line_type = line
