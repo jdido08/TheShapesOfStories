@@ -24,20 +24,6 @@ from gi.repository import Pango, PangoCairo
 import anthropic
 import yaml
 
-# Load config and create client
-with open("config.yaml", 'r') as stream:
-    config = yaml.safe_load(stream)
-    anthropic_key = config['anthropic_key']
-
-client = anthropic.Anthropic(
-    api_key=anthropic_key,
-)
-
-# # Load API key from config
-# with open("config.yaml", 'r') as stream:
-#     config = yaml.safe_load(stream)
-#     OPENAI_KEY = config['openai_key_vonnegutgraphs']
-#     client = OpenAI(api_key=OPENAI_KEY)
 
 def create_shape(story_data_path,
                 x_delta = 0.015,
@@ -517,13 +503,22 @@ def create_shape_single_pass(story_data,
             arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled)
 
             # If arc_text not generated yet, do so
-            if 'arc_text' not in component:
 
-                #calculate target chars based on estimate of the number of chars that could fit in arc segment
-                average_char_width = get_average_char_width(pangocairo_context, font_desc, arc_sample_text)
-                average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled)
-                target_chars = estimate_characters_fit(arc_length, average_char_width, average_rotation_angle)
-                component['target_arc_text_chars'] = target_chars
+            create_descriptor = True
+            if 'arc_text_valid' in component:
+                if component['arc_text_valid'] == True:
+                    create_descriptor = False
+                
+            if create_descriptor:
+
+                if 'target_arc_text_chars' not in component:
+                    #calculate target chars based on estimate of the number of chars that could fit in arc segment
+                    average_char_width = get_average_char_width(pangocairo_context, font_desc, arc_sample_text)
+                    average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled)
+                    target_chars = estimate_characters_fit(arc_length, average_char_width, average_rotation_angle)
+                    component['target_arc_text_chars'] = target_chars
+                else:
+                    target_chars = component['target_arc_text_chars']
 
                 if target_chars < 5:
                     continue
@@ -532,14 +527,20 @@ def create_shape_single_pass(story_data,
                     llm_target_chars = target_chars #set llm_target_chars to target chars because there's no net calc needed at this point
                 else: #calc llm_target_chars considering net
                     llm_target_chars = target_chars - (story_data['story_components'][index - 1]['actual_arc_text_chars'] - story_data['story_components'][index - 1]['target_arc_text_chars_with_net'] )
-                    
-                component['target_arc_text_chars_with_net'] = llm_target_chars #save net target in story data dict so it can be referenced in future 
                 
-                #update llm target chars with bias 
-                llm_bias_adjustment = (-4) #I NOTICED THAT LLM USUALLY PRODUCE LONGER CHAR OUTPUTS SO ADDING ADJUSTMENT HERE
-                llm_target_chars = llm_target_chars + llm_bias_adjustment
-                lower_bound = component['target_arc_text_chars_with_net'] - 3
-                upper_bound = component['target_arc_text_chars_with_net'] + 3
+                
+                if 'arc_text_valid_message' in component:
+                    if component['arc_text_valid_message'] == "curve too long but can't change due to constraints":
+                        target_chars = target_chars + 3
+                        llm_target_chars = target_chars
+                    elif component['arc_text_valid_message'] == "curve too short but can't change due to constraints":
+                        target_chars = target_chars - 3
+                        llm_target_chars = target_chars
+                
+                component['target_arc_text_chars_with_net'] = llm_target_chars #save net target in story data dict so it can be referenced in future 
+                lower_bound = llm_target_chars - 3
+                upper_bound = llm_target_chars + 3
+                
 
                 # Generate descriptors 
                 descriptors_valid = False 
@@ -575,7 +576,7 @@ def create_shape_single_pass(story_data,
                     if descriptors_valid == True:
                          print("#", reasonable_descriptiors_attempts,".) Descriptors Valid: ", descriptors_text, "(",actual_chars,"/",str(upper_bound-3),") -- LLM Char Target: ", llm_target_chars )
                     else:
-                        print("#", reasonable_descriptiors_attempts,".) Descriptors NOT Valid: ", descriptors_text, " Error: ",  descriptor_error_message)
+                        print("#", reasonable_descriptiors_attempts,".) Descriptors NOT Valid: ", descriptors_text, "Target Chars: ", llm_target_chars, " Error: ",  descriptor_error_message)
 
                         if (actual_chars - target_chars) > 50:
                             llm_target_chars = llm_target_chars - random.randint(20, 30) #if descriptors not even close > 10 chars away
@@ -628,6 +629,11 @@ def create_shape_single_pass(story_data,
                 x_og = x_og[sorted_indices]
                 y_og = y_og[sorted_indices]
 
+                # Check that we have at least two points before proceeding with CubicSpline
+                if len(x_og) < 2:
+                    print("CALLING TO SEE IF THERE'S LESS THAN 2 before removing dups")
+                    print("original_arc_end_time_values: ", original_arc_end_time_values)
+
                 # Remove duplicates
                 tolerance = 1e-12
                 unique_indices = [0]
@@ -636,6 +642,14 @@ def create_shape_single_pass(story_data,
                         unique_indices.append(i)
                 x_og = x_og[unique_indices]
                 y_og = y_og[unique_indices]
+
+                # Check that we have at least two points before proceeding with CubicSpline
+                if len(x_og) < 2:
+                    print("Not enough points for cubic spline adjustment; skipping cubic spline update.")
+                    print("X_og: ", x_og)
+                    # You can decide to either return an error status, skip the adjustment, or use a fallback
+                    # For instance, set the status to "error" or simply continue:
+                    return story_data, "error"  # or handle it in another way
 
                 #print("X: ", x_og)
                 cs = CubicSpline(x_og, y_og, extrapolate=True)
@@ -672,27 +686,32 @@ def create_shape_single_pass(story_data,
                         surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 
-                #we hit y max / min and need to extend x
-                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
+                # #we hit y max / min and need to extend x
+                # elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
                     
-                    new_y = y_og[-1]
-                    component['modified_end_time'] = new_x
-                    component['modified_end_emotional_score'] = new_y
+                #     new_y = y_og[-1]
+                #     component['modified_end_time'] = new_x
+                #     component['modified_end_emotional_score'] = new_y
 
-                    if output_format == "svg":
-                        surface.flush()   # flush the partial drawing, but do *not* finalize!
-                    else:
-                        surface.write_to_png(story_shape_path)
-                    return story_data, "processing"
+                #     if output_format == "svg":
+                #         surface.flush()   # flush the partial drawing, but do *not* finalize!
+                #     else:
+                #         surface.write_to_png(story_shape_path)
+                #     return story_data, "processing"
                 
-                else:
+                else: #this means: "curve too short but can't change due to constraints"
+                    #so we actually want less chars than we initially thought
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
                    
-                    status = "curve too short but can't change due to constraints"
-                    print(status)
+                    component['arc_text_valid'] = False
+                    component['arc_text_valid_message'] = "curve too short but can't change due to constraints"
+                    print("curve too short but can't change due to constraints")
+                    #status = "curve too short but can't change due to constraints"
+                    return story_data, "processing"
+
 
             #curve is too long so need to shorten it
             elif curve_length_status == "curve_too_long":
@@ -723,7 +742,7 @@ def create_shape_single_pass(story_data,
                         surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 
-                #cant touch x 
+                #cant touch x -- maybe want to remove
                 elif ((original_arc_end_time_values[-1] == old_min_x or original_arc_end_time_values[-1] == old_max_x)
                     and original_arc_end_emotional_score_values[-1] > old_min_y
                     and original_arc_end_emotional_score_values[-1] < old_max_y
@@ -740,29 +759,36 @@ def create_shape_single_pass(story_data,
                         surface.write_to_png(story_shape_path)
                     return story_data, "processing"
                 
-                #cant touch y
-                elif ((original_arc_end_emotional_score_values[-1] == old_min_y or original_arc_end_emotional_score_values[-1] == old_max_y)
-                    and original_arc_end_time_values[-1] > old_min_x 
-                    and original_arc_end_time_values[-1] < old_max_x
-                    and len(component['arc_x_values']) > 1 and recursive_mode
-                    and original_arc_end_time_index_length >= 0):
+                # #cant touch y
+                # elif ((original_arc_end_emotional_score_values[-1] == old_min_y or original_arc_end_emotional_score_values[-1] == old_max_y)
+                #     and original_arc_end_time_values[-1] > old_min_x 
+                #     and original_arc_end_time_values[-1] < old_max_x
+                #     and len(component['arc_x_values']) > 1 and recursive_mode
+                #     and original_arc_end_time_index_length >= 0):
 
-                    #print("hey")
-                    component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
-                    component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
+                #     #print("hey")
+                #     print("modifying end time")
+                #     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
+                #     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
 
+                #     if output_format == "svg":
+                #         surface.flush()   # flush the partial drawing, but do *not* finalize!
+                #     else:
+                #         surface.write_to_png(story_shape_path)
+                #     return story_data, "processing"
+
+                else: # this means: curve too long but can't change due to constraints
+                    # so we want more chars than we initially thought so let's up the number of chars
+                    # so we need recalc descriptors and ask for longer 
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+
+                    component['arc_text_valid'] = False
+                    component['arc_text_valid_message'] = "curve too long but can't change due to constraints"
+                    print("curve too long but can't change due to constraints")
                     return story_data, "processing"
-
-                else:
-                    if output_format == "svg":
-                        surface.flush()   # flush the partial drawing, but do *not* finalize!
-                    else:
-                        surface.write_to_png(story_shape_path)
-                    status = "curve too long but can't change due to constraints"
 
             elif curve_length_status == "curve_correct_length":
                 if output_format == "svg":
@@ -1793,6 +1819,7 @@ def hex_to_rgb(hex_color):
     
     return (r, g, b)
 
+
 def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound):
     """
     Validates descriptor text against all requirements.
@@ -1800,7 +1827,6 @@ def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound
     Args:
         descriptors_text (str): The descriptor text to validate
         protagonist (str): Name of the protagonist to check against
-        story_segment (str): The original story segment text
         desired_length (int): Target character count
         lower_bound (int): Minimum acceptable character count
         upper_bound (int): Maximum acceptable character count
@@ -1836,8 +1862,14 @@ def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound
         'in', 'of', 'to', 'for', 'with', 'by', 'at', 'on', 'from',
     }
 
-    # 5. Phrase Format Checks
-    phrases = descriptors_text.split('. ')
+    # 5. Split into phrases and check format
+    # Changed to handle the last period correctly
+    if descriptors_text.endswith('. '):
+        return False, "Text should not end with period and space"
+        
+    # Remove the final period for splitting
+    text_without_final_period = descriptors_text[:-1]
+    phrases = text_without_final_period.split('. ')
     
     for i, phrase in enumerate(phrases):
         # Empty phrase check
@@ -1869,12 +1901,10 @@ def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound
                     if not word[0].isupper():
                         return False, f"Word '{word}' should be capitalized"
 
-        # Check period spacing
-        if i < len(phrases) - 1:  # Not last phrase
-            if not phrase.endswith(' '):
-                return False, "Phrases (except last) must end with '. '"
-        else:  # Last phrase
-            if phrase.endswith(' '):
-                return False, "Last phrase should end with '.' not '. '"
+    # Check that all phrases except the last end with '. '
+    reconstructed_text = descriptors_text[:-1]  # Remove final period
+    expected_text = '. '.join(phrases) + '.'
+    if reconstructed_text != expected_text[:-1]:
+        return False, "Incorrect phrase separation format"
 
     return True, "Valid"
