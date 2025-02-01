@@ -1,3 +1,8 @@
+1/31/2025:
+- add arc validation check 
+
+
+
 1/16/2025:
 - need better handling for story shape descriptors
 - 

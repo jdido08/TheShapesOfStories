@@ -14,6 +14,7 @@ import copy
 from scipy.interpolate import CubicSpline
 import json
 import os
+import random 
 
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
@@ -165,7 +166,7 @@ def create_shape(story_data_path,
             print(count)
 
         count = count + 1
-        if status == "completed":
+        if status == "completed" or status == "error":
             story_data['status'] = status
             break
         #print(story_data['story_components'][1]['modified_end_time'])
@@ -541,11 +542,11 @@ def create_shape_single_pass(story_data,
                 upper_bound = component['target_arc_text_chars_with_net'] + 3
 
                 # Generate descriptors 
-                reasonable_descriptiors_length = False 
+                descriptors_valid = False 
                 reasonable_descriptiors_attempts = 1
 
                 #generate descriptors 
-                while reasonable_descriptiors_length == False and reasonable_descriptiors_attempts <= 4:
+                while descriptors_valid == False and reasonable_descriptiors_attempts <= 4:
                     descriptors_text = generate_descriptors(
                         title=story_data['title'],
                         author=story_data['author'],
@@ -557,35 +558,47 @@ def create_shape_single_pass(story_data,
                         llm_model=llm_model
                     )
 
+                    descriptors_valid, descriptor_error_message = validate_descriptors(
+                        descriptors_text=descriptors_text,
+                        protagonist=story_data['protagonist'],
+                        lower_bound=lower_bound,
+                        upper_bound=upper_bound
+                    )
+
+                    component['arc_text'] = descriptors_text
+                    component['actual_arc_text_chars'] = len(descriptors_text)
+                    component['arc_text_valid'] = descriptors_valid
+                    component['arc_text_valid_message'] = descriptor_error_message
+
                     actual_chars = len(descriptors_text)
-                    print("DESCRIPTORS ", "#", reasonable_descriptiors_attempts," :", descriptors_text, "(",actual_chars,"/",str(upper_bound-3),") -- LLM Char Target: ", llm_target_chars )
 
+                    if descriptors_valid == True:
+                         print("#", reasonable_descriptiors_attempts,".) Descriptors Valid: ", descriptors_text, "(",actual_chars,"/",str(upper_bound-3),") -- LLM Char Target: ", llm_target_chars )
+                    else:
+                        print("#", reasonable_descriptiors_attempts,".) Descriptors NOT Valid: ", descriptors_text, " Error: ",  descriptor_error_message)
 
-                    if lower_bound <= actual_chars <= upper_bound:
-                         reasonable_descriptiors_length = True
-                    elif (actual_chars - target_chars) > 50:
-                        llm_target_chars = llm_target_chars - 25 #if descriptors not even close > 10 chars away
-                    elif (actual_chars - target_chars) > 20 and (actual_chars - target_chars) <= 50:
-                        llm_target_chars = llm_target_chars - 15 #if descriptors not even close > 10 chars away
-                    elif (actual_chars - target_chars) > 10 and (actual_chars - target_chars) <= 20:
-                        llm_target_chars = llm_target_chars - 7 #if descriptors not even close > 10 chars away
-                    elif (actual_chars - target_chars) > 5 and (actual_chars - target_chars) <= 10:
-                        llm_target_chars = llm_target_chars - 3 #if descriptors not even close > 10 chars away
-                    elif (actual_chars - target_chars) > 0 and (actual_chars - target_chars) <= 5:
-                        llm_target_chars = llm_target_chars - 2 #if descriptors not even close > 10 chars away
-                    elif (actual_chars - target_chars) < 0 and (actual_chars - target_chars) >= -5:
-                        llm_target_chars = llm_target_chars + 2
-                    elif (actual_chars - target_chars) < -5 and (actual_chars - target_chars) >= -10:
-                        llm_target_chars = llm_target_chars + 4
-                    elif (actual_chars - target_chars) < -10:
-                        llm_target_chars = llm_target_chars + 4
+                        if (actual_chars - target_chars) > 50:
+                            llm_target_chars = llm_target_chars - random.randint(20, 30) #if descriptors not even close > 10 chars away
+                        elif (actual_chars - target_chars) > 20 and (actual_chars - target_chars) <= 50:
+                            llm_target_chars = llm_target_chars - random.randint(13, 17) #if descriptors not even close > 10 chars away
+                        elif (actual_chars - target_chars) > 10 and (actual_chars - target_chars) <= 20:
+                            llm_target_chars = llm_target_chars - random.randint(4, 9) #if descriptors not even close > 10 chars away
+                        elif (actual_chars - target_chars) > 5 and (actual_chars - target_chars) <= 10:
+                            llm_target_chars = llm_target_chars - random.randint(3, 5) #if descriptors not even close > 10 chars away
+                        elif (actual_chars - target_chars) > 0 and (actual_chars - target_chars) <= 5:
+                            llm_target_chars = llm_target_chars - random.randint(1, 2) #if descriptors not even close > 10 chars away
+                        elif (actual_chars - target_chars) < 0 and (actual_chars - target_chars) >= -5:
+                            llm_target_chars = llm_target_chars + random.randint(1, 2)
+                        elif (actual_chars - target_chars) < -5 and (actual_chars - target_chars) >= -10:
+                            llm_target_chars = llm_target_chars + random.randint(3, 4)
+                        elif (actual_chars - target_chars) < -10:
+                            llm_target_chars = llm_target_chars + random.randint(4, 5)
                     
                     reasonable_descriptiors_attempts = reasonable_descriptiors_attempts + 1
 
-
-                component['arc_text'] = descriptors_text
-                component['actual_arc_text_chars'] = len(descriptors_text)
-            
+                if descriptors_valid == False:
+                    return story_data, "error"
+                
             else:
                 descriptors_text = component['arc_text']
                 component['actual_arc_text_chars'] = len(descriptors_text)
@@ -624,7 +637,7 @@ def create_shape_single_pass(story_data,
                 x_og = x_og[unique_indices]
                 y_og = y_og[unique_indices]
 
-                print("X: ", x_og)
+                #print("X: ", x_og)
                 cs = CubicSpline(x_og, y_og, extrapolate=True)
                 new_x = x_og[-1] + (x_og[1] - x_og[0])
                 new_y = float(cs(new_x))
@@ -1073,6 +1086,7 @@ Respond with ONLY the descriptor text, exactly {desired_length} characters. No e
     
     output_text = output_text.strip()
     return output_text
+
 
 def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
     total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
@@ -1779,3 +1793,88 @@ def hex_to_rgb(hex_color):
     
     return (r, g, b)
 
+def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound):
+    """
+    Validates descriptor text against all requirements.
+    
+    Args:
+        descriptors_text (str): The descriptor text to validate
+        protagonist (str): Name of the protagonist to check against
+        story_segment (str): The original story segment text
+        desired_length (int): Target character count
+        lower_bound (int): Minimum acceptable character count
+        upper_bound (int): Maximum acceptable character count
+    
+    Returns:
+        tuple: (bool, str) - (is_valid, error_message)
+    """
+    # 1. Length Check
+    actual_length = len(descriptors_text)
+    if not (lower_bound <= actual_length <= upper_bound):
+        return False, f"Length {actual_length} outside bounds {lower_bound}-{upper_bound}"
+
+    # 2. Basic Format Checks
+    if not descriptors_text[0].isupper():
+        return False, "First character must be capitalized"
+    
+    if not descriptors_text.endswith('.'):
+        return False, "Must end with period"
+    
+    # 3. Protagonist Name Check
+    if protagonist.lower() in descriptors_text.lower():
+        return False, f"Contains protagonist name '{protagonist}'"
+
+    # 4. Define minor words that shouldn't be capitalized (unless first word in phrase)
+    minor_words = {
+        # Articles
+        'a', 'an', 'the',
+        
+        # Common Conjunctions
+        'and', 'but', 'or', 'nor',
+        
+        # Common Prepositions
+        'in', 'of', 'to', 'for', 'with', 'by', 'at', 'on', 'from',
+    }
+
+    # 5. Phrase Format Checks
+    phrases = descriptors_text.split('. ')
+    
+    for i, phrase in enumerate(phrases):
+        # Empty phrase check
+        if not phrase:
+            return False, "Contains empty phrase"
+            
+        # Check capitalization and word count for each phrase
+        words = phrase.split()
+        if not words:
+            return False, "Contains phrase without words"
+        
+        # Word count check
+        if len(words) > 4:
+            return False, f"Phrase '{phrase}' has more than 4 words"
+        if len(words) < 1:
+            return False, f"Phrase '{phrase}' has no words"
+            
+        # First word must always be capitalized regardless of whether it's a minor word
+        if not words[0][0].isupper():
+            return False, f"First word of phrase '{phrase}' must be capitalized"
+        
+        # Check other words (not first word)
+        for word in words[1:]:
+            if len(word) > 0:
+                if word.lower() in minor_words:
+                    if word[0].isupper():
+                        return False, f"Minor word '{word}' should not be capitalized unless it's the first word"
+                else:
+                    if not word[0].isupper():
+                        return False, f"Word '{word}' should be capitalized"
+
+        # Check period spacing
+        if i < len(phrases) - 1:  # Not last phrase
+            if not phrase.endswith(' '):
+                return False, "Phrases (except last) must end with '. '"
+        else:  # Last phrase
+            if phrase.endswith(' '):
+                return False, "Last phrase should end with '.' not '. '"
+
+    return True, "Valid"
