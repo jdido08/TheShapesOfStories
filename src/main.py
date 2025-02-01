@@ -1,12 +1,12 @@
 from story_shape import create_shape
-from story_data import create_story_data
+#from story_data import create_story_data
 import json
 
 #input path should be composite data
 summaries_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries'
 story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data'
 
-create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/romeo_and_juliet_juliet.json',
+create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/romeo_and_juliet_romeo.json',
                 x_delta=0.015, #number of points in the line 
                 line_type = 'char', #values line or char
                 line_thickness = 10, #only used if line_type = line
@@ -32,7 +32,9 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 wrap_in_inches=1.5,  # for canvas print outs 
                 wrap_background_color = '#D4B682', #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
                 recursive_mode = True, #if you want to recurisvely generate story
-                recursive_loops = 500, #the number of iterations 
+                recursive_loops = 100, #the number of iterations 
+                llm_provider = "anthropic", #for generating descriptors
+                llm_model = "claude-3-5-sonnet-latest", #for generating descriptors 
                 output_format="png") #options png or svg
 
 # #notes:
@@ -40,10 +42,12 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
 
 
 
-#for running one off - remember to comment out when not using 
+# #for running one off - remember to comment out when not using 
 # create_story_data(
 #     input_path='//Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/romeo_and_juliet_composite_data.json',
 #     author = "William Shakespeare",
 #     year = "1597",
 #     protagonist="Romeo",
-#     output_path= '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/')
+#     output_path= '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/',
+#     llm_provider="anthropic", #options: anthropic, openai
+#     llm_model="o3-mini") #options: claude-3-5-sonnet-latest, gpt-4o, o3-mini

@@ -1,20 +1,16 @@
-import anthropic
+from llm import load_config, get_llm, extract_json
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
 import yaml
 import tiktoken
 import json 
 import os 
 
-def analyze_story(author_name, story_title, protagonist, story_summary):
-    with open("config.yaml", 'r') as stream:
-        config = yaml.safe_load(stream)
-        anthropic_key = config['anthropic_key']
-
-    client = anthropic.Anthropic(
-        api_key=anthropic_key,
-    )
+def analyze_story(author_name, story_title, protagonist, story_summary, llm_provider, llm_model):
+    
 
     # The user_message includes placeholders that will be replaced by the function arguments
-    user_message = f"""You are a world-class literary scholar and expert in story analysis. Your task is to analyze a story through the emotional journey of {protagonist}. Please carefully read and analyze the following story summary:
+    prompt_template = """You are a world-class literary scholar and expert in story analysis. Your task is to analyze a story through the emotional journey of {protagonist}. Please carefully read and analyze the following story summary:
 
 <author_name>
 {author_name}
@@ -87,24 +83,24 @@ def analyze_story(author_name, story_title, protagonist, story_summary):
 
 After your analysis, provide the final output in the following JSON format:
 
-{{
+{{{{
     "title": "Story Title",
     "protagonist": "Protagonist",
     "story_components": [
-        {{
+        {{{{
             "end_time": 0,
             "description": "#N/A",
             "end_emotional_score": initial_score,
             "arc": "#N/A"
-        }},
-        {{
+        }}}},
+        {{{{
             "end_time": percentage,
             "description": "Detailed description of events in this component",
             "end_emotional_score": score,
             "arc": "Arc Type"
-        }},
+        }}}},
     ]
-}}
+}}}}
 
 ### Story Component Description Guidelines:
 - Each description must be derived directly from the provided story summary
@@ -134,9 +130,11 @@ After your analysis, provide the final output in the following JSON format:
 - Double-check your analysis for accuracy and internal consistency before providing the final JSON output.
 
 Please proceed with your analysis and provide the JSON output. ONLY respond with the JSON and nothing else.
-"""
 
-    examples_section = """
+____________________
+
+EXAMPLE:
+
 <example>
 <author_name>
 Charles Perrault
@@ -151,42 +149,42 @@ Cinderella
 Heartbroken and alone after being mocked and denied attendance by her stepfamily, Cinderella weeps in the garden until her Fairy Godmother appears. Through magical transformations, she provides Cinderella with a splendid carriage, resplendent gown, and delicate glass slippers, warning her to return before midnight. At the grand royal ball, Cinderella's kindness, modesty, and radiant beauty immediately enchant the Prince, who spends the entire evening dancing with her. Each moment increases her joy, until the clock strikes midnight. She flees in panic, losing a glass slipper on the palace steps. The Prince, determined to find her, searches the kingdom with the slipper until he reaches her home. When the slipper fits perfectly, they joyfully marry, with Cinderella's inner goodness finally rewarded.
 </story_summary>
 <ideal_output>
-{
+{{{{
     "title": "Cinderella at the Ball",
     "protagonist": "Cinderella",
     "story_components": [
-        {
+        {{{{
             "end_time": 0,
             "description": "#N/A",
             "end_emotional_score": -5,
             "arc": "#N/A"
-        },
-        {
+        }}}},
+        {{{{
             "end_time": 30,
             "description": "Cinderella weeps alone in the garden, heartbroken after her stepfamily mocks her desires and denies her chance to attend the ball. Her despair turns to wonder when her Fairy Godmother appears, transforming her circumstances through magical gifts: her pumpkin becomes a splendid carriage, mice become horses, and she receives a resplendent gown with glass slippers. Despite her rising hopes, she must bear the weight of the midnight deadline.",
             "end_emotional_score": 2,
             "arc": "Step-by-Step Increase"
-        },
-        {
+        }}}},
+        {{{{
             "end_time": 60,
             "description": "Cinderella experiences a profound transformation as she arrives at the grand ball. Her kindness and radiant beauty draw the Prince's attention, and she finds herself, for the first time, being treated with admiration and respect. As she dances with the Prince throughout the evening, each moment fills her with increasing joy and wonder, allowing her to momentarily forget her life of servitude.",
             "end_emotional_score": 8,
             "arc": "Gradual-to-Rapid Increase"
-        },
-        {
+        }}}},
+        {{{{
             "end_time": 75,
             "description": "Cinderella's magical evening shatters as the clock strikes midnight. Panic overtakes her as she flees the palace, losing a glass slipper in her desperate rush to escape. Her brief taste of happiness ends abruptly as she races to prevent the revelation of her true identity, watching her transformed world revert to its ordinary state.",
             "end_emotional_score": -3,
             "arc": "Straight Decrease"
-        },
-        {
+        }}}},
+        {{{{
             "end_time": 100,
             "description": "Cinderella's hopes revive when the Prince begins searching for her with the glass slipper. Her moment of triumph arrives when she steps forward in her home to try on the slipper, and it fits perfectly. Her patient endurance is finally rewarded as she marries the Prince, rising from her life of servitude to find happiness, maintaining her gracious nature by forgiving her stepfamily.",
             "end_emotional_score": 10,
             "arc": "Gradual-to-Rapid Increase"
-        }
+        }}}}
     ]
-}
+}}}}
 </ideal_output>
 </example>
 
@@ -196,52 +194,41 @@ The descriptions in the example output demonstrate the minimum expected level of
 - Include concrete details that reveal the protagonist's state of mind
 - Use language that reflects the protagonist's perspective
 - Capture interactions primarily through their impact on the protagonist
+
 """
-
-    copy_and_paste = f"""
-    {user_message}
-
-    EXAMPLE:
-    {examples_section}
-
-    """
-
-    #print(copy_and_paste)
-
-    # Make the API call
-    message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=8192,
-        temperature=0.3,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": user_message
-                    },
-                    {
-                        "type": "text",
-                        "text": examples_section
-                    }
-                ]
-            },
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "<json_output></json_output>"
-                    }
-                ]
-            }
-        ]
+    prompt = PromptTemplate(
+        input_variables=["author_name", "story_title", "protagonist", "story_summary"],  # Define the expected inputs
+        template=prompt_template
     )
 
-    #return json 
-    return message.content[0].text
 
+    config = load_config()
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=8192)
+
+    # Instead of building an LLMChain, use the pipe operator:
+    runnable = prompt | llm
+
+    # Then invoke with the required inputs:
+    output = runnable.invoke({
+        "author_name": author_name,
+        "story_title": story_title,
+        "protagonist": protagonist,
+        "story_summary": story_summary,
+    })
+
+    print(output)
+
+    # If the output is an object with a 'content' attribute, extract it.
+    if hasattr(output, "content"):
+        output_text = output.content
+    else:
+        output_text = output
+
+    #attempt to extact json (if needed)
+    output_text = extract_json(output_text)
+
+
+    return output_text
 
 
 
@@ -300,7 +287,8 @@ def num_tokens_from_string(string: str, model: str) -> int:
     return num_tokens
 
 
-def create_story_data(input_path="", author="", year="", protagonist="", output_path=""):
+def create_story_data(input_path="", author="", year="", protagonist="", output_path="", 
+                      llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
 
     with open(input_path, 'r', encoding='utf-8') as file:
         story_data = json.load(file)
@@ -333,7 +321,8 @@ def create_story_data(input_path="", author="", year="", protagonist="", output_
                 story_summary_source = summary_source
     
     #print(story_summary_source)
-    story_plot_data = analyze_story(author, story_title, protagonist, story_summary)
+    story_plot_data = analyze_story(author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
+                                    llm_provider=llm_provider,llm_model=llm_model)
     story_plot_data = json.loads(story_plot_data)
     story_validity = validate_story_arcs(story_plot_data)
     story_plot_data["type"] = "book"
@@ -342,6 +331,7 @@ def create_story_data(input_path="", author="", year="", protagonist="", output_
     story_plot_data['summary'] = story_summary
     story_plot_data['story_summary_source'] = story_summary_source
     story_plot_data['shape_validity'] = story_validity
+    story_plot_data['story_data_llm'] = llm_model
    
 
     for component in story_plot_data["story_components"]:

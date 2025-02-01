@@ -6,9 +6,10 @@ import math
 from shapely.geometry import Polygon
 from shapely.affinity import rotate as shapely_rotate
 import shapely.affinity
-import openai  # For LLM interactions
+from llm import load_config, get_llm, extract_json
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
 import yaml
-from openai import OpenAI
 import copy
 from scipy.interpolate import CubicSpline
 import json
@@ -64,6 +65,8 @@ def create_shape(story_data_path,
                 wrap_background_color = (0,0,0),
                 recursive_mode = True,
                 recursive_loops = 500,
+                llm_provider = "anthropic",
+                llm_model = "claude-3-5-sonnet-latest",
                 output_format="png"):
     
 
@@ -153,6 +156,8 @@ def create_shape(story_data_path,
                     wrap_background_color = wrap_background_color,
                     story_shape_path=story_shape_path,
                     recursive_mode=recursive_mode,
+                    llm_provider = llm_provider,
+                    llm_model = llm_model,
                     output_format = output_format)
 
         #print(count, " .) ", status)
@@ -190,6 +195,7 @@ def create_shape(story_data_path,
     story_data['background_color'] = background_value
     story_data['border_thickness'] = border_thickness
     story_data['border_color'] = border_color
+    story_data['arc_text_llm'] = llm_model
     new_title = story_data['title'].lower().replace(' ', '_')
     new_size = f'{width_in_inches}x{height_in_inches}'
     new_protagonist = story_data['protagonist'].lower().replace(' ', '_')
@@ -223,6 +229,8 @@ def create_shape_single_pass(story_data,
                 wrap_background_color = (0,0,0),
                 story_shape_path = "test",
                 recursive_mode = True,
+                llm_provider = "anthropic",
+                llm_model = "claude-3-5-sonnet-latest",
                 output_format = "png"):
     
     """
@@ -509,6 +517,8 @@ def create_shape_single_pass(story_data,
 
             # If arc_text not generated yet, do so
             if 'arc_text' not in component:
+
+                #calculate target chars based on estimate of the number of chars that could fit in arc segment
                 average_char_width = get_average_char_width(pangocairo_context, font_desc, arc_sample_text)
                 average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled)
                 target_chars = estimate_characters_fit(arc_length, average_char_width, average_rotation_angle)
@@ -517,64 +527,62 @@ def create_shape_single_pass(story_data,
                 if target_chars < 5:
                     continue
 
-                # lower_bound = target_chars - 3
-                # upper_bound = target_chars + 3
-                #llm_target_chars = target_chars - 2
                 if index == 1:
-                    llm_target_chars = target_chars
-                else:
+                    llm_target_chars = target_chars #set llm_target_chars to target chars because there's no net calc needed at this point
+                else: #calc llm_target_chars considering net
                     llm_target_chars = target_chars - (story_data['story_components'][index - 1]['actual_arc_text_chars'] - story_data['story_components'][index - 1]['target_arc_text_chars_with_net'] )
                     
-                component['target_arc_text_chars_with_net'] = llm_target_chars
+                component['target_arc_text_chars_with_net'] = llm_target_chars #save net target in story data dict so it can be referenced in future 
+                
+                #update llm target chars with bias 
                 llm_bias_adjustment = (-4) #I NOTICED THAT LLM USUALLY PRODUCE LONGER CHAR OUTPUTS SO ADDING ADJUSTMENT HERE
                 llm_target_chars = llm_target_chars + llm_bias_adjustment
                 lower_bound = component['target_arc_text_chars_with_net'] - 3
                 upper_bound = component['target_arc_text_chars_with_net'] + 3
 
-                # Generate descriptors (call your GPT logic)
-                descriptors_text, chat_messages = generate_descriptors(
-                    title=story_data['title'],
-                    author=story_data['author'],
-                    protagonist=story_data['protagonist'],
-                    component_description=description,
-                    story_data=story_data,
-                    desired_length=llm_target_chars
-                )
+                # Generate descriptors 
+                reasonable_descriptiors_length = False 
+                reasonable_descriptiors_attempts = 1
 
-                print("DESCRIPTORS: ", descriptors_text)
+                #generate descriptors 
+                while reasonable_descriptiors_length == False and reasonable_descriptiors_attempts <= 4:
+                    descriptors_text = generate_descriptors(
+                        title=story_data['title'],
+                        author=story_data['author'],
+                        protagonist=story_data['protagonist'],
+                        component_description=description,
+                        story_data=story_data,
+                        desired_length=llm_target_chars,
+                        llm_provider=llm_provider,
+                        llm_model=llm_model
+                    )
 
-                
+                    actual_chars = len(descriptors_text)
+                    print("DESCRIPTORS ", "#", reasonable_descriptiors_attempts," :", descriptors_text, "(",actual_chars,"/",str(upper_bound-3),") -- LLM Char Target: ", llm_target_chars )
 
-                actual_chars = len(descriptors_text)
-                valid_descriptor = False
-                max_attempts = 5
-                attempt = 1
 
-                if lower_bound <= actual_chars <= upper_bound:
-                    valid_descriptor = True
-                else:
+                    if lower_bound <= actual_chars <= upper_bound:
+                         reasonable_descriptiors_length = True
+                    elif (actual_chars - target_chars) > 50:
+                        llm_target_chars = llm_target_chars - 25 #if descriptors not even close > 10 chars away
+                    elif (actual_chars - target_chars) > 20 and (actual_chars - target_chars) <= 50:
+                        llm_target_chars = llm_target_chars - 15 #if descriptors not even close > 10 chars away
+                    elif (actual_chars - target_chars) > 10 and (actual_chars - target_chars) <= 20:
+                        llm_target_chars = llm_target_chars - 7 #if descriptors not even close > 10 chars away
+                    elif (actual_chars - target_chars) > 5 and (actual_chars - target_chars) <= 10:
+                        llm_target_chars = llm_target_chars - 3 #if descriptors not even close > 10 chars away
+                    elif (actual_chars - target_chars) > 0 and (actual_chars - target_chars) <= 5:
+                        llm_target_chars = llm_target_chars - 2 #if descriptors not even close > 10 chars away
+                    elif (actual_chars - target_chars) < 0 and (actual_chars - target_chars) >= -5:
+                        llm_target_chars = llm_target_chars + 2
+                    elif (actual_chars - target_chars) < -5 and (actual_chars - target_chars) >= -10:
+                        llm_target_chars = llm_target_chars + 4
+                    elif (actual_chars - target_chars) < -10:
+                        llm_target_chars = llm_target_chars + 4
+                    
+                    reasonable_descriptiors_attempts = reasonable_descriptiors_attempts + 1
 
-                    while not valid_descriptor and attempt <= max_attempts:
-                        descriptors_text, chat_messages = adjust_descriptors(
-                            title=story_data['title'],
-                            author=story_data['author'],
-                            protagonist=story_data['protagonist'],
-                            component_description=description,
-                            story_data=story_data,
-                            desired_length=llm_target_chars,
-                            actual_length=actual_chars,
-                            chat_messages=chat_messages
-                        )
-                        print("ADJUSTED DESCRIPTORS: ", descriptors_text)
-                        actual_chars = len(descriptors_text)
-                        
-                        if lower_bound <= actual_chars <= upper_bound:
-                            valid_descriptor = True
-                        else:
-                            attempt += 1
 
-                          
-                
                 component['arc_text'] = descriptors_text
                 component['actual_arc_text_chars'] = len(descriptors_text)
             
@@ -616,6 +624,7 @@ def create_shape_single_pass(story_data,
                 x_og = x_og[unique_indices]
                 y_og = y_og[unique_indices]
 
+                print("X: ", x_og)
                 cs = CubicSpline(x_og, y_og, extrapolate=True)
                 new_x = x_og[-1] + (x_og[1] - x_og[0])
                 new_y = float(cs(new_x))
@@ -862,8 +871,6 @@ def create_shape_single_pass(story_data,
 
     return story_data, "completed"
 
-    
-
 
 def calculate_arc_length(arc_x_values, arc_y_values):
     segment_lengths = np.hypot(
@@ -901,14 +908,8 @@ def calculate_average_rotation_angle(x_values, y_values):
     average_angle = sum(angles) / len(angles)
     return average_angle
 
-from anthropic import Anthropic
-import copy
 
-# Initialize Anthropic client
-anthropic = Anthropic()
-
-
-def generate_descriptors(title, author, protagonist, component_description, story_data, desired_length):
+def generate_descriptors(title, author, protagonist, component_description, story_data, desired_length, llm_provider, llm_model):
     
     existing_arc_texts = "\n".join(
         component.get('arc_text', '') 
@@ -920,16 +921,17 @@ def generate_descriptors(title, author, protagonist, component_description, stor
         existing_arc_texts = f"Previous descriptions:\n{existing_arc_texts}"
 
     
+    prompt_template = """ ## INSTRUCTIONS: Generate EXACTLY {desired_length}-character descriptors for this segment of {author}'s "{title}" that focus on {protagonist}".
 
-    prompt = f""" ## INSTRUCTIONS: Generate EXACTLY {desired_length}-character descriptors for this segment of {author}'s "{title}" that focus on {protagonist}".
-
-    
 ## STORY SEGMENT DESCRIPTION:
 {component_description}
 
 
 ## REQUIREMENTS:
-1. LENGTH: EXACTLY {desired_length} characters (including all spaces and periods)
+1. LENGTH: OUTPUT MUST BE EXACTLY {desired_length} CHARACTERS. NO MORE, NO LESS
+    - Count EVERY character including spaces and periods
+    - Count EVERY period and space between phrases
+    - Example: "Green Light." is 12 characters
 2. SOURCE: ONLY use elements explicitly mentioned in the STORY SEGMENT DESCRIPTION above
 3. FORMAT: 
     - Descriptors should consist of 1-4 word phrases
@@ -946,186 +948,131 @@ def generate_descriptors(title, author, protagonist, component_description, stor
 5. PHRASE ORDERING: The order of the phrases MUST be in the chronological order as they appear in STORY SEGMENT DESCRIPTION
 6. CONTINUITY:
     - Each story segment descriptors joins with other story story segments to tell the full {protagonist}'s story
-    - Descriptors should be dinstinct from previous story segment descriptors: {existing_arc_texts}
-7. OUTPUT: Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation.
+    - Descriptors should be distinct from previous story segment descriptors: {existing_arc_texts}
+7. VERIFICATION:
+    - Before responding, verify LENGTH by counting all characters including spaces and punctuation to ensure total is EXACTLY {desired_length} characters
+    - Before responding, verify that all phrases come from STORY SEGMENT DESCRIPTION and that the each phrase FORMAT, PHRASE CONSTRUCTION, and PHRASE ORDERING is correct
+    - If LENGTH is not exact and/or phrases are not created correctly, please adjust the phrase to match the requirements
+8. OUTPUT: Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation
+
+______
+
 
 ## EXAMPLES:
 
-Story Segment Description: "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and optimism. His friendship with Manolin provides comfort and support, though the boy has been forced to work on another boat. His determination remains strong as he prepares for a new day of fishing, finding peace in his dreams of Africa and its lions."
-Potential Phases: "84 Days. No Fish. Unlucky. Optimist. Manolin Friendship. Preps for Fishing. Dreams of Africa."
-Example 37-character OUTPUT: "84 Days. No Fish. Manolin Friendship."
-
+### EXAMPLE 1
+Length Requirements: 12 characters
+Author: F. Scott Fitzgerald
+Title: The Great Gatsby
+Protagonist: Jay Gatsby
 Story Segment Description: "Gatsby stands alone in his garden, reaching out towards the green light across the bay, embodying his yearning for Daisy. His elaborate mansion and lavish parties serve as carefully orchestrated attempts to attract her attention, revealing both his hope and desperation. When he finally arranges to meet Nick, his neighbor and Daisy's cousin, Gatsby's carefully constructed facade begins to show cracks of vulnerability as he seeks a way to reconnect with his lost love"
-Potential Phases: "Alone in Garden. Green Light. Yearning for Daisy. Lost Love."
-Example 12-character OUTPUT: "Green Light."
 
-Story Segment Description: "During the prolonged struggle with the marlin, Santiago endures physical pain and isolation, his hand cramping and cuts deepening. Yet his determination never wavers, drawing strength from memories of his past triumphs. He develops a profound respect for the marlin, calling it his brother while maintaining his resolve to prevail."
-Potential Phases: "Struggle with Marlin. Pain. Hand Camps. Deep Cuts. Respect for Marlin. Brother. Unwavering Resolve."
-Example 82-character OUTPUT: "Struggle with Marlin. Hand Camps. Deep Cuts. Respect. Brother. Unwavering Resolve."
+Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
+- "Alone in Garden." (16 characters --> 1:A, 2:l, 3:o, 4:n, 5:e, 6:[space], 7:i, 8:n, 9:[space], 10:G, 11:a, 12:r, 13:d, 14:e, 15:n, 16:.)
+- "Green Light."  (12 characters --> 1:G, 2:r, 3:e, 4:e, 5:n, 6:[space], 7:L, 8:i, 9:g, 10:h, 11:h, 12:.)
+- "Yearning for Daisy." (20 characters --> 1:Y, 2:e, 3:a, 4:r, 5:r, 6:n, 7:i, 8:n, 9:g, 10:[space], 11:f, 12:o, 13:r, 14:[space], 15:D, 16:a, 17:i, 18:s, 19:y, 20:.)
+- "Lost Love." (10 characters --> 1:L, 2:o, 3:s, 4:t, 5:[space], 6:L, 7:o, 8:v, 9:e, 10:.)
 
-Story Segment Description: "Juliet awakens to find Romeo dead beside her, having poisoned himself in the belief she was dead. In her final moments, she experiences complete despair, attempting to die by kissing his poisoned lips before ultimately using his dagger to join him in death, unable to conceive of life without him.
-Potential Phases: "Awake. Romeo Dead. Despair. Kisses Poisoned Lips. Suicide by Dagger. Reunited in Death."
-Example 8-character OUTPUT: "Suicide."
+Note: Phrases must appear in chronological order as events occur in the Story Segment Description
 
-Story Segment Description: "The death of his beloved friend Patroclos shatters Achilles's world, transforming his anger at Agamemnon into consuming grief and rage against Hector. His emotional state plummets as he learns of Patroclos's death and the loss of his armor, driving him to a state of vengeful fury."
-Potential Phases: "Patroclos Dies. Grief. Rage for Hector. Vengeful Fury."
-Example 21-character OUTPUT: "Patroclos Dies. Rage."
+Output: "Green Light." (12 characters total)
+Breakdown:
+- "Green Light." (12 characters)
 
-Story Segment Description: "Gatsby's world crumbles during the confrontation at the Plaza Hotel. His desperate attempt to claim Daisy fails as she cannot deny her love for Tom, shattering his dream of recreating the past. His devotion to Daisy remains unchanged even after the accident with Myrtle, as he takes the blame and stands watch outside her house, clinging to the last remnants of his fantasy despite its obvious collapse."
-Potential Phases: "Plaza Hotel. Daisy Loves Tom. Shattered Dream. Stand Watch Outside. Clings to Fantasy."
-Example 48-character OUTPUT: "Plaza Hotel. Daisy Chooses Tom. Myrtle Accident."
+Notes:
+- Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
+- Phrases must appear in chronological order as events occur in the Story Segment Description
 
-Story Segment Description: "Gatsby's tragic end comes as he waits faithfully for a call from Daisy that never arrives, still believing in the possibility of their future together. His death at Wilson's hands is made more poignant by Daisy's complete absence - she doesn't even send flowers to his funeral. The empty funeral, attended only by Nick, Gatsby's father, and one former party guest, serves as the final testament to the hollow nature of Gatsby's dream and the society he tried to join."
-Potential Phases: "Waits for Call. Daisy Never Arrives. Killed by Wilson. No Flowers. Empty Funeral."
-Example 66-character OUTPUT: "Waits for Daisy Call. Killed by Wilson. No Flowers. Empty Funeral."
+### EXAMPLE 2
+Length Requirements: 37 characters
+Author: Ernest Hemingway
+Title: The Old Man and the Sea
+Protagonist: Santiago
+Story Segment Description: "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and optimism. His friendship with Manolin provides comfort and support, though the boy has been forced to work on another boat. His determination remains strong as he prepares for a new day of fishing, finding peace in his dreams of Africa and its lions."
 
-Note about Examples:
-The Potential Phases shown are just examples of phrases for the given Story Segment Description. The actual output will be determined by exact character LENGTH requirement as demonstrated by the example outputs. . 
+Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
+- "84 Days No Fish" (17 characters --> 1:8, 2:4, 3:[space], 4:D, 5:a, 6:y, 7:s, 8:., 9:[space], 10:N, 11:o, 12:[space], 13:F, 14:i, 15:s, 16:h, 17:.)
+- "Unlucky." (8 characters --> 1:U, 2:n, 3:l, 4:u, 5:c, 6:k, 7:y, 8:.)
+- "Optimist." (9 characters --> 1:O, 2:p, 3:t, 4:i, 5:m, 6:i, 7:s, 8:t, 9:.)
+- "Manolin Friendship." (19 characters --> 1:M, 2:a, 3:n, 4:o, 5:l, 6:i, 7:n, 8:[space], 9:F, 10:r, 11:i, 12:e, 13:n, 14:d, 15:s, 16:h, 17:i, 18:p, 19:.)
+- "Preps for Fishing." (18 characters --> 1:P, 2:r, 3:e, 4:p, 5:s, 6:[space], 7:f, 8:o, 9:r, 10:[space], 11:F, 12:i, 13:s, 14:h, 15:i, 16:n, 17:g, 18:.)
+- "Dreams of Africa." (16 characters --> 1:D, 2:r, 3:e, 4:a, 5:m, 6:s, 7:[space], 8:o, 9:f, 10:A, 11:f, 12:r, 13:i, 14:c, 15:a, 16:.)
+
+Note: Phrases must appear in chronological order as events occur in the Story Segment Description
+
+Output: "84 Days. No Fish. Manolin Friendship." (37 characters total)
+Breakdown:
+- "84 Days. " (9 chars --> 8 characters + space)
+- "No Fish. " (9 chars --> 8 characters + space)
+- "Manolin Friendship." (19 chars)
+
+Notes:
+- Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
+- Phrases must appear in chronological order as events occur in the Story Segment Description
+
+### EXAMPLE 3
+Length Requirements: 79 characters
+Author: William Shakespeare
+Title: Romeo and Juliet
+Protagonist: Juliet
+Story Segment Description: "Juliet awakens to find Romeo dead beside her, having poisoned himself in the belief she was dead. In her final moments, she experiences complete despair, attempting to die by kissing his poisoned lips before ultimately using his dagger to join him in death, unable to conceive of life without him."
+
+Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
+- "Awakens." (8 characters --> 1:A, 2:w, 3:a, 4:k, 5:e, 6:n, 7:s, 8:.)
+- "Romeo Dead." (11 characters --> 1:R, 2:o, 3:m, 4:e, 5:o, 6:[space], 7:D, 8:e, 9:a, 10:d, 11:.)
+- "Despair." (8 characters --> 1:D, 2:e, 3:s, 4:p, 5:a, 6:i, 7:r, 8:.)
+- "Kisses Poisoned Lips." (21 characters --> 1:K, 2:i, 3:s, 4:s, 5:e, 6:s, 7:[space], 8:P, 9:o, 10:i, 11:s, 12:o, 13:n, 14:e, 15:d, 16:[space], 17:L, 18:i, 19:p, 20:s, 21:.)
+- "Suicide by Dagger." (18 characters --> 1:S, 2:u, 3:i, 4:c, 5:i, 6:d, 7:e, 8:[space], 9:b, 10:y, 11:[space], 12:D, 13:a, 14:g, 15:g, 16:e, 17:r, 18:.)
+- "Reunited with Love." (19 characters --> 1:R, 2:e, 3:u, 4:n, 5:i, 6:t, 7:e, 8:d, 9:[space], 10:w, 11:i, 12:t, 13:h, 14:[space], 15:L, 16:o, 17:v, 18:e, 19:. )
+
+Note: Phrases must appear in chronological order as events occur in the Story Segment Description
+
+Output: "Awakens. Romeo Dead. Complete Despair. Kisses Poisoned Lips. Suicide by Dagger." (79 characters total)
+Breakdown:
+- "Awakens. " (9 characters --> 8 characters + space)
+- "Romeo Dead. " (12 characters --> 11 characters + space)
+- "Complete Despair. " (17 characters --> 16 characters + space)
+- "Kisses Poisoned Lips. " (22 characters --> 21 characters + space)
+- "Suicide by Dagger." (18 characters)
+
+Notes:
+- Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
+- Phrases must appear in chronological order as events occur in the Story Segment Description
 
 
-
-
-
+________
 
 Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation.
 """
-
-
-    #print(prompt)
-    response = client.messages.create(
-        model="claude-3-sonnet-20240229",
-        max_tokens=500,
-        temperature=0.3,
-        messages=[{"role": "user", "content": prompt}]
+    prompt = PromptTemplate(
+        input_variables=["desired_length", "author", "title", "protagonist", "component_description", "existing_arc_texts"],  # Define the expected inputs
+        template=prompt_template
     )
+    config = load_config()
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=500)
 
-    response_text = response.content[0].text.strip()
-    return response_text, [{"role": "user", "content": prompt}, {"role": "assistant", "content": response_text}]
+     # Instead of building an LLMChain, use the pipe operator:
+    runnable = prompt | llm
 
-def adjust_descriptors(title, author, protagonist, component_description, story_data, desired_length, actual_length, chat_messages):
+    # Then invoke with the required inputs:
+    output = runnable.invoke({
+        "desired_length": desired_length,
+        "author": author,
+        "title": title,
+        "protagonist": protagonist,
+        "component_description":component_description,
+        "existing_arc_texts":existing_arc_texts,
+    })
+
+    #print(output)
+    # If the output is an object with a 'content' attribute, extract it.
+    if hasattr(output, "content"):
+        output_text = output.content
+    else:
+        output_text = output
     
-    # Get all previous attempts from chat history
-    previous_attempts = []
-    for message in chat_messages:
-        if message["role"] == "assistant":
-            previous_attempts.append(message["content"])
-    
-    # Format previous attempts with length analysis
-    attempts_text = []
-    for i, attempt in enumerate(previous_attempts, 1):
-        length = len(attempt)
-        difference = length - desired_length
-        if difference > 0:
-            status = f"too long by {difference} chars"
-        elif difference < 0:
-            status = f"too short by {abs(difference)} chars"
-        else:
-            status = "correct length but needs variation"
-        attempts_text.append(f"Attempt {i}: {attempt} ({length} chars, {status})")
-    
-    attempts_summary = "\n".join(attempts_text)
-
-    existing_arc_texts = "\n".join(
-        component.get('arc_text', '') 
-        for component in story_data['story_components'] 
-        if 'arc_text' in component
-    )
-    
-    if existing_arc_texts:
-        existing_arc_texts = f"Previous descriptions:\n{existing_arc_texts}"
-    
-    
-    prompt = f"""## INSTRUCTIONS: Generate EXACTLY {desired_length}-character descriptors for this segment of {author}'s "{title}" that focus on {protagonist}".
-
-## STORY SEGMENT DESCRIPTION:
-{component_description}
-
-Previous attempts (need EXACTLY {desired_length} chars):
-{attempts_summary}
-
-## REQUIREMENTS:
-1. LENGTH: EXACTLY {desired_length} characters (including all spaces and periods)
-2. SOURCE: ONLY use elements explicitly mentioned in the STORY SEGMENT DESCRIPTION above
-3. FORMAT: 
-    - Descriptors should consist of 1-4 word phrases
-    - A single phrase is perfectly acceptable 
-    - If multiple phrases, each ends with ". " except the last phrase, which ends with just "." and no space
-    - CAPITALIZATION: Use Title Case (capitalize the first letter of every word, except minor words like "and," "of," "the," unless they are the first word of a phrase)
-4. PHRASE CONSTRUCTION:
-    - USE ONLY elements directly from the provided STORY SEGMENT DESCRIPTION
-    - USE specific and concrete elements from the STORY SEGMENT DESCRIPTION e.g. places, actions, people, objects, events
-    - USE elements that are most critical and important to the STORY SEGMENT DESCRIPTION
-    - AVOID using any analysis or abstractions/metaphors
-    - Break compound actions into separate phrases
-    - NEVER mention {protagonist} by name
-5. PHRASE ORDERING: The order of the phrases MUST be in the chronological order as they appear in STORY SEGMENT DESCRIPTION
-6. CONTINUITY:
-    - Each story segment descriptors joins with other story story segments to tell the full {protagonist}'s story
-    - Descriptors should be dinstinct from previous story segment descriptors: {existing_arc_texts}
-7. MUST be different from ALL previous attempts shown above
-8. OUTPUT: Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation.
-
-## EXAMPLES:
-
-Story Segment Description: "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and optimism. His friendship with Manolin provides comfort and support, though the boy has been forced to work on another boat. His determination remains strong as he prepares for a new day of fishing, finding peace in his dreams of Africa and its lions."
-Potential Phases: "84 Days. No Fish. Unlucky. Optimist. Manolin Friendship. Preps for Fishing. Dreams of Africa."
-Example 37-character OUTPUT: "84 Days. No Fish. Manolin Friendship."
-
-Story Segment Description: "Gatsby stands alone in his garden, reaching out towards the green light across the bay, embodying his yearning for Daisy. His elaborate mansion and lavish parties serve as carefully orchestrated attempts to attract her attention, revealing both his hope and desperation. When he finally arranges to meet Nick, his neighbor and Daisy's cousin, Gatsby's carefully constructed facade begins to show cracks of vulnerability as he seeks a way to reconnect with his lost love"
-Potential Phases: "Alone in Garden. Green Light. Yearning for Daisy. Lost Love."
-Example 12-character OUTPUT: "Green Light."
-
-Story Segment Description: "During the prolonged struggle with the marlin, Santiago endures physical pain and isolation, his hand cramping and cuts deepening. Yet his determination never wavers, drawing strength from memories of his past triumphs. He develops a profound respect for the marlin, calling it his brother while maintaining his resolve to prevail."
-Potential Phases: "Struggle with Marlin. Pain. Hand Camps. Deep Cuts. Respect for Marlin. Brother. Unwavering Resolve."
-Example 82-character OUTPUT: "Struggle with Marlin. Hand Camps. Deep Cuts. Respect. Brother. Unwavering Resolve."
-
-Story Segment Description: "Juliet awakens to find Romeo dead beside her, having poisoned himself in the belief she was dead. In her final moments, she experiences complete despair, attempting to die by kissing his poisoned lips before ultimately using his dagger to join him in death, unable to conceive of life without him.
-Potential Phases: "Awake. Romeo Dead. Despair. Kisses Poisoned Lips. Suicide by Dagger. Reunited in Death."
-Example 8-character OUTPUT: "Suicide."
-
-Story Segment Description: "The death of his beloved friend Patroclos shatters Achilles's world, transforming his anger at Agamemnon into consuming grief and rage against Hector. His emotional state plummets as he learns of Patroclos's death and the loss of his armor, driving him to a state of vengeful fury."
-Potential Phases: "Patroclos Dies. Grief. Rage for Hector. Vengeful Fury."
-Example 21-character OUTPUT: "Patroclos Dies. Rage."
-
-Story Segment Description: "Gatsby's world crumbles during the confrontation at the Plaza Hotel. His desperate attempt to claim Daisy fails as she cannot deny her love for Tom, shattering his dream of recreating the past. His devotion to Daisy remains unchanged even after the accident with Myrtle, as he takes the blame and stands watch outside her house, clinging to the last remnants of his fantasy despite its obvious collapse."
-Potential Phases: "Plaza Hotel. Daisy Loves Tom. Shattered Dream. Stand Watch Outside. Clings to Fantasy."
-Example 48-character OUTPUT: "Plaza Hotel. Daisy Chooses Tom. Myrtle Accident."
-
-Story Segment Description: "Gatsby's tragic end comes as he waits faithfully for a call from Daisy that never arrives, still believing in the possibility of their future together. His death at Wilson's hands is made more poignant by Daisy's complete absence - she doesn't even send flowers to his funeral. The empty funeral, attended only by Nick, Gatsby's father, and one former party guest, serves as the final testament to the hollow nature of Gatsby's dream and the society he tried to join."
-Potential Phases: "Waits for Call. Daisy Never Arrives. Killed by Wilson. No Flowers. Empty Funeral."
-Example 66-character OUTPUT: "Waits for Daisy Call. Killed by Wilson. No Flowers. Empty Funeral."
-
-Note about Examples:
-The Potential Phases shown are just examples of phrases for the given Story Segment Description. The actual output will be determined by exact character LENGTH requirement as demonstrated by the example outputs. . 
-
-"""
-
-    response = client.messages.create(
-        model="claude-3-sonnet-20240229",
-        max_tokens=500,
-        temperature=0.5,  # Slightly higher temperature to encourage variation
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    response_text = response.content[0].text.strip()
-    
-    # Check if response matches any previous attempt
-    if response_text in previous_attempts:
-        retry_prompt = prompt + "\n\nIMPORTANT: Your response matched one of the previous attempts. Generate completely new text."
-        
-        response = client.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=500,
-            temperature=0.6,  # Higher temperature for more variation
-            messages=[{"role": "user", "content": retry_prompt}]
-        )
-        response_text = response.content[0].text.strip()
-
-    return response_text, chat_messages + [
-        {"role": "user", "content": prompt},
-        {"role": "assistant", "content": response_text}
-    ]
-
+    output_text = output_text.strip()
+    return output_text
 
 def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
     total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
