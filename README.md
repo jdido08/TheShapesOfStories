@@ -2,9 +2,9 @@
 - descriptors creation setup good for now but can be optimized for sure 
 
 need to do:
-- format/style for protognist 
+- format/style for protognist --> done 
 - make some shape functions e.g. step-by-step parameterized 
-- download all font that could be used to computer
+- download all font that could be used to computer 
 - make the title font bold 
 
 

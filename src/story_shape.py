@@ -15,6 +15,9 @@ from scipy.interpolate import CubicSpline
 import json
 import os
 import random 
+import os
+import json
+import matplotlib.font_manager as fm
 
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
@@ -40,12 +43,16 @@ def create_shape(story_data_path,
                 title_font_style = "",
                 title_font_size=96,
                 title_font_color = (0, 0, 0),#default to black
+                title_font_bold = False, #can be True or False
+                title_font_underline = False,
                 title_padding = 20,
                 gap_above_title = 20,
                 protagonist_text = "",
                 protagonist_font_style = "Cormorant Garamond",
                 protagonist_font_size= 12, 
                 protagonist_font_color= (0, 0 , 0),
+                protagonist_font_bold = False,
+                protagonist_font_underline = False,
                 top_text = "", #only applies when wrapped > 0; if "" will default to author, year
                 top_text_font_style = "Cormorant Garamond",
                 top_text_font_size = "24",
@@ -66,6 +73,18 @@ def create_shape(story_data_path,
                 llm_provider = "anthropic",
                 llm_model = "claude-3-5-sonnet-latest",
                 output_format="png"):
+    
+
+    fonts_to_check = {
+        "Body Font": font_style,
+        "Title Font": title_font_style,
+        "Protagonist Font": protagonist_font_style,
+        "Top Text Font": top_text_font_style,
+        "Bottom Text Font": bottom_text_font_style,
+    }
+    for desc, font in fonts_to_check.items():
+        if font and not pango_font_exists(font):
+            raise ValueError(f"{desc} '{font}' not found on this system.")
     
 
     #convert hex colors to (x,y,z) foramt
@@ -145,12 +164,16 @@ def create_shape(story_data_path,
                     title_font_style=title_font_style,
                     title_font_size=title_font_size,
                     title_font_color = title_font_color,
+                    title_font_bold = title_font_bold, 
+                    title_font_underline = title_font_underline,
                     title_padding = title_padding,
                     gap_above_title = gap_above_title,
                     protagonist_text = protagonist_text,
                     protagonist_font_style = protagonist_font_style,
                     protagonist_font_size= protagonist_font_size, 
                     protagonist_font_color= protagonist_font_color,
+                    protagonist_font_bold = protagonist_font_bold,
+                    protagonist_font_underline = protagonist_font_underline,
                     top_text = top_text, #only applies when wrapped > 0; if "" will default to author, year
                     top_text_font_style = top_text_font_style,
                     top_text_font_size = top_text_font_size,
@@ -218,6 +241,7 @@ def create_shape(story_data_path,
     with open(new_path, 'w', encoding='utf-8') as file:
         json.dump(story_data, file, ensure_ascii=False, indent=4)
 
+
 def create_shape_single_pass(story_data, 
                 font_style="",
                 font_size=72,
@@ -232,12 +256,16 @@ def create_shape_single_pass(story_data,
                 title_font_style = "",
                 title_font_size=96,
                 title_font_color = (0, 0 , 0), #default to black
+                title_font_bold = False, 
+                title_font_underline = False,
                 title_padding = 20,
                 gap_above_title = 20,
                 protagonist_text = "",
                 protagonist_font_style = "Cormorant Garamond",
                 protagonist_font_size= 12, 
                 protagonist_font_color= (0, 0 , 0),
+                protagonist_font_bold = False,
+                protagonist_font_underline = False,
                 top_text = "", #only applies when wrapped > 0; if "" will default to author, year
                 top_text_font_style = "Cormorant Garamond",
                 top_text_font_size = "24",
@@ -312,9 +340,13 @@ def create_shape_single_pass(story_data,
 
     title_font_size_for_300dpi = title_font_size * (300 / 96)
     title_font_desc = Pango.FontDescription(f"{title_font_style} {title_font_size_for_300dpi}")
+    if title_font_bold == True:
+        title_font_desc.set_weight(Pango.Weight.BOLD)
 
     protagonist_font_size_for_300dpi = protagonist_font_size * (300/96)
     protagonist_font_desc = Pango.FontDescription(f"{protagonist_font_style} {protagonist_font_size_for_300dpi}")
+    if protagonist_font_bold == True:
+        protagonist_font_desc.set_weight(Pango.Weight.BOLD)
 
     top_text_font_size_for_300dpi = top_text_font_size * (300/96)
     top_text_font_desc = Pango.FontDescription(f"{top_text_font_style} {top_text_font_size_for_300dpi}")
@@ -422,6 +454,12 @@ def create_shape_single_pass(story_data,
         layout_temp.set_font_description(title_font_desc)
         layout_temp.set_text(title_text, -1)
         _, measured_title_height = layout_temp.get_pixel_size()
+
+        if title_font_underline == True:
+            attr_list = Pango.AttrList()
+            underline_attr = Pango.attr_underline_new(Pango.Underline.SINGLE)
+            attr_list.insert(underline_attr)
+            layout_temp.set_attributes(attr_list)
 
         title_band_height = measured_title_height + title_padding
 
@@ -852,6 +890,13 @@ def create_shape_single_pass(story_data,
         final_layout.set_font_description(title_font_desc)
         final_layout.set_text(title_text, -1)
 
+        # Create an attribute list and add an underline attribute.
+        if title_font_underline == True:
+            attr_list = Pango.AttrList()
+            underline_attr = Pango.attr_underline_new(Pango.Underline.SINGLE)
+            attr_list.insert(underline_attr)
+            final_layout.set_attributes(attr_list)
+
         # Measure the title's bounding box
         title_text_width, title_text_height = final_layout.get_pixel_size()
 
@@ -879,6 +924,13 @@ def create_shape_single_pass(story_data,
             prot_layout = PangoCairo.create_layout(cr)
             prot_layout.set_font_description(protagonist_font_desc)
             prot_layout.set_text(protagonist_text, -1)
+
+            # Create an attribute list and add an underline attribute.
+            if protagonist_font_underline == True:
+                attr_list = Pango.AttrList()
+                underline_attr = Pango.attr_underline_new(Pango.Underline.SINGLE)
+                attr_list.insert(underline_attr)
+                prot_layout.set_attributes(attr_list)
 
             # Measure the protagonist text
             prot_text_width, prot_text_height = prot_layout.get_pixel_size()
@@ -1957,3 +2009,22 @@ def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound
         return False, "Incorrect phrase separation format"
 
     return True, "Valid"
+
+def pango_font_exists(font_name):
+    """
+    Checks whether the given font is available using Pango.
+    Returns True if the font is found, False otherwise.
+    """
+    if not font_name:
+        return True  # nothing to check if font_name is empty
+
+    # Get the default font map from PangoCairo.
+    font_map = PangoCairo.FontMap.get_default()
+    families = font_map.list_families()
+
+    # Iterate through the font families and see if any name matches (case-insensitive).
+    for family in families:
+        if font_name.lower() in family.get_name().lower():
+            return True
+
+    return False

@@ -21,12 +21,16 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 title_font_style = "Cormorant Garamond", #only used if has_title = "YES"
                 title_font_size=24, #only used if has_title = "YES"
                 title_font_color = '#1F4534', #only used if has_title = "YES"
+                title_font_bold = False, #can be True or False
+                title_font_underline = False, #can be true or False
                 title_padding = 0, #extra padding in pixels between bottom and title
                 gap_above_title=20, #padding in pixels between title and story shape
                 protagonist_text = "", #if you leave blank will include protognaist name in lower right corner; can get rid of by just setting to " ", only works if has title is true
                 protagonist_font_style = "Cormorant Garamond",
                 protagonist_font_size=12, 
                 protagonist_font_color='#1F4534',
+                protagonist_font_bold = False, #can be True or False
+                protagonist_font_underline = False, #can be True or False
                 top_text = "", #only applies when wrapped > 0; if "" will default to author, year
                 top_text_font_style = "Cormorant Garamond",
                 top_text_font_size = 24,
