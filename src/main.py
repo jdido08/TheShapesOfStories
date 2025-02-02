@@ -6,7 +6,7 @@ import json
 summaries_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries'
 story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data'
 
-create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/romeo_and_juliet_romeo.json',
+create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_old_man_and_the_sea_santiago.json',
                 x_delta=0.015, #number of points in the line 
                 line_type = 'char', #values line or char
                 line_thickness = 10, #only used if line_type = line
@@ -24,6 +24,9 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 title_padding = 0, #extra padding in pixels between bottom and title
                 gap_above_title=20, #padding in pixels between title and story shape
                 protagonist_text = "", #if you leave blank will include protognaist name in lower right corner; can get rid of by just setting to " ", only works if has title is true
+                protagonist_font_style = "Cormorant Garamond",
+                protagonist_font_size=12, 
+                protagonist_font_color='#1F4534',
                 border=True, #True or False
                 border_thickness=60, #only applicable if border is set to True
                 border_color='#D4B682', #only applicable if border is set to True
@@ -32,7 +35,7 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 wrap_in_inches=1.5,  # for canvas print outs 
                 wrap_background_color = '#D4B682', #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
                 recursive_mode = True, #if you want to recurisvely generate story
-                recursive_loops = 10, #the number of iterations 
+                recursive_loops = 50, #the number of iterations 
                 llm_provider = "anthropic", #for generating descriptors
                 llm_model = "claude-3-5-sonnet-latest", #for generating descriptors 
                 output_format="png") #options png or svg

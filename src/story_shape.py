@@ -43,6 +43,9 @@ def create_shape(story_data_path,
                 title_padding = 20,
                 gap_above_title = 20,
                 protagonist_text = "",
+                protagonist_font_style = "Cormorant Garamond",
+                protagonist_font_size= 12, 
+                protagonist_font_color= (0, 0 , 0),
                 border = False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
@@ -61,6 +64,7 @@ def create_shape(story_data_path,
     font_color = hex_to_rgb(font_color)
     line_color = hex_to_rgb(line_color)
     title_font_color = hex_to_rgb(title_font_color)
+    protagonist_font_color = hex_to_rgb(protagonist_font_color)
     border_color = hex_to_rgb(border_color)
     background_value = hex_to_rgb(background_value)
     wrap_background_color = hex_to_rgb(wrap_background_color)
@@ -134,6 +138,9 @@ def create_shape(story_data_path,
                     title_padding = title_padding,
                     gap_above_title = gap_above_title,
                     protagonist_text = protagonist_text,
+                    protagonist_font_style = protagonist_font_style,
+                    protagonist_font_size= protagonist_font_size, 
+                    protagonist_font_color= protagonist_font_color,
                     border = border,
                     border_thickness=border_thickness,
                     border_color=border_color,
@@ -179,6 +186,9 @@ def create_shape(story_data_path,
     story_data['title_font_size'] = title_font_size
     story_data['title_font_style'] = title_font_style
     story_data['title_font_color'] = title_font_color
+    story_data['protagonist_font_size'] = protagonist_font_size
+    story_data['protagonist_font_style'] = protagonist_font_style
+    story_data['protagonist_font_color'] = protagonist_font_color
     story_data['background_color'] = background_value
     story_data['border_thickness'] = border_thickness
     story_data['border_color'] = border_color
@@ -207,6 +217,9 @@ def create_shape_single_pass(story_data,
                 title_padding = 20,
                 gap_above_title = 20,
                 protagonist_text = "",
+                protagonist_font_style = "Cormorant Garamond",
+                protagonist_font_size= 12, 
+                protagonist_font_color= (0, 0 , 0),
                 border=False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
@@ -267,11 +280,15 @@ def create_shape_single_pass(story_data,
 
 
     #SETUP FONTS
-    # Prepare for text on arcs
     from gi.repository import Pango
     font_size_for_300dpi = font_size * (300 / 96)
     font_desc = Pango.FontDescription(f"{font_style} {font_size_for_300dpi}")
-   
+
+    title_font_size_for_300dpi = title_font_size * (300 / 96)
+    title_font_desc = Pango.FontDescription(f"{title_font_style} {title_font_size_for_300dpi}")
+
+    protagonist_font_size_for_300dpi = protagonist_font_size * (300/96)
+    protagonist_font_desc = Pango.FontDescription(f"{protagonist_font_style} {protagonist_font_size_for_300dpi}")
 
     # Create a Cairo surface and context
     import cairo
@@ -370,9 +387,7 @@ def create_shape_single_pass(story_data,
     if has_title == "YES":
         # measure text height
         layout_temp = PangoCairo.create_layout(cr)
-        scaled_title_size = title_font_size * (300 / 96)
-        temp_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
-        layout_temp.set_font_description(temp_desc)
+        layout_temp.set_font_description(title_font_desc)
         layout_temp.set_text(title_text, -1)
         _, measured_title_height = layout_temp.get_pixel_size()
 
@@ -531,10 +546,10 @@ def create_shape_single_pass(story_data,
                 
                 if 'arc_text_valid_message' in component:
                     if component['arc_text_valid_message'] == "curve too long but can't change due to constraints":
-                        target_chars = target_chars + 3
+                        target_chars = target_chars + 2
                         llm_target_chars = target_chars
                     elif component['arc_text_valid_message'] == "curve too short but can't change due to constraints":
-                        target_chars = target_chars - 3
+                        target_chars = target_chars - 2
                         llm_target_chars = target_chars
                 
                 component['target_arc_text_chars_with_net'] = llm_target_chars #save net target in story data dict so it can be referenced in future 
@@ -547,7 +562,7 @@ def create_shape_single_pass(story_data,
                 reasonable_descriptiors_attempts = 1
 
                 #generate descriptors 
-                while descriptors_valid == False and reasonable_descriptiors_attempts <= 4:
+                while descriptors_valid == False and reasonable_descriptiors_attempts <= 5:
                     descriptors_text = generate_descriptors(
                         title=story_data['title'],
                         author=story_data['author'],
@@ -687,17 +702,17 @@ def create_shape_single_pass(story_data,
                     return story_data, "processing"
                 
                 # #we hit y max / min and need to extend x
-                # elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
+                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
                     
-                #     new_y = y_og[-1]
-                #     component['modified_end_time'] = new_x
-                #     component['modified_end_emotional_score'] = new_y
+                    new_y = y_og[-1]
+                    component['modified_end_time'] = new_x
+                    component['modified_end_emotional_score'] = new_y
 
-                #     if output_format == "svg":
-                #         surface.flush()   # flush the partial drawing, but do *not* finalize!
-                #     else:
-                #         surface.write_to_png(story_shape_path)
-                #     return story_data, "processing"
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
+                    return story_data, "processing"
                 
                 else: #this means: "curve too short but can't change due to constraints"
                     #so we actually want less chars than we initially thought
@@ -802,9 +817,7 @@ def create_shape_single_pass(story_data,
     if has_title == "YES":
         # -- Prepare the title layout --
         final_layout = PangoCairo.create_layout(cr)
-        scaled_title_size = title_font_size * (300 / 96)
-        final_desc = Pango.FontDescription(f"{title_font_style} {scaled_title_size}")
-        final_layout.set_font_description(final_desc)
+        final_layout.set_font_description(title_font_desc)
         final_layout.set_text(title_text, -1)
 
         # Measure the title's bounding box
@@ -832,8 +845,7 @@ def create_shape_single_pass(story_data,
         if protagonist_text:
             # Prepare protagonist layout
             prot_layout = PangoCairo.create_layout(cr)
-            # Reuse the *same* font description as the title so styling is consistent
-            prot_layout.set_font_description(font_desc)
+            prot_layout.set_font_description(protagonist_font_desc)
             prot_layout.set_text(protagonist_text, -1)
 
             # Measure the protagonist text
@@ -880,7 +892,7 @@ def create_shape_single_pass(story_data,
 
         place_text_centered(cr,
                             text=author_year,
-                            font_size_px=scaled_title_size,
+                            font_size_px=title_font_size_for_300dpi,
                             font_face = font_style,
                             x_center=x_top_center,
                             y_center=y_top_center,

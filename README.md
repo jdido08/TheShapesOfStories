@@ -1,5 +1,11 @@
 1/31/2025:
-- add arc validation check 
+- descriptors creation setup good for now but can be optimized for sure 
+
+need to do:
+- format/style for protognist 
+- make some shape functions e.g. step-by-step parameterized 
+- download all font that could be used to computer
+- make the title font bold 
 
 
 
@@ -24,7 +30,7 @@
 - add protogonst to story shape -- bottom right corner 
 - download all font that could be used to computer
 - make the title font bold 
-- refine descriptors prompt to not use protoganist name 
+- refine descriptors prompt to not use protoganist name -- done 
 - need to come up with some sort of multiple color scheme - should have different colors for different protoganst at least 
 
 1/21/2024:
