@@ -46,6 +46,14 @@ def create_shape(story_data_path,
                 protagonist_font_style = "Cormorant Garamond",
                 protagonist_font_size= 12, 
                 protagonist_font_color= (0, 0 , 0),
+                top_text = "", #only applies when wrapped > 0; if "" will default to author, year
+                top_text_font_style = "Cormorant Garamond",
+                top_text_font_size = "24",
+                top_text_font_color = "#1F4534",
+                bottom_text = "", #only applies when wrapped > 0; if "" will default to "Shapes of Stories"
+                bottom_text_font_style = "Sans",
+                bottom_text_font_size = "12",
+                bottom_text_font_color = "#000000",
                 border = False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
@@ -65,6 +73,8 @@ def create_shape(story_data_path,
     line_color = hex_to_rgb(line_color)
     title_font_color = hex_to_rgb(title_font_color)
     protagonist_font_color = hex_to_rgb(protagonist_font_color)
+    top_text_font_color = hex_to_rgb(top_text_font_color)
+    bottom_text_font_color = hex_to_rgb(bottom_text_font_color)
     border_color = hex_to_rgb(border_color)
     background_value = hex_to_rgb(background_value)
     wrap_background_color = hex_to_rgb(wrap_background_color)
@@ -141,6 +151,14 @@ def create_shape(story_data_path,
                     protagonist_font_style = protagonist_font_style,
                     protagonist_font_size= protagonist_font_size, 
                     protagonist_font_color= protagonist_font_color,
+                    top_text = top_text, #only applies when wrapped > 0; if "" will default to author, year
+                    top_text_font_style = top_text_font_style,
+                    top_text_font_size = top_text_font_size,
+                    top_text_font_color = top_text_font_color,
+                    bottom_text = bottom_text, #only applies when wrapped > 0; if "" will default to "Shapes of Stories"
+                    bottom_text_font_style = bottom_text_font_style,
+                    bottom_text_font_size = bottom_text_font_size,
+                    bottom_text_font_color = bottom_text_font_color,
                     border = border,
                     border_thickness=border_thickness,
                     border_color=border_color,
@@ -220,6 +238,14 @@ def create_shape_single_pass(story_data,
                 protagonist_font_style = "Cormorant Garamond",
                 protagonist_font_size= 12, 
                 protagonist_font_color= (0, 0 , 0),
+                top_text = "", #only applies when wrapped > 0; if "" will default to author, year
+                top_text_font_style = "Cormorant Garamond",
+                top_text_font_size = "24",
+                top_text_font_color = (0, 0 , 0),
+                bottom_text = "", #only applies when wrapped > 0; if "" will default to "Shapes of Stories"
+                bottom_text_font_style = "Sans",
+                bottom_text_font_size = "12",
+                bottom_text_font_color = (0, 0 , 0),
                 border=False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
@@ -289,6 +315,12 @@ def create_shape_single_pass(story_data,
 
     protagonist_font_size_for_300dpi = protagonist_font_size * (300/96)
     protagonist_font_desc = Pango.FontDescription(f"{protagonist_font_style} {protagonist_font_size_for_300dpi}")
+
+    top_text_font_size_for_300dpi = top_text_font_size * (300/96)
+    top_text_font_desc = Pango.FontDescription(f"{top_text_font_style} {top_text_font_size_for_300dpi}")
+
+    bottom_text_font_size_for_300dpi = bottom_text_font_size * (300/96)
+    bottom_text_font_desc = Pango.FontDescription(f"{bottom_text_font_style} {bottom_text_font_size_for_300dpi}")
 
     # Create a Cairo surface and context
     import cairo
@@ -862,7 +894,7 @@ def create_shape_single_pass(story_data,
             prot_x = margin_x + drawable_width - prot_text_width
 
             cr.move_to(prot_x, prot_y)
-            cr.set_source_rgb(*font_color)
+            cr.set_source_rgb(*protagonist_font_color)
             PangoCairo.show_layout(cr, prot_layout)
 
 
@@ -871,18 +903,20 @@ def create_shape_single_pass(story_data,
 
     if wrap_in_inches > 0:
 
-        author = story_data.get('author','')
-        year = story_data.get('year', '')
-        if(author == '' and year == ''):
-            author_year = ""
-        elif(author == '' and year != ''):
-            author_year = year 
-        elif(author != '' and year == ''):
-            author_year = author
-        elif(author != '' and year != ''):
-            author_year = author + ", " + year
-        else:
-            author_year = ""
+        if top_text == "":
+
+            author = story_data.get('author','')
+            year = story_data.get('year', '')
+            if(author == '' and year == ''):
+                top_text = ""
+            elif(author == '' and year != ''):
+                top_text = year 
+            elif(author != '' and year == ''):
+                top_text = author
+            elif(author != '' and year != ''):
+                top_text = author + ", " + year
+            else:
+                top_text = ""
 
         top_wrap_h = design_offset_y  # from y=0 to design_offset_y
         # The center x is half the total width
@@ -891,13 +925,13 @@ def create_shape_single_pass(story_data,
         y_top_center = top_wrap_h / 2
 
         place_text_centered(cr,
-                            text=author_year,
-                            font_size_px=title_font_size_for_300dpi,
-                            font_face = font_style,
+                            text=top_text,
+                            font_size_px=top_text_font_size_for_300dpi,
+                            font_face = top_text_font_style,
                             x_center=x_top_center,
                             y_center=y_top_center,
                             rotation_degrees=0,
-                            color= title_font_color)
+                            color= (top_text_font_color))
 
         # 3) Place text on bottom edge, fully centered
         bottom_wrap_y = design_offset_y + design_height
@@ -905,13 +939,16 @@ def create_shape_single_pass(story_data,
         x_bottom_center = total_width_px / 2
         y_bottom_center = bottom_wrap_y + (bottom_wrap_h / 2)
 
+        if bottom_text == "":
+            bottom_text = "THE SHAPES OF STORIES, LLC"
         place_text_centered(cr,
-                            text="THE SHAPES OF STORIES, LLC",
-                            font_size_px=font_size_for_300dpi,
+                            text=bottom_text,
+                            font_size_px=bottom_text_font_size_for_300dpi,
+                            font_face = bottom_text_font_style,
+                            color = bottom_text_font_color,
                             x_center=x_bottom_center,
                             y_center=y_bottom_center,
-                            rotation_degrees=0,
-                            color=(0,0,0))
+                            rotation_degrees=0)
 
 
     # 7) Save final image
