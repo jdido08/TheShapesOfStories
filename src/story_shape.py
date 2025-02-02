@@ -30,6 +30,7 @@ import yaml
 
 def create_shape(story_data_path,
                 x_delta = 0.015,
+                step_k = 15,
                 font_style="",
                 font_size=72,
                 font_color = (0, 0, 0), #default to black
@@ -147,7 +148,7 @@ def create_shape(story_data_path,
     # while status == "processing":
     for i in range(recursive_loops):
         # print(story_data['story_components'][1]['modified_end_time'])
-        story_data = transform_story_data(story_data, x_delta)
+        story_data = transform_story_data(story_data, x_delta, step_k)
 
         story_data, status = create_shape_single_pass(
                     story_data=story_data, 
@@ -534,10 +535,15 @@ def create_shape_single_pass(story_data,
         all_rendered_boxes = []
         status = "completed"
 
+        last_story_component_index = last_index = len(story_data['story_components']) - 1 
+
         for index, component in enumerate(story_data['story_components'][1:], start=1):
             arc_x_values = component.get('arc_x_values', [])
             arc_y_values = component.get('arc_y_values', [])
             description = component.get('description', '')
+            
+            if 'arc_manual_override' not in component:
+                component['arc_manual_override'] = False
 
             if not arc_x_values or not arc_y_values:
                 continue
@@ -608,18 +614,20 @@ def create_shape_single_pass(story_data,
                 if target_chars < 5:
                     continue
 
-                if index == 1:
+                if index == 1 or index == last_story_component_index:
                     llm_target_chars = target_chars #set llm_target_chars to target chars because there's no net calc needed at this point
                 else: #calc llm_target_chars considering net
                     llm_target_chars = target_chars - (story_data['story_components'][index - 1]['actual_arc_text_chars'] - story_data['story_components'][index - 1]['target_arc_text_chars_with_net'] )
                 
-                
+                print("STORY COMPONENT INDEX: ", index)
+                print("")
+
                 if 'arc_text_valid_message' in component:
                     if component['arc_text_valid_message'] == "curve too long but can't change due to constraints":
-                        target_chars = target_chars + 2
+                        target_chars = target_chars + 3
                         llm_target_chars = target_chars
                     elif component['arc_text_valid_message'] == "curve too short but can't change due to constraints":
-                        target_chars = target_chars - 2
+                        target_chars = target_chars - 3
                         llm_target_chars = target_chars
                 
                 component['target_arc_text_chars_with_net'] = llm_target_chars #save net target in story data dict so it can be referenced in future 
@@ -644,12 +652,18 @@ def create_shape_single_pass(story_data,
                         llm_model=llm_model
                     )
 
+                    
                     descriptors_valid, descriptor_error_message = validate_descriptors(
                         descriptors_text=descriptors_text,
                         protagonist=story_data['protagonist'],
                         lower_bound=lower_bound,
                         upper_bound=upper_bound
                     )
+
+                    if 'arc_text' not in component:
+                         component['arc_text_attempts'] = 1
+                    else:
+                        component['arc_text_attempts'] = component['arc_text_attempts'] + 1
 
                     component['arc_text'] = descriptors_text
                     component['actual_arc_text_chars'] = len(descriptors_text)
@@ -683,6 +697,10 @@ def create_shape_single_pass(story_data,
                     reasonable_descriptiors_attempts = reasonable_descriptiors_attempts + 1
 
                 if descriptors_valid == False:
+                    return story_data, "error"
+                
+                if component['arc_text_attempts'] > 10:
+                    print("Max attempts to create descriptors exceeded")
                     return story_data, "error"
                 
             else:
@@ -790,12 +808,15 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
-                   
-                    component['arc_text_valid'] = False
-                    component['arc_text_valid_message'] = "curve too short but can't change due to constraints"
-                    print("curve too short but can't change due to constraints")
-                    #status = "curve too short but can't change due to constraints"
-                    return story_data, "processing"
+
+                    if component['arc_manual_override'] == True:
+                        status = 'Manual Override'
+                    else:
+                        component['arc_text_valid'] = False
+                        component['arc_text_valid_message'] = "curve too short but can't change due to constraints"
+                        print("curve too short but can't change due to constraints")
+                        #status = "curve too short but can't change due to constraints"
+                        return story_data, "processing"
 
 
             #curve is too long so need to shorten it
@@ -870,10 +891,13 @@ def create_shape_single_pass(story_data,
                     else:
                         surface.write_to_png(story_shape_path)
 
-                    component['arc_text_valid'] = False
-                    component['arc_text_valid_message'] = "curve too long but can't change due to constraints"
-                    print("curve too long but can't change due to constraints")
-                    return story_data, "processing"
+                    if component['arc_manual_override'] == True:
+                        status = 'Manual Override'
+                    else:
+                        component['arc_text_valid'] = False
+                        component['arc_text_valid_message'] = "curve too long but can't change due to constraints"
+                        print("curve too long but can't change due to constraints")
+                        return story_data, "processing"
 
             elif curve_length_status == "curve_correct_length":
                 if output_format == "svg":
@@ -1394,7 +1418,7 @@ def scale_y_values(y_values, new_min, new_max):
    
 
 
-def get_component_arc_function(x1, x2, y1, y2, arc):
+def get_component_arc_function(x1, x2, y1, y2, arc, step_k=15):
 
     def exponential_step_function(x):
         # 1) If out of range, return None
@@ -1402,9 +1426,42 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             return None
         
         # 2) Decide how many steps you want
-        num_steps = int(math.ceil(x2 - x1))
-        if num_steps < 1:
+        # num_steps = int(math.ceil(x2 - x1))
+        # if num_steps < 1:
+        #     num_steps = 1
+        # elif num_steps > 3:
+        #     num_steps = 3
+
+
+        # distance = math.hypot(x2 - x1, y2 - y1)  # sqrt(dx^2 + dy^2)
+        # # Then map distance to [1..3] steps, for example:
+        # if distance < 1:
+        #     num_steps = 1
+        # elif distance < 3:
+        #     num_steps = 2
+        # else:
+        #     num_steps = 3
+
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+
+        if dx == 0:
+            # Avoid dividing by zero
+            slope = float('inf')
+        else:
+            slope = dy / dx
+
+        # Example rule:
+        # - if slope is small (< ~ 0.5), only 1 step
+        # - if slope is moderate, use 2 steps
+        # - if slope is steep, use 3 steps
+
+        if slope < 0.5:
             num_steps = 1
+        elif slope < 3.0:
+            num_steps = 2
+        else:
+            num_steps = 3
         
         
         # 3) We create the sub-intervals
@@ -1424,7 +1481,7 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
                 
                 # now define an exponential from y_base up to y_base + dy
                 # choose a k (steepness)
-                k = 15  # or 10, or something user-chosen
+                k = step_k  # or 10, or something user-chosen
                 # map x into [0..1] for exponential
                 alpha = (x - start) / (end - start)  # 0 to 1
                 # standard increase formula:
@@ -1443,6 +1500,8 @@ def get_component_arc_function(x1, x2, y1, y2, arc):
             #print(x2, " ", x1)
             if num_steps < 1:
                 num_steps = 2  # Ensure at least one step
+            elif num_steps > 3:
+                num_steps = 3
             #num_steps = 2
 
             # Calculate the positions of the steps
@@ -1686,7 +1745,7 @@ def get_story_arc(x, functions_list):
     return None  # Return None if x is outside the range of all functions
 
 
-def transform_story_data(data, x_delta):
+def transform_story_data(data, x_delta, step_k):
     # Convert JSON to DataFrame
     try:
         df = pd.json_normalize(
@@ -1756,7 +1815,8 @@ def transform_story_data(data, x_delta):
             story_component_times[1],
             story_component_end_emotional_scores[0],
             story_component_end_emotional_scores[1],
-            story_component_arc
+            story_component_arc,
+            step_k
         )
         story_arc_functions_list.append(component_arc_function)
 
@@ -1786,7 +1846,8 @@ def transform_story_data(data, x_delta):
             story_component_times[1],
             story_component_end_emotional_scores[0],
             story_component_end_emotional_scores[1],
-            story_component_arc
+            story_component_arc, 
+            step_k
         )
         result = np.array([get_story_arc(x, [component_arc_function]) for x in x_values])
 
