@@ -1085,41 +1085,58 @@ def generate_descriptors(title, author, protagonist, component_description, stor
         existing_arc_texts = f"Previous descriptions:\n{existing_arc_texts}"
 
     
-    prompt_template = """ ## INSTRUCTIONS: Generate EXACTLY {desired_length}-character descriptors for this segment of {author}'s "{title}" that focus on {protagonist}".
+    prompt_template = """ ## INSTRUCTIONS 
+Your task is to identify and express the most significant moments from this segment of {author}'s "{title}". Create a series of precise phrases that capture {protagonist}'s key story beats, fitting exactly {desired_length} characters.
 
 ## STORY SEGMENT DESCRIPTION:
 {component_description}
 
-
 ## REQUIREMENTS:
-1. LENGTH: OUTPUT MUST BE EXACTLY {desired_length} CHARACTERS. NO MORE, NO LESS
-    - Count EVERY character including spaces and periods
-    - Count EVERY period and space between phrases
-    - Example: "Green Light." is 12 characters
-2. SOURCE: ONLY use elements explicitly mentioned in the STORY SEGMENT DESCRIPTION above
-3. FORMAT: 
-    - Descriptors should consist of 1-4 word phrases
+1. CONTENT:
+    - USE ONLY elements directly from the provided STORY SEGMENT DESCRIPTION
+    - SELECT the most significant moments and actions pertaining to {protagonist}'s story
+    - PRIORITIZE concrete actions, events, places, objects, people
+    - FOCUS on the perspective of {protagonist} 
+    - NEVER mention {protagonist} by name
+
+2. FORMAT: 
+    - BE CONCISE descriptors should consist of 1-4 word phrases
     - A single phrase is perfectly acceptable 
     - If multiple phrases, each ends with ". " except the last phrase, which ends with just "." and no space
     - CAPITALIZATION: Use Title Case (capitalize the first letter of every word, except minor words like "and," "of," "the," unless they are the first word of a phrase)
-4. PHRASE CONSTRUCTION:
-    - USE ONLY elements directly from the provided STORY SEGMENT DESCRIPTION
-    - USE specific and concrete elements from the STORY SEGMENT DESCRIPTION e.g. places, actions, people, objects, events
-    - USE elements that are most critical and important to the STORY SEGMENT DESCRIPTION
-    - AVOID using any analysis or abstractions/metaphors
+    
+3. PHRASE CONSTRUCTION:
+    - CAPTURE the progression of events that drive the story forward
     - Break compound actions into separate phrases
-    - NEVER mention {protagonist} by name
-5. PHRASE ORDERING: The order of the phrases MUST be in the chronological order as they appear in STORY SEGMENT DESCRIPTION
-6. CONTINUITY:
-    - Each story segment descriptors joins with other story story segments to tell the full {protagonist}'s story
-    - Descriptors should be distinct from previous story segment descriptors: {existing_arc_texts}
-7. VERIFICATION:
-    - Before responding, verify LENGTH by counting all characters including spaces and punctuation to ensure total is EXACTLY {desired_length} characters
-    - Before responding, verify that all phrases come from STORY SEGMENT DESCRIPTION and that the each phrase FORMAT, PHRASE CONSTRUCTION, and PHRASE ORDERING is correct
-    - If LENGTH is not exact and/or phrases are not created correctly, please adjust the phrase to match the requirements
-8. OUTPUT: Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation
+    - AVOID redundant information across phrases
+    - Each phrase should capture a complete, meaningful story beat
 
-______
+4. PHRASE ORDERING: 
+    - The order of the phrases MUST be in chronological order as events occur in STORY SEGMENT DESCRIPTION
+    - Each phrase should flow naturally into the next to tell a coherent story of {protagonist} 
+
+5. CONTINUITY:
+    - Each story segment descriptors joins with other story segments to tell the full {protagonist}'s story
+    - Descriptors should be distinct from previous story segment descriptors: {existing_arc_texts}
+
+6. LENGTH: OUTPUT MUST BE EXACTLY {desired_length} CHARACTERS. NO MORE, NO LESS
+    - Count EVERY character including spaces and periods
+    - Count EVERY period and space between phrases
+    - Example: "Green Light." is 12 characters
+    
+7. VERIFICATION:
+    Step 1: Verify Narrative Quality
+    - Do phrases capture the most important story moments?
+    - Are events in correct chronological order?
+    - Does each phrase advance the story?
+
+    Step 2: Verify Technical Requirements
+    - Count all characters (including spaces and periods)
+    - Check format and capitalization
+    - Confirm no protagonist name used
+    - Verify source material accuracy
+
+8. OUTPUT: Provide ONLY the descriptor text, exactly {desired_length} characters. No explanation. 
 
 
 ## EXAMPLES:
@@ -1132,20 +1149,13 @@ Protagonist: Jay Gatsby
 Story Segment Description: "Gatsby stands alone in his garden, reaching out towards the green light across the bay, embodying his yearning for Daisy. His elaborate mansion and lavish parties serve as carefully orchestrated attempts to attract her attention, revealing both his hope and desperation. When he finally arranges to meet Nick, his neighbor and Daisy's cousin, Gatsby's carefully constructed facade begins to show cracks of vulnerability as he seeks a way to reconnect with his lost love"
 
 Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
-- "Alone in Garden." (16 characters --> 1:A, 2:l, 3:o, 4:n, 5:e, 6:[space], 7:i, 8:n, 9:[space], 10:G, 11:a, 12:r, 13:d, 14:e, 15:n, 16:.)
-- "Green Light."  (12 characters --> 1:G, 2:r, 3:e, 4:e, 5:n, 6:[space], 7:L, 8:i, 9:g, 10:h, 11:h, 12:.)
-- "Yearning for Daisy." (20 characters --> 1:Y, 2:e, 3:a, 4:r, 5:r, 6:n, 7:i, 8:n, 9:g, 10:[space], 11:f, 12:o, 13:r, 14:[space], 15:D, 16:a, 17:i, 18:s, 19:y, 20:.)
-- "Lost Love." (10 characters --> 1:L, 2:o, 3:s, 4:t, 5:[space], 6:L, 7:o, 8:v, 9:e, 10:.)
+- "Alone in Garden." (16 characters)
+- "Green Light."  (12 characters)
+- "Yearning for Daisy." (20 characters)
+- "Lost Love." (10 characters)
 
-Note: Phrases must appear in chronological order as events occur in the Story Segment Description
+Selected Output (12 characters): "Green Light."
 
-Output: "Green Light." (12 characters total)
-Breakdown:
-- "Green Light." (12 characters)
-
-Notes:
-- Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
-- Phrases must appear in chronological order as events occur in the Story Segment Description
 
 ### EXAMPLE 2
 Length Requirements: 37 characters
@@ -1154,25 +1164,16 @@ Title: The Old Man and the Sea
 Protagonist: Santiago
 Story Segment Description: "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and optimism. His friendship with Manolin provides comfort and support, though the boy has been forced to work on another boat. His determination remains strong as he prepares for a new day of fishing, finding peace in his dreams of Africa and its lions."
 
-Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
-- "84 Days No Fish" (17 characters --> 1:8, 2:4, 3:[space], 4:D, 5:a, 6:y, 7:s, 8:., 9:[space], 10:N, 11:o, 12:[space], 13:F, 14:i, 15:s, 16:h, 17:.)
-- "Unlucky." (8 characters --> 1:U, 2:n, 3:l, 4:u, 5:c, 6:k, 7:y, 8:.)
-- "Optimist." (9 characters --> 1:O, 2:p, 3:t, 4:i, 5:m, 6:i, 7:s, 8:t, 9:.)
-- "Manolin Friendship." (19 characters --> 1:M, 2:a, 3:n, 4:o, 5:l, 6:i, 7:n, 8:[space], 9:F, 10:r, 11:i, 12:e, 13:n, 14:d, 15:s, 16:h, 17:i, 18:p, 19:.)
-- "Preps for Fishing." (18 characters --> 1:P, 2:r, 3:e, 4:p, 5:s, 6:[space], 7:f, 8:o, 9:r, 10:[space], 11:F, 12:i, 13:s, 14:h, 15:i, 16:n, 17:g, 18:.)
-- "Dreams of Africa." (16 characters --> 1:D, 2:r, 3:e, 4:a, 5:m, 6:s, 7:[space], 8:o, 9:f, 10:A, 11:f, 12:r, 13:i, 14:c, 15:a, 16:.)
+Potential Phrases -- note phrases shown are non-exhaustive:
+- "84 Days No Fish" (17 characters)
+- "Unlucky." (8 characters)
+- "Optimist." (9 characters)
+- "Manolin Friendship." (19 characters)
+- "Preps for Fishing." (18 characters)
+- "Dreams of Africa." (16 characters)
 
-Note: Phrases must appear in chronological order as events occur in the Story Segment Description
+Selected Output (37 characters): "84 Days. No Fish. Manolin Friendship."
 
-Output: "84 Days. No Fish. Manolin Friendship." (37 characters total)
-Breakdown:
-- "84 Days. " (9 chars --> 8 characters + space)
-- "No Fish. " (9 chars --> 8 characters + space)
-- "Manolin Friendship." (19 chars)
-
-Notes:
-- Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
-- Phrases must appear in chronological order as events occur in the Story Segment Description
 
 ### EXAMPLE 3
 Length Requirements: 79 characters
@@ -1181,28 +1182,19 @@ Title: Romeo and Juliet
 Protagonist: Juliet
 Story Segment Description: "Juliet awakens to find Romeo dead beside her, having poisoned himself in the belief she was dead. In her final moments, she experiences complete despair, attempting to die by kissing his poisoned lips before ultimately using his dagger to join him in death, unable to conceive of life without him."
 
-Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
-- "Awakens." (8 characters --> 1:A, 2:w, 3:a, 4:k, 5:e, 6:n, 7:s, 8:.)
-- "Romeo Dead." (11 characters --> 1:R, 2:o, 3:m, 4:e, 5:o, 6:[space], 7:D, 8:e, 9:a, 10:d, 11:.)
-- "Despair." (8 characters --> 1:D, 2:e, 3:s, 4:p, 5:a, 6:i, 7:r, 8:.)
-- "Kisses Poisoned Lips." (21 characters --> 1:K, 2:i, 3:s, 4:s, 5:e, 6:s, 7:[space], 8:P, 9:o, 10:i, 11:s, 12:o, 13:n, 14:e, 15:d, 16:[space], 17:L, 18:i, 19:p, 20:s, 21:.)
-- "Suicide by Dagger." (18 characters --> 1:S, 2:u, 3:i, 4:c, 5:i, 6:d, 7:e, 8:[space], 9:b, 10:y, 11:[space], 12:D, 13:a, 14:g, 15:g, 16:e, 17:r, 18:.)
-- "Reunited with Love." (19 characters --> 1:R, 2:e, 3:u, 4:n, 5:i, 6:t, 7:e, 8:d, 9:[space], 10:w, 11:i, 12:t, 13:h, 14:[space], 15:L, 16:o, 17:v, 18:e, 19:. )
-
-Note: Phrases must appear in chronological order as events occur in the Story Segment Description
-
-Output: "Awakens. Romeo Dead. Complete Despair. Kisses Poisoned Lips. Suicide by Dagger." (79 characters total)
-Breakdown:
-- "Awakens. " (9 characters --> 8 characters + space)
-- "Romeo Dead. " (12 characters --> 11 characters + space)
-- "Complete Despair. " (17 characters --> 16 characters + space)
-- "Kisses Poisoned Lips. " (22 characters --> 21 characters + space)
+Potential Phrases -- note phrases shown are non-exhaustive:
+- "Awakens." (8 characters)
+- "Romeo Dead." (11 characters)
+- "Despair." (8 characters)
+- "Kisses Poisoned Lips." (21 characters)
 - "Suicide by Dagger." (18 characters)
+- "Reunited with Love." (19 characters)
 
-Notes:
+Selected Output (79 characters): "Awakens. Romeo Dead. Complete Despair. Kisses Poisoned Lips. Suicide by Dagger."
+
+Notes for All Examples:
 - Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
-- Phrases must appear in chronological order as events occur in the Story Segment Description
-
+- Phrases appear in chronological order as events occur in Story Segment Description
 
 ________
 
