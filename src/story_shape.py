@@ -1094,13 +1094,13 @@ Your task is to identify and express the most significant moments from this segm
 ## REQUIREMENTS:
 1. CONTENT:
     - USE ONLY elements directly from the provided STORY SEGMENT DESCRIPTION
-    - SELECT the most significant moments and actions pertaining to {protagonist}'s story
-    - PRIORITIZE concrete actions, events, places, objects, people
     - FOCUS on the perspective of {protagonist} 
+    - SELECT concrete actions, events, places, objects, people
+    - PRIORITIZE the most significant moments and actions pertaining to {protagonist}'s story
     - NEVER mention {protagonist} by name
 
 2. FORMAT: 
-    - BE CONCISE descriptors should consist of 1-4 word phrases
+    - BE CONCISE, descriptors should consist of 1-4 word phrases
     - A single phrase is perfectly acceptable 
     - If multiple phrases, each ends with ". " except the last phrase, which ends with just "." and no space
     - CAPITALIZATION: Use Title Case (capitalize the first letter of every word, except minor words like "and," "of," "the," unless they are the first word of a phrase)
