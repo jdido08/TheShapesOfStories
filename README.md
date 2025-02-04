@@ -1,13 +1,36 @@
+2/3/2025:
+- create system for identify protoganist 
+- create system for determing font + colors 
+- create system for creating stories 
+- figure out size offerings:
+    - Book
+        - Amazon
+        - Lulu
+    - Canvas
+    - Poster 
+    - T-Shirt
+
+
+inputs:
+- title, author, year, (protoganist this could be done programctically) 
+- determine story data 
+--> create prompt to determine background color, font color, border color, font 
+- create story shape 
+
+-- create story one by one 
+
+
+
 1/31/2025:
-- descriptors creation setup good for now but can be optimized for sure but moving on for right now
+- descriptors creation setup good for now but can be optimized for sure but moving on for right now -- done 
 
 need to do:
 - format/style for protognist --> done 
 - download all font that could be used to computer -- done
 - make the title font bold -- done
-- make some shape functions e.g. step-by-step parameterized 
-- add some checks to make sure I dont get into a death spiral of llm api calls
-- dont use net chars for last sections 
+- make some shape functions e.g. step-by-step parameterized  -- done
+- add some checks to make sure I dont get into a death spiral of llm api calls -- done
+- dont use net chars for last sections  -- done
 
 
 

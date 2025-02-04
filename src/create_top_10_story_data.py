@@ -25,8 +25,12 @@ client = gspread.authorize(credentials)
 sheet_id = "1LIZ6lfFwH7SWwbdwkR4rX5v36_DhI0Bx-L8vlw8pL2w"
 spreadsheet = client.open_by_key(sheet_id)
 
-# Access the first worksheet
-worksheet = spreadsheet.sheet1
+
+# Access a specific worksheet by name
+#worksheet_name = "YourTabName"  
+#worksheet = spreadsheet.worksheet(worksheet_name) # Change this to the actual tab name
+worksheet = spreadsheet.sheet1 # Access the first worksheet
+
 
 # Get all rows from the sheet
 rows = worksheet.get_all_records()

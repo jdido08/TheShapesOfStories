@@ -1,5 +1,12 @@
 Story Styling Guide Request:
-For "{STORY_TITLE}" by {AUTHOR}, please provide a visual styling guide that will work effectively both as digital art and as physical wall art.
+
+I'm creating artwork called "The Shapes of Stories" which visualizes the narrative journey's (i.e. their ups and down) of a story's protoganist. 
+
+See the attached image for an example of the Shape of Achilles's journey in the "Iliad". 
+
+I need your help creating a story guide for each of the protoganist's in "{Story Title}" by {Author}.
+
+Please provide a visual styling guide that will work effectively both as digital art and as physical wall art.
 
 1. Color Palette:
    Please provide hex codes and explanations for:
