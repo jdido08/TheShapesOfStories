@@ -62,6 +62,7 @@ def create_shape(story_data_path,
                 bottom_text_font_style = "Sans",
                 bottom_text_font_size = "12",
                 bottom_text_font_color = "#000000",
+                top_and_bottom_text_band = 1.5,
                 border = False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
@@ -183,6 +184,7 @@ def create_shape(story_data_path,
                     bottom_text_font_style = bottom_text_font_style,
                     bottom_text_font_size = bottom_text_font_size,
                     bottom_text_font_color = bottom_text_font_color,
+                    top_and_bottom_text_band = top_and_bottom_text_band,
                     border = border,
                     border_thickness=border_thickness,
                     border_color=border_color,
@@ -275,6 +277,7 @@ def create_shape_single_pass(story_data,
                 bottom_text_font_style = "Sans",
                 bottom_text_font_size = "12",
                 bottom_text_font_color = (0, 0 , 0),
+                top_and_bottom_text_band = 1.5,
                 border=False,
                 border_thickness=4,
                 border_color=(0, 0, 0),
@@ -977,6 +980,7 @@ def create_shape_single_pass(story_data,
     # MAKE NOTES ON TOP AND BOTTOM OF CANVAS -- only applies when wrap_in_inches > 0
     cr.restore()  # <== restore out of that translation
 
+
     if wrap_in_inches > 0:
 
         if top_text == "":
@@ -994,11 +998,14 @@ def create_shape_single_pass(story_data,
             else:
                 top_text = ""
 
-        top_wrap_h = design_offset_y  # from y=0 to design_offset_y
-        # The center x is half the total width
+      
         x_top_center = total_width_px / 2
-        # The center y is half the top_wrap_h
-        y_top_center = top_wrap_h / 2
+        band_height_top = top_and_bottom_text_band * dpi  # 1.5" band
+        band_start_top = design_offset_y - band_height_top  # upper edge of top band
+        band_end_top   = design_offset_y                    # shape starts here
+
+        y_top_center = band_start_top + (band_height_top / 2)
+       
 
         place_text_centered(cr,
                             text=top_text,
@@ -1010,10 +1017,14 @@ def create_shape_single_pass(story_data,
                             color= (top_text_font_color))
 
         # 3) Place text on bottom edge, fully centered
-        bottom_wrap_y = design_offset_y + design_height
-        bottom_wrap_h = total_height_px - bottom_wrap_y
+        bottom_wrap_y = design_offset_y + design_height  # The shape ends here
+        band_height_bottom = top_and_bottom_text_band * dpi                   # Another 1.5" band
+        band_start_bottom = bottom_wrap_y
+        band_end_bottom   = bottom_wrap_y + band_height_bottom
+
         x_bottom_center = total_width_px / 2
-        y_bottom_center = bottom_wrap_y + (bottom_wrap_h / 2)
+        y_bottom_center = band_start_bottom + (band_height_bottom / 2)
+
 
         if bottom_text == "":
             bottom_text = "THE SHAPES OF STORIES, LLC"
@@ -1027,6 +1038,7 @@ def create_shape_single_pass(story_data,
                             rotation_degrees=0)
 
 
+    
     # 7) Save final image
     if output_format == "svg":
         surface.finish()
@@ -1929,6 +1941,18 @@ def place_text_centered(cr, text, font_size_px,
         cr.translate(-x_center, -y_center)
 
     # 4) Show the layout
+    PangoCairo.show_layout(cr, layout)
+    cr.restore()
+
+def place_text_centered_layout(cr, layout, x_center, y_center, rgb_color=(0,0,0)):
+    """
+    Renders the given Pango layout so its bounding box center is at (x_center, y_center).
+    """
+    text_width, text_height = layout.get_pixel_size()
+    cr.save()
+    cr.set_source_rgb(*rgb_color)  # set the text color
+    # Move so layout's top-left corner = (x_center - w/2, y_center - h/2)
+    cr.move_to(x_center - text_width / 2, y_center - text_height / 2)
     PangoCairo.show_layout(cr, layout)
     cr.restore()
 

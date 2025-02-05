@@ -40,6 +40,7 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 bottom_text_font_style = "Sans",
                 bottom_text_font_size = 8*2,
                 bottom_text_font_color = "#000000",
+                top_and_bottom_text_band = 1.5, #this determines the band which top and center text is centered on above/below design; if you want to center along full wrap in inches set value to wrap_in_inches else standard is 1.5 
                 border=True, #True or False
                 border_thickness=60, #only applicable if border is set to True
                 border_color='#D8CFC2', #only applicable if border is set to True
