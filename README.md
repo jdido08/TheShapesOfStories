@@ -1,8 +1,17 @@
 2/3/2025:
-- create system for identify protoganist 
-- create system for determing font + colors 
 - create system for creating stories 
-- figure out size offerings:
+    - create system for identify protoganist 
+    - create system for determing font + colors 
+- need to figure out font sizes for: [should I have sizes]
+   -- 6x6 [same as 12x12]
+   -- 12x12 [same as 6x6]
+   -- 12x36 [this is actually different --> same font as 12x12 but story needs to be more indepth and detailed]
+- add space at the end of phrase (so there's non spaces between component text)
+- need to do writeup about story walls
+  -- what does the shape of your favorite stories reveal about you?
+
+
+- figure out size offerings: Done
     - Book
         - Amazon
         - Lulu
