@@ -5,9 +5,11 @@
 - need to figure out font sizes for: [should I have sizes]
    -- 6x6 [same as 12x12]
    -- 12x12 [same as 6x6]
-   -- 12x36 [this is actually different --> same font as 12x12 but story needs to be more indepth and detailed]
-- add space at the end of phrase (so there's non spaces between component text)
-- need to figure out about text at top and bottom of canvas so it's always within 1.5 inch 
+   -- 12x36 [this is actually different --> same font as 12x12 but story needs to be more indepth and detailed; save only for really special and popular ones]
+
+
+- add space at the end of phrase (so there's non spaces between component text) -- done
+- need to figure out about text at top and bottom of canvas so it's always within 1.5 inch -- done
 - need to do writeup about story walls
   -- what does the shape of your favorite stories reveal about you?
 

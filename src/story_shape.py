@@ -655,14 +655,24 @@ def create_shape_single_pass(story_data,
                         llm_model=llm_model
                     )
 
-                    
-                    descriptors_valid, descriptor_error_message = validate_descriptors(
+                    descriptors_valid, descriptor_message = validate_descriptors(
                         descriptors_text=descriptors_text,
                         protagonist=story_data['protagonist'],
                         lower_bound=lower_bound,
                         upper_bound=upper_bound
                     )
 
+                    #update descriptors text immediately if valid 
+                    if descriptors_valid == True:
+                        descriptors_text = descriptor_message
+
+                      #if descriptors valid and it's the last index then remove the trailing space
+                        if index == last_story_component_index:
+                            if descriptors_text.endswith(' '): #check if ends in space
+                                descriptors_text = descriptors_text[:-1] #remove last character (the space)
+                                
+
+                             
                     if 'arc_text' not in component:
                          component['arc_text_attempts'] = 1
                     else:
@@ -671,14 +681,14 @@ def create_shape_single_pass(story_data,
                     component['arc_text'] = descriptors_text
                     component['actual_arc_text_chars'] = len(descriptors_text)
                     component['arc_text_valid'] = descriptors_valid
-                    component['arc_text_valid_message'] = descriptor_error_message
+                    component['arc_text_valid_message'] = descriptor_message
 
                     actual_chars = len(descriptors_text)
 
                     if descriptors_valid == True:
                          print("#", reasonable_descriptiors_attempts,".) Descriptors Valid: ", descriptors_text, "(",actual_chars,"/",str(upper_bound-3),") -- LLM Char Target: ", llm_target_chars )
                     else:
-                        print("#", reasonable_descriptiors_attempts,".) Descriptors NOT Valid: ", descriptors_text, "Target Chars: ", llm_target_chars, " Error: ",  descriptor_error_message)
+                        print("#", reasonable_descriptiors_attempts,".) Descriptors NOT Valid: ", descriptors_text, "Target Chars: ", llm_target_chars, " Error: ",  descriptor_message)
 
                         if (actual_chars - target_chars) > 50:
                             llm_target_chars = llm_target_chars - random.randint(20, 30) #if descriptors not even close > 10 chars away
@@ -1114,7 +1124,7 @@ Your task is to identify and express the most significant moments from this segm
 2. FORMAT: 
     - BE CONCISE, descriptors should consist of 1-4 word phrases
     - A single phrase is perfectly acceptable 
-    - If multiple phrases, each ends with ". " except the last phrase, which ends with just "." and no space
+    - ALL phrases end with ". " (period followed by space)
     - CAPITALIZATION: Use Title Case (capitalize the first letter of every word, except minor words like "and," "of," "the," unless they are the first word of a phrase)
     
 3. PHRASE CONSTRUCTION:
@@ -1133,8 +1143,8 @@ Your task is to identify and express the most significant moments from this segm
 
 6. LENGTH: OUTPUT MUST BE EXACTLY {desired_length} CHARACTERS. NO MORE, NO LESS
     - Count EVERY character including spaces and periods
-    - Count EVERY period and space between phrases
-    - Example: "Green Light." is 12 characters
+    - Count EVERY period and space after EVERY phrase
+    - Example: "Green Light. " is 13 characters (includes ending space)
     
 7. VERIFICATION:
     Step 1: Verify Narrative Quality
@@ -1147,6 +1157,7 @@ Your task is to identify and express the most significant moments from this segm
     - Check format and capitalization
     - Confirm no protagonist name used
     - Verify source material accuracy
+    - Confirm all phrases end with ". "
 
 8. OUTPUT: Provide ONLY the descriptor text, exactly {desired_length} characters. No explanation. 
 
@@ -1154,59 +1165,60 @@ Your task is to identify and express the most significant moments from this segm
 ## EXAMPLES:
 
 ### EXAMPLE 1
-Length Requirements: 12 characters
+Length Requirements: 13 characters
 Author: F. Scott Fitzgerald
 Title: The Great Gatsby
 Protagonist: Jay Gatsby
 Story Segment Description: "Gatsby stands alone in his garden, reaching out towards the green light across the bay, embodying his yearning for Daisy. His elaborate mansion and lavish parties serve as carefully orchestrated attempts to attract her attention, revealing both his hope and desperation. When he finally arranges to meet Nick, his neighbor and Daisy's cousin, Gatsby's carefully constructed facade begins to show cracks of vulnerability as he seeks a way to reconnect with his lost love"
 
 Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
-- "Alone in Garden." (16 characters)
-- "Green Light."  (12 characters)
-- "Yearning for Daisy." (20 characters)
-- "Lost Love." (10 characters)
+- "Alone in Garden. " (17 characters)
+- "Green Light. "  (13 characters)
+- "Yearning for Daisy. " (21 characters)
+- "Lost Love. " (11 characters)
 
-Selected Output (12 characters): "Green Light."
+Selected Output (13 characters): "Green Light. "
 
 
 ### EXAMPLE 2
-Length Requirements: 37 characters
+Length Requirements: 38 characters
 Author: Ernest Hemingway
 Title: The Old Man and the Sea
 Protagonist: Santiago
 Story Segment Description: "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and optimism. His friendship with Manolin provides comfort and support, though the boy has been forced to work on another boat. His determination remains strong as he prepares for a new day of fishing, finding peace in his dreams of Africa and its lions."
 
 Potential Phrases -- note phrases shown are non-exhaustive:
-- "84 Days No Fish" (17 characters)
-- "Unlucky." (8 characters)
-- "Optimist." (9 characters)
-- "Manolin Friendship." (19 characters)
-- "Preps for Fishing." (18 characters)
-- "Dreams of Africa." (16 characters)
+- "84 Days No Fish. " (17 characters)
+- "Unlucky. " (9 characters)
+- "Optimist. " (10 characters)
+- "Manolin Friendship. " (20 characters)
+- "Preps for Fishing. " (19 characters)
+- "Dreams of Africa. " (17 characters)
 
-Selected Output (37 characters): "84 Days. No Fish. Manolin Friendship."
+Selected Output (38 characters): "84 Days. No Fish. Manolin Friendship. "
 
 
 ### EXAMPLE 3
-Length Requirements: 79 characters
+Length Requirements: 80 characters
 Author: William Shakespeare
 Title: Romeo and Juliet
 Protagonist: Juliet
 Story Segment Description: "Juliet awakens to find Romeo dead beside her, having poisoned himself in the belief she was dead. In her final moments, she experiences complete despair, attempting to die by kissing his poisoned lips before ultimately using his dagger to join him in death, unable to conceive of life without him."
 
 Potential Phrases -- note phrases shown are non-exhaustive:
-- "Awakens." (8 characters)
-- "Romeo Dead." (11 characters)
-- "Despair." (8 characters)
-- "Kisses Poisoned Lips." (21 characters)
-- "Suicide by Dagger." (18 characters)
-- "Reunited with Love." (19 characters)
+- "Awakens. " (9 characters)
+- "Romeo Dead. " (12 characters)
+- "Despair. " (9 characters)
+- "Kisses Poisoned Lips. " (22 characters)
+- "Suicide by Dagger. " (19 characters)
+- "Reunited with Love. " (20 characters)
 
-Selected Output (79 characters): "Awakens. Romeo Dead. Complete Despair. Kisses Poisoned Lips. Suicide by Dagger."
+Selected Output (80 characters): "Awakens. Romeo Dead. Complete Despair. Kisses Poisoned Lips. Suicide by Dagger. "
 
 Notes for All Examples:
-- Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
+- ALL phrases end with ". " (period + space = 2 chars)
 - Phrases appear in chronological order as events occur in Story Segment Description
+- Character counts include the space after the period in ALL phrases
 
 ________
 
@@ -1944,39 +1956,6 @@ def place_text_centered(cr, text, font_size_px,
     PangoCairo.show_layout(cr, layout)
     cr.restore()
 
-def place_text_centered_layout(cr, layout, x_center, y_center, rgb_color=(0,0,0)):
-    """
-    Renders the given Pango layout so its bounding box center is at (x_center, y_center).
-    """
-    text_width, text_height = layout.get_pixel_size()
-    cr.save()
-    cr.set_source_rgb(*rgb_color)  # set the text color
-    # Move so layout's top-left corner = (x_center - w/2, y_center - h/2)
-    cr.move_to(x_center - text_width / 2, y_center - text_height / 2)
-    PangoCairo.show_layout(cr, layout)
-    cr.restore()
-
-
-def chaikin_curve(points, iterations=1):
-    """
-    points is a list of (x, y) tuples.
-    """
-    for _ in range(iterations):
-        new_points = []
-        for i in range(len(points) - 1):
-            p1 = points[i]
-            p2 = points[i+1]
-            # Add two new points 1/4 and 3/4 along the edge
-            q = (0.75*p1[0] + 0.25*p2[0], 0.75*p1[1] + 0.25*p2[1])
-            r = (0.25*p1[0] + 0.75*p2[0], 0.25*p1[1] + 0.75*p2[1])
-            new_points.append(q)
-            new_points.append(r)
-        # Add final point
-        new_points.append(points[-1])
-        points = new_points
-    return points
-
-
 def hex_to_rgb(hex_color):
     """
     Convert a hex color string to an RGB tuple normalized to [0, 1].
@@ -2000,92 +1979,80 @@ def hex_to_rgb(hex_color):
 
 def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound):
     """
-    Validates descriptor text against all requirements.
+    Validates and fixes descriptor text against all requirements.
     
     Args:
         descriptors_text (str): The descriptor text to validate
         protagonist (str): Name of the protagonist to check against
-        desired_length (int): Target character count
         lower_bound (int): Minimum acceptable character count
         upper_bound (int): Maximum acceptable character count
     
     Returns:
-        tuple: (bool, str) - (is_valid, error_message)
+        tuple: (bool, str) - (is_valid, error_message_or_fixed_text)
+            If invalid: (False, error_message)
+            If valid: (True, potentially_modified_text)
     """
+    if not descriptors_text:
+        return False, "Empty descriptor text"
+
     # 1. Length Check
     actual_length = len(descriptors_text)
     if not (lower_bound <= actual_length <= upper_bound):
         return False, f"Length {actual_length} outside bounds {lower_bound}-{upper_bound}"
 
-    # 2. Basic Format Checks
-    if not descriptors_text[0].isupper():
-        return False, "First character must be capitalized"
-    
-    if not descriptors_text.endswith('.'):
-        return False, "Must end with period"
-    
-    # 3. Protagonist Name Check
+    # 2. Protagonist Name Check
     if protagonist.lower() in descriptors_text.lower():
         return False, f"Contains protagonist name '{protagonist}'"
 
-    # 4. Define minor words that shouldn't be capitalized (unless first word in phrase)
+    # 3. Define minor words
     minor_words = {
-        # Articles
         'a', 'an', 'the',
-        
-        # Common Conjunctions
         'and', 'but', 'or', 'nor',
-        
-        # Common Prepositions
         'in', 'of', 'to', 'for', 'with', 'by', 'at', 'on', 'from',
     }
 
-    # 5. Split into phrases and check format
-    # Changed to handle the last period correctly
-    if descriptors_text.endswith('. '):
-        return False, "Text should not end with period and space"
-        
-    # Remove the final period for splitting
-    text_without_final_period = descriptors_text[:-1]
-    phrases = text_without_final_period.split('. ')
+    # 4. Split into phrases and verify/fix each one
+    # Split on ". " to preserve correct ending format
+    phrases = descriptors_text.split('. ')
+    modified_phrases = []
     
-    for i, phrase in enumerate(phrases):
-        # Empty phrase check
+    for phrase in phrases:
         if not phrase:
             return False, "Contains empty phrase"
             
-        # Check capitalization and word count for each phrase
+        # Remove any trailing periods if they exist
+        phrase = phrase.rstrip('.')
+        
         words = phrase.split()
         if not words:
             return False, "Contains phrase without words"
         
-        # Word count check
         if len(words) > 4:
             return False, f"Phrase '{phrase}' has more than 4 words"
         if len(words) < 1:
             return False, f"Phrase '{phrase}' has no words"
             
-        # First word must always be capitalized regardless of whether it's a minor word
-        if not words[0][0].isupper():
-            return False, f"First word of phrase '{phrase}' must be capitalized"
+        # Fix capitalization
+        modified_words = []
+        modified_words.append(words[0].capitalize())  # First word always capitalized
         
-        # Check other words (not first word)
         for word in words[1:]:
-            if len(word) > 0:
-                if word.lower() in minor_words:
-                    if word[0].isupper():
-                        return False, f"Minor word '{word}' should not be capitalized unless it's the first word"
-                else:
-                    if not word[0].isupper():
-                        return False, f"Word '{word}' should be capitalized"
+            if word.lower() in minor_words:
+                modified_words.append(word.lower())
+            else:
+                modified_words.append(word.capitalize())
+        
+        modified_phrases.append(' '.join(modified_words))
 
-    # Check that all phrases except the last end with '. '
-    reconstructed_text = descriptors_text[:-1]  # Remove final period
-    expected_text = '. '.join(phrases) + '.'
-    if reconstructed_text != expected_text[:-1]:
-        return False, "Incorrect phrase separation format"
+    # 5. Join phrases ensuring each one ends with ". "
+    fixed_text = '. '.join(modified_phrases) + '. '
 
-    return True, "Valid"
+    # 6. Final length check after fixes
+    if not (lower_bound <= len(fixed_text) <= upper_bound):
+        return False, f"After fixes, length {len(fixed_text)} outside bounds {lower_bound}-{upper_bound}"
+
+    return True, fixed_text
+
 
 def pango_font_exists(font_name):
     """

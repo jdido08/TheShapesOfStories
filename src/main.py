@@ -6,7 +6,7 @@ import json
 # summaries_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries'
 # story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data'
 
-create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/to_kill_a_mockingbird_atticus_finch.json',
+create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_iliad_achilles.json',
                 x_delta=0.015, #number of points in the line 
                 step_k = 10, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                 line_type = 'char', #values line or char
