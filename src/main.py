@@ -6,36 +6,36 @@ import json
 # summaries_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries'
 # story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data'
 
-create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_iliad_achilles.json',
+create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/the_great_gatsby_jay_gatsby.json',
                 x_delta=0.015, #number of points in the line 
                 step_k = 10, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                 line_type = 'char', #values line or char
                 line_thickness = 10*2, #only used if line_type = line
-                line_color = '#2B1810', #only used if line_type = line
-                font_style="Minion Pro", #only used if line_type set to char
+                line_color = '#FFD700', #only used if line_type = line
+                font_style="Playfair Display", #only used if line_type set to char
                 font_size= 8*2, #only used if line_type set to char
-                font_color = '#2B1810', #only used if line_type set to char
+                font_color = '#FFD700', #only used if line_type set to char
                 background_type='solid', #values solid or transparent
-                background_value= '#F2EDE4', #only used if background_type = solid
+                background_value= '#0F1E2D', #only used if background_type = solid
                 has_title = "YES", #values YES or NO
                 title_text = "", #optinal if left blank then will use story title as default
-                title_font_style = "Minion Pro", #only used if has_title = "YES"
+                title_font_style = "Playfair Display", #only used if has_title = "YES"
                 title_font_size=24*2, #only used if has_title = "YES"
-                title_font_color = '#2B1810', #only used if has_title = "YES"
+                title_font_color = '#FFD700', #only used if has_title = "YES"
                 title_font_bold = False, #can be True or False
                 title_font_underline = False, #can be true or False
                 title_padding = 0, #extra padding in pixels between bottom and title
                 gap_above_title=20*2, #padding in pixels between title and story shape
                 protagonist_text = "", #if you leave blank will include protognaist name in lower right corner; can get rid of by just setting to " ", only works if has title is true
-                protagonist_font_style = "Minion Pro",
+                protagonist_font_style = "Playfair Display",
                 protagonist_font_size=12*2, 
-                protagonist_font_color='#2B1810',
+                protagonist_font_color='#FFD700',
                 protagonist_font_bold = False, #can be True or False
                 protagonist_font_underline = False, #can be True or False
                 top_text = "", #only applies when wrapped > 0; if "" will default to author, year
-                top_text_font_style = "Minion Pro",
+                top_text_font_style = "Playfair Display",
                 top_text_font_size = 24*2,
-                top_text_font_color = "#2B1810",
+                top_text_font_color = "#FFD700",
                 bottom_text = "", #only applies when wrapped > 0; if "" will default to "Shapes of Stories"
                 bottom_text_font_style = "Sans",
                 bottom_text_font_size = 8*2,
@@ -43,11 +43,11 @@ create_shape(story_data_path = '/Users/johnmikedidonato/Projects/TheShapesOfStor
                 top_and_bottom_text_band = 1.5, #this determines the band which top and center text is centered on above/below design; if you want to center along full wrap in inches set value to wrap_in_inches else standard is 1.5 
                 border=True, #True or False
                 border_thickness=60, #only applicable if border is set to True
-                border_color='#D8CFC2', #only applicable if border is set to True
+                border_color='#0B6E4F', #only applicable if border is set to True
                 width_in_inches = 12,  #design width size
                 height_in_inches = 12, #design width size
                 wrap_in_inches=3,  # for canvas print outs 
-                wrap_background_color = '#D8CFC2', #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
+                wrap_background_color = '#0B6E4F', #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
                 recursive_mode = True, #if you want to recurisvely generate story
                 recursive_loops = 250, #the number of iterations 
                 llm_provider = "anthropic", #for generating descriptors

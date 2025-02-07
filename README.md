@@ -1,7 +1,10 @@
 2/3/2025:
+
 - create system for creating stories 
     - create system for identify protoganist 
     - create system for determing font + colors 
+
+
 - need to figure out font sizes for: [should I have sizes]
    -- 6x6 [same as 12x12]
    -- 12x12 [same as 6x6]
@@ -10,6 +13,7 @@
 
 - add space at the end of phrase (so there's non spaces between component text) -- done
 - need to figure out about text at top and bottom of canvas so it's always within 1.5 inch -- done
+
 - need to do writeup about story walls
   -- what does the shape of your favorite stories reveal about you?
 
