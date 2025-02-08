@@ -21,11 +21,11 @@ Input:
 
 Analysis Framework:
 1. Story Elements
-   - Historical visual traditions (consider iconic cover designs, notable adaptations, and established visual associations that audiences would recognize)
-   - Core themes and protagonist's journey
-   - Setting (time period, location, atmosphere)
+   - Historical visual traditions e.g. iconic cover designs and established print design elements that audiences would recognize (if applicable)
+   - Setting (time period, location, social context)
+   - Dominant mood and atmosphere (consider the overall emotional landscape of the work and protagonist)
+   - Core themes and the protagonist's journey
    - Key symbols and motifs
-   - Emotional tone and trajectory
 
 2. Design Requirements
    Colors must:
