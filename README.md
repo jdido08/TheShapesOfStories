@@ -1,9 +1,10 @@
 2/3/2025:
 
 - create system for creating stories 
-    - create system for identify protoganist 
-    - create system for determing font + colors 
+    - create system for identify protoganist (can do manually)
+    - create system for determing font + colors -- done; have prompt now 
 
+- create system for reviewing 
 
 - need to figure out font sizes for: [should I have sizes]
    -- 6x6 [same as 12x12]

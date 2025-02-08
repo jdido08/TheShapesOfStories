@@ -125,11 +125,3 @@ Output:
     # font_color = story_style['font_color']
     # border_color = story_style['border_color']
     # font = story_style['font']
-
-get_story_style(
-    story_title = "The Catcher in the Rye", 
-    author = "J. D. Salinger",
-    protagonist = "Holden Caulfield", 
-    llm_provider = "anthropic", 
-    llm_model = "claude-3-5-sonnet-latest"
-)

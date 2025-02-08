@@ -344,7 +344,7 @@ def create_story_data(input_path="", author="", year="", protagonist="", output_
     with open(output_path, 'w') as json_file:
         json.dump(story_plot_data, json_file, indent=4)
 
-    return story_plot_data
+    return story_plot_data, output_path
 
 
 
