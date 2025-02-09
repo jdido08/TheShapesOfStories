@@ -29,6 +29,7 @@ import yaml
 
 
 def create_shape(story_data_path,
+                product = "canvas",
                 x_delta = 0.015,
                 step_k = 15,
                 font_style="",
@@ -89,6 +90,11 @@ def create_shape(story_data_path,
             raise ValueError(f"{desc} '{font}' not found on this system.")
     
 
+    #save hex values 
+    font_color_hex = font_color
+    background_value_hex = background_value
+    border_color_hex = border_color
+
     #convert hex colors to (x,y,z) foramt
     font_color = hex_to_rgb(font_color)
     line_color = hex_to_rgb(line_color)
@@ -107,15 +113,15 @@ def create_shape(story_data_path,
             story_data = story_data['story_plot_data']
     
     #get title 
-    path_title = story_data['title'].lower().replace(' ', '_')
+    path_title = story_data['title'].lower().replace(' ', '-')
     path_size = f'{width_in_inches}x{height_in_inches}'
-    path_protagonist= story_data['protagonist'].lower().replace(' ', '_')
+    path_protagonist= story_data['protagonist'].lower().replace(' ', '-')
     
 
     check_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{path_title}_{path_protagonist}_{path_size}.json'
-    #check if specific file exists for story + size and if it does exist use it
     if os.path.exists(check_path):
         story_data_path = check_path
+        print("Story Data for " , path_size ," exists")
         with open(story_data_path, 'r', encoding='utf-8') as file:
             story_data = json.load(file)
             if 'story_plot_data' in story_data:
@@ -123,24 +129,24 @@ def create_shape(story_data_path,
 
     #create story_shape_path
 
-    story_shape_title = story_data['title'].lower().replace(' ', '_')
-    story_shape_size = f'{width_in_inches}x{height_in_inches}'
-    story_shape_protagonist = story_data['protagonist'].lower().replace(' ', '_')
+    story_shape_product = "product-" + product
+    story_shape_line_type = "line-type-" + line_type
+    story_shape_title = "title-" + story_data['title'].lower().replace(' ', '-')
+    story_shape_size = "size-" + f'{width_in_inches}x{height_in_inches}'
+    story_shape_protagonist = "protagonist-"+story_data['protagonist'].lower().replace(' ', '-')
+    story_shape_background_color = "background-color-" + background_value_hex
+    story_shape_font_color = "font-color-" + font_color_hex
+    story_shape_border_color = "border-color-" + border_color_hex
+    story_shape_font = "font-"+font
 
     if title_text == "":
-        path_title_text = "with_title"
+        story_shape_title_display = "title-display-yes"
     else:
-        path_title_text = "no_title"
+        story_shape_title_display = "title-display-no"
 
-    if wrap_in_inches > 0:
-        path_canvas = "wrapped_in_" + str(wrap_in_inches) + "inches"
-    else:
-        path_canvas = "no_wrapped"
 
-    if output_format == "svg":
-        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_size}_{path_canvas}_{line_type}_{path_title_text}.svg'
-    elif output_format == "png":
-        story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_size}_{path_canvas}_{line_type}_{path_title_text}.png'
+    story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_{story_shape_size}_{story_shape_line_type}_{line_type}_{story_shape_background_color}_{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_{story_shape_title_display}.{output_format}'
+
    
     status = "processing"
     story_data['status'] = status
@@ -237,12 +243,14 @@ def create_shape(story_data_path,
     story_data['border_thickness'] = border_thickness
     story_data['border_color'] = border_color
     story_data['arc_text_llm'] = llm_model
-    new_title = story_data['title'].lower().replace(' ', '_')
+    new_title = story_data['title'].lower().replace(' ', '-')
     new_size = f'{width_in_inches}x{height_in_inches}'
-    new_protagonist = story_data['protagonist'].lower().replace(' ', '_')
-    new_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{new_title}_{new_protagonist}_{new_size}.json'
-    with open(new_path, 'w', encoding='utf-8') as file:
+    new_protagonist = story_data['protagonist'].lower().replace(' ', '-')
+    new_story_data_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{new_title}_{new_protagonist}_{new_size}.json'
+    with open(new_story_data_path, 'w', encoding='utf-8') as file:
         json.dump(story_data, file, ensure_ascii=False, indent=4)
+
+    return new_story_data_path, story_shape_path
 
 
 def create_shape_single_pass(story_data, 
@@ -627,11 +635,17 @@ def create_shape_single_pass(story_data,
 
                 if 'arc_text_valid_message' in component:
                     if component['arc_text_valid_message'] == "curve too long but can't change due to constraints":
+                        print("old target chars: ", target_chars)
                         target_chars = target_chars + 3
+                        component['target_arc_text_chars'] = target_chars
                         llm_target_chars = target_chars
+                        print("updated target chars: ", llm_target_chars)
                     elif component['arc_text_valid_message'] == "curve too short but can't change due to constraints":
+                        print("old target chars: ", target_chars)
                         target_chars = target_chars - 3
+                        component['target_arc_text_chars'] = target_chars
                         llm_target_chars = target_chars
+                        print("updated target chars: ", llm_target_chars)
                 
                 component['target_arc_text_chars_with_net'] = llm_target_chars #save net target in story data dict so it can be referenced in future 
                 lower_bound = llm_target_chars - 3

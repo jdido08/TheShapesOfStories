@@ -332,6 +332,11 @@ def create_story_data(input_path="", author="", year="", protagonist="", output_
     story_plot_data['story_summary_source'] = story_summary_source
     story_plot_data['shape_validity'] = story_validity
     story_plot_data['story_data_llm'] = llm_model
+
+    if story_plot_data['protagonist'] != protagonist:
+        print("LLM designated protagonist as: ", story_plot_data['protagonist'], " but I specified protagonist as: ", protagonist)
+        print("PLEASE RESOLVE")
+        raise ValueError
    
 
     for component in story_plot_data["story_components"]:
@@ -339,7 +344,7 @@ def create_story_data(input_path="", author="", year="", protagonist="", output_
         component['modified_end_emotional_score'] = component['end_emotional_score']
     
     output_path = output_path
-    title = story_plot_data['title'].lower().replace(' ', '_') + "_" + story_plot_data['protagonist'].lower().replace(' ', '_')
+    title = story_plot_data['title'].lower().replace(' ', '-') + "_" + story_plot_data['protagonist'].lower().replace(' ', '-')
     output_path = os.path.join(output_path, f"{title}.json")
     with open(output_path, 'w') as json_file:
         json.dump(story_plot_data, json_file, indent=4)

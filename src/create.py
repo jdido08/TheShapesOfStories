@@ -5,6 +5,7 @@ from story_data import create_story_data
 from story_style import get_story_style
 from story_shape import create_shape
 import json 
+import os
 
 # Load credentials from the YAML file
 def load_credentials_from_yaml(file_path):
@@ -36,7 +37,7 @@ rows = worksheet.get_all_records()
 
 #loop through all rows but really should just be first row
 for row in rows:
-
+    print("starting...")
     # Assign each column value to a variable
     product = row.get("product")
     size = row.get("size")
@@ -64,16 +65,56 @@ for row in rows:
         )
         story_style = json.loads(story_style)
         design_rationale = story_style.get('design_rationale')
-        background_color = story_style.get('background_color')
-        font_color = story_style.get('font_color')
-        border_color = story_style.get('border_color')
-        font = story_style.get('font')
-        print(story_style)
+
+        print(design_rationale)
+
+        if background_color == "":
+            background_color = story_style.get('background_color')
+            print("background color set to: ", background_color)
+        else:
+            print("background color manual override set to: ", background_color)
+
+        if font_color == "":
+            font_color = story_style.get('font_color')
+            print("font color set to: ", font_color)
+        else:
+            print("font color manual override set to: ", font_color)
+
+        if border_color == "":
+            border_color = story_style.get('border_color')
+            print("border color set to: ", border_color)
+        else:
+            print("border color manual override set to: ", border_color)
+
+        if font == "":
+            font = story_style.get('font')
+            print("font set to: ", font)
+        else:
+            print("font manual override set to: ", font)
+        
+    else:
+        print("story style provided")
 
     
     #next create story data
+
+    #we should check if exsits first if not then create it 
     story_data_output_path_base = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/"
-    story_data, story_data_path = create_story_data(input_path=summary_path,output_path = story_data_output_path_base)
+    potential_story_data_file_path = title.lower().replace(' ', '-') + "_" + protagonist.lower().replace(' ', '-')
+    check_path = story_data_output_path_base + potential_story_data_file_path + ".json"
+    print(check_path)
+    if os.path.exists(check_path):
+        story_data_path = check_path
+        print("story data exists")
+    else:
+        #print("couldnt find")
+        print("story data did not exist")
+        story_data, story_data_path = create_story_data(
+            input_path=summary_path,
+            author=author, 
+            year=year, 
+            protagonist=protagonist,
+            output_path = story_data_output_path_base)
 
     ### YOU JUST NEED 12x12 and then you shrinnk it down 
     # size     | 6x6 | 12x12
@@ -105,10 +146,13 @@ for row in rows:
         width_in_inches = 12
         height_in_inches = 12
         wrap_in_inches = 3
+    else:
+        raise ValueError
 
 
-
-    create_shape(story_data_path = story_data_path,
+    print("creating story shape")
+    new_story_data_path, story_shape_path = create_shape(story_data_path = story_data_path,
+                    product = product,
                     x_delta=0.015, #number of points in the line 
                     step_k = 10, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                     line_type = line_type, #values line or char
@@ -118,7 +162,7 @@ for row in rows:
                     font_size= font_size, #only used if line_type set to char
                     font_color = font_color, #only used if line_type set to char
                     background_type='solid', #values solid or transparent
-                    background_value= background_color, #only used if background_type = solid
+                    background_value = background_color, #only used if background_type = solid
                     has_title = "YES", #values YES or NO
                     title_text = "", #optinal if left blank then will use story title as default
                     title_font_style = font, #only used if has_title = "YES"

@@ -116,7 +116,7 @@ Output:
 
     #attempt to extact json (if needed)
     story_style = extract_json(output_text)
-    print(story_style)
+    #print(story_style)
     return story_style
 
 
