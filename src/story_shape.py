@@ -1138,7 +1138,7 @@ Your task is to identify and express the most significant moments from this segm
 2. FORMAT: 
     - BE CONCISE, descriptors should consist of 1-4 word phrases
     - A single phrase is perfectly acceptable 
-    - ALL phrases end with ". " (period followed by space)
+    - If multiple phrases, each ends with ". " except the last phrase, which ends with just "." and no space
     - CAPITALIZATION: Use Title Case (capitalize the first letter of every word, except minor words like "and," "of," "the," unless they are the first word of a phrase)
     
 3. PHRASE CONSTRUCTION:
@@ -1157,8 +1157,8 @@ Your task is to identify and express the most significant moments from this segm
 
 6. LENGTH: OUTPUT MUST BE EXACTLY {desired_length} CHARACTERS. NO MORE, NO LESS
     - Count EVERY character including spaces and periods
-    - Count EVERY period and space after EVERY phrase
-    - Example: "Green Light. " is 13 characters (includes ending space)
+    - Count EVERY period and space between phrases
+    - Example: "Green Light." is 12 characters
     
 7. VERIFICATION:
     Step 1: Verify Narrative Quality
@@ -1171,7 +1171,6 @@ Your task is to identify and express the most significant moments from this segm
     - Check format and capitalization
     - Confirm no protagonist name used
     - Verify source material accuracy
-    - Confirm all phrases end with ". "
 
 8. OUTPUT: Provide ONLY the descriptor text, exactly {desired_length} characters. No explanation. 
 
@@ -1179,58 +1178,58 @@ Your task is to identify and express the most significant moments from this segm
 ## EXAMPLES:
 
 ### EXAMPLE 1
-Length Requirements: 13 characters
+Length Requirements: 12 characters
 Author: F. Scott Fitzgerald
 Title: The Great Gatsby
 Protagonist: Jay Gatsby
 Story Segment Description: "Gatsby stands alone in his garden, reaching out towards the green light across the bay, embodying his yearning for Daisy. His elaborate mansion and lavish parties serve as carefully orchestrated attempts to attract her attention, revealing both his hope and desperation. When he finally arranges to meet Nick, his neighbor and Daisy's cousin, Gatsby's carefully constructed facade begins to show cracks of vulnerability as he seeks a way to reconnect with his lost love"
 
 Potential Phrases (with character counts including ending punctuation) -- note phrases shown are non-exhaustive and are just meant to provide examples of potential phrases
-- "Alone in Garden. " (17 characters)
-- "Green Light. "  (13 characters)
-- "Yearning for Daisy. " (21 characters)
-- "Lost Love. " (11 characters)
+- "Alone in Garden." (16 characters)
+- "Green Light."  (12 characters)
+- "Yearning for Daisy." (20 characters)
+- "Lost Love." (10 characters)
 
-Selected Output (13 characters): "Green Light. "
+Selected Output (12 characters): "Green Light."
 
 
 ### EXAMPLE 2
-Length Requirements: 38 characters
+Length Requirements: 37 characters
 Author: Ernest Hemingway
 Title: The Old Man and the Sea
 Protagonist: Santiago
 Story Segment Description: "Despite 84 days without a catch and being considered unlucky, Santiago maintains his dignity and optimism. His friendship with Manolin provides comfort and support, though the boy has been forced to work on another boat. His determination remains strong as he prepares for a new day of fishing, finding peace in his dreams of Africa and its lions."
 
 Potential Phrases -- note phrases shown are non-exhaustive:
-- "84 Days No Fish. " (17 characters)
-- "Unlucky. " (9 characters)
-- "Optimist. " (10 characters)
-- "Manolin Friendship. " (20 characters)
-- "Preps for Fishing. " (19 characters)
-- "Dreams of Africa. " (17 characters)
+- "84 Days No Fish." (16 characters)
+- "Unlucky." (8 characters)
+- "Optimist." (9 characters)
+- "Manolin Friendship." (19 characters)
+- "Preps for Fishing." (18 characters)
+- "Dreams of Africa." (16 characters)
 
-Selected Output (38 characters): "84 Days. No Fish. Manolin Friendship. "
+Selected Output (37 characters): "84 Days. No Fish. Manolin Friendship."
 
 
 ### EXAMPLE 3
-Length Requirements: 80 characters
+Length Requirements: 79 characters
 Author: William Shakespeare
 Title: Romeo and Juliet
 Protagonist: Juliet
 Story Segment Description: "Juliet awakens to find Romeo dead beside her, having poisoned himself in the belief she was dead. In her final moments, she experiences complete despair, attempting to die by kissing his poisoned lips before ultimately using his dagger to join him in death, unable to conceive of life without him."
 
 Potential Phrases -- note phrases shown are non-exhaustive:
-- "Awakens. " (9 characters)
-- "Romeo Dead. " (12 characters)
-- "Despair. " (9 characters)
-- "Kisses Poisoned Lips. " (22 characters)
-- "Suicide by Dagger. " (19 characters)
-- "Reunited with Love. " (20 characters)
+- "Awakens." (8 characters)
+- "Romeo Dead." (11 characters)
+- "Despair." (8 characters)
+- "Kisses Poisoned Lips." (21 characters)
+- "Suicide by Dagger." (18 characters)
+- "Reunited with Love." (19 characters)
 
-Selected Output (80 characters): "Awakens. Romeo Dead. Complete Despair. Kisses Poisoned Lips. Suicide by Dagger. "
+Selected Output (79 characters): "Awakens. Romeo Dead. Complete Despair. Kisses Poisoned Lips. Suicide by Dagger."
 
 Notes for All Examples:
-- ALL phrases end with ". " (period + space = 2 chars)
+- Each phrase except the last ends with ". " (period + space = 2 chars). The last phrase ends with "." (period only = 1 char)
 - Phrases appear in chronological order as events occur in Story Segment Description
 - Character counts include the space after the period in ALL phrases
 
@@ -1238,6 +1237,7 @@ ________
 
 Respond with ONLY the descriptor text, exactly {desired_length} characters. No explanation.
 """
+    
     prompt = PromptTemplate(
         input_variables=["desired_length", "author", "title", "protagonist", "component_description", "existing_arc_texts"],  # Define the expected inputs
         template=prompt_template
@@ -2026,17 +2026,14 @@ def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound
     }
 
     # 4. Split into phrases and verify/fix each one
-    # Split on ". " to preserve correct ending format
-    phrases = descriptors_text.split('. ')
+    # First split on period to get raw phrases
+    raw_phrases = [p.strip() for p in descriptors_text.replace('. ', '.').split('.') if p.strip()]
     modified_phrases = []
     
-    for phrase in phrases:
+    for phrase in raw_phrases:
         if not phrase:
             return False, "Contains empty phrase"
             
-        # Remove any trailing periods if they exist
-        phrase = phrase.rstrip('.')
-        
         words = phrase.split()
         if not words:
             return False, "Contains phrase without words"
@@ -2058,15 +2055,19 @@ def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound
         
         modified_phrases.append(' '.join(modified_words))
 
-    # 5. Join phrases ensuring each one ends with ". "
-    fixed_text = '. '.join(modified_phrases) + '. '
+    # 5. Join phrases with proper formatting:
+    # - All phrases except last end with ". "
+    # - Last phrase ends with "."
+    if len(modified_phrases) > 1:
+        fixed_text = '. '.join(modified_phrases[:-1]) + '. ' + modified_phrases[-1] + '.'
+    else:
+        fixed_text = modified_phrases[0] + '.'
 
     # 6. Final length check after fixes
     if not (lower_bound <= len(fixed_text) <= upper_bound):
         return False, f"After fixes, length {len(fixed_text)} outside bounds {lower_bound}-{upper_bound}"
 
     return True, fixed_text
-
 
 def pango_font_exists(font_name):
     """
