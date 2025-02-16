@@ -1,3 +1,48 @@
+2/15/2025:
+- modify space at the end requirement
+- change top section font size 
+- changing to 10x10 and 10x20 (expanded options in the future)
+
+
+2/9/2025:
+- order 6x6 and 12x12 to test -- in mail 
+
+- come up with review process and save
+  -- visually inspect -- no gaps, words make sense
+  -- max edits via json 
+  -- use chatgpt with prompt ()
+  -- once reviewed save to categlog 
+    -- probably just specify output file and extract all the details 
+        -- add author to output file name 
+    -- figure out save data to catelog spreadsheet
+    -- save file to gdrive 
+
+- come up with logo --> simple just "The Shapes of Stories" in circle 
+
+- figure out etsy and printful connection
+    - for Etsy page 
+        --> title - Include keywords that buyers would use to search for this item.
+        --> need up to 10 photos and 1 video 
+        - note: need to make video:
+            - https://www.etsy.com/seller-handbook/article/3-types-of-listing-videos-that-online/821069530001 
+            - We found that listings with video get twice as many orders as listings with just photos
+        --> Description
+        --> Personalization
+    - price for item and inventory 
+    - Variations
+    - Tags and attributes 
+
+- get login for shapesofstory.com 
+- put date created and product id number (come up with?)
+
+- pay for email for shapesofstory.com + google workspace 
+    - 7 dollar a month --> 12 * 7 = $84 dollar a year --> done 
+    - change billing for TSOS 
+    - create printful and etsy accounts with email -- done
+    - order prototyypes
+- The Shapes of Stories
+
+
 2/3/2025:
 
 - create system for creating stories 

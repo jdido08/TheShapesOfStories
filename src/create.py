@@ -117,35 +117,49 @@ for row in rows:
             output_path = story_data_output_path_base)
 
     ### YOU JUST NEED 12x12 and then you shrinnk it down 
-    # size     | 6x6 | 12x12
-    # wrap     | 1.5 | 3
-    # t/b band | 1.5 | 1.5
-    # ------------------------
-    # arc      | 8   | 16
-    # title    | 24  | 48
-    # protag   | 12  | 24
-    # top      | 24  | 48
-    # bottom   | 6   | 12
-    #-----------------------
-    # line     | 20  | 40
-    # border   | ?   | 150
-    # gap      | 20  | 40
-    #-----------------------
+    # size     | 6x6 | 12x12 | 10x10
+    # wrap     | 1.5 | 3     | 1.5
+    # t/b band | 1.5 | 1.5   | 1.5
+    # ----------------------------------
+    # arc      | 8   | 16    | 14
+    # title    | 24  | 48    | 40
+    # protag   | 12  | 24    | 20
+    # top      | 24  | 48    | 20
+    # bottom   | 6   | 12    | 12
+    #-----------------------------------
+    # line     | 20  | 40    | 33
+    # border   | ?   | 150   | 150
+    # gap      | 20  | 40    | 33
+    #-----------------------------------
 
     if product == "canvas" and size == "12x12":
-        line_thickness = 40,
+        line_thickness = 40
         font_size = 16
         title_font_size = 48
         gap_above_title = 40
         protagonist_font_size = 24
-        top_text = protagonist + ", " + str(year)
+        top_text = author + ", " + str(year)
         top_text_font_size = 48
         bottom_text_font_size = 12
         top_and_bottom_text_band = 1.5
-        border_thickness = 75
+        border_thickness = 150
         width_in_inches = 12
         height_in_inches = 12
         wrap_in_inches = 3
+    elif product == "canvas" and size == "10x10":
+        line_thickness = 33
+        font_size = 14
+        title_font_size = 40
+        gap_above_title = 33
+        protagonist_font_size = 20
+        top_text = author + ", " + str(year)
+        top_text_font_size = 20
+        bottom_text_font_size = 12
+        top_and_bottom_text_band = 1.5
+        border_thickness = 150
+        width_in_inches = 10
+        height_in_inches = 10
+        wrap_in_inches = 1.5
     else:
         raise ValueError
 
