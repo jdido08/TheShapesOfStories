@@ -155,7 +155,7 @@ for row in rows:
         top_text = author + ", " + str(year)
         top_text_font_size = 20
         bottom_text_font_size = 12
-        top_and_bottom_text_band = 1.5
+        top_and_bottom_text_band = 1
         border_thickness = 150
         width_in_inches = 10
         height_in_inches = 10
