@@ -146,7 +146,7 @@ Cinderella at the Ball
 Cinderella
 </protagonist>
 <story_summary>
-Heartbroken and alone after being mocked and denied attendance by her stepfamily, Cinderella weeps in the garden until her Fairy Godmother appears. Through magical transformations, she provides Cinderella with a splendid carriage, resplendent gown, and delicate glass slippers, warning her to return before midnight. At the grand royal ball, Cinderella's kindness, modesty, and radiant beauty immediately enchant the Prince, who spends the entire evening dancing with her. Each moment increases her joy, until the clock strikes midnight. She flees in panic, losing a glass slipper on the palace steps. The Prince, determined to find her, searches the kingdom with the slipper until he reaches her home. When the slipper fits perfectly, they joyfully marry, with Cinderella's inner goodness finally rewarded.
+Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
 </story_summary>
 <ideal_output>
 {{{{
@@ -196,6 +196,7 @@ The descriptions in the example output demonstrate the minimum expected level of
 - Capture interactions primarily through their impact on the protagonist
 
 """
+    
     prompt = PromptTemplate(
         input_variables=["author_name", "story_title", "protagonist", "story_summary"],  # Define the expected inputs
         template=prompt_template
