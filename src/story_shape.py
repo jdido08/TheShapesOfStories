@@ -72,6 +72,7 @@ def create_shape(story_data_path,
                 height_in_inches = 15,
                 wrap_in_inches=1.5,
                 wrap_background_color = (0,0,0),
+                fixed_margin_in_inches=0.625,
                 recursive_mode = True,
                 recursive_loops = 500,
                 llm_provider = "anthropic",
@@ -200,6 +201,7 @@ def create_shape(story_data_path,
                     height_in_inches=height_in_inches,
                     wrap_in_inches=wrap_in_inches,
                     wrap_background_color = wrap_background_color,
+                    fixed_margin_in_inches=fixed_margin_in_inches,
                     story_shape_path=story_shape_path,
                     recursive_mode=recursive_mode,
                     llm_provider = llm_provider,
@@ -245,6 +247,7 @@ def create_shape(story_data_path,
     story_data['border_thickness'] = border_thickness
     story_data['border_color'] = border_color
     story_data['arc_text_llm'] = llm_model
+    story_data['fixed_margin_in_inches'] = fixed_margin_in_inches
     new_title = story_data['title'].lower().replace(' ', '-')
     new_size = f'{width_in_inches}x{height_in_inches}'
     new_protagonist = story_data['protagonist'].lower().replace(' ', '-')
@@ -294,6 +297,7 @@ def create_shape_single_pass(story_data,
                 width_in_inches = 15,
                 height_in_inches = 15,
                 wrap_in_inches=1.5,
+                fixed_margin_in_inches = 0.625,
                 wrap_background_color = (0,0,0),
                 story_shape_path = "test",
                 recursive_mode = True,
@@ -444,9 +448,8 @@ def create_shape_single_pass(story_data,
 
      # Set margins in inches and convert to pixels
     # Now define margins *inside* that design region
-    fixed_margin_in_inches = 0.5
-    margin_x = int(fixed_margin_in_inches * dpi)
-    margin_y = int(fixed_margin_in_inches * dpi)
+    margin_x = round(fixed_margin_in_inches * dpi)
+    margin_y = round(fixed_margin_in_inches * dpi)
 
     # Determine data range for x and y
     x_min = min(x_values)
@@ -749,7 +752,8 @@ def create_shape_single_pass(story_data,
                 descriptors_text,
                 pangocairo_context,
                 font_desc,
-                all_rendered_boxes
+                all_rendered_boxes,
+                margin_x, margin_y, design_width, design_height
             )
 
             #print(curve_length_status)
@@ -1094,6 +1098,21 @@ def create_shape_single_pass(story_data,
     else:
         surface.write_to_png(story_shape_path)
 
+    # 8) QUICK AUDIT (skip for SVG)
+    if output_format == "png":
+        try:
+            margins = verify_safe_margin(
+                path=story_shape_path,
+                bg_rgb=tuple(int(c*255) for c in background_value),
+                dpi=300,                    # ← match your real DPI
+                margin_in=fixed_margin_in_inches,
+                tolerance_px=0             # or 1–2 px if you prefer
+            )
+            print("✅ margin check:", margins, "px")
+        except ValueError as e:
+            print(e)
+        # optionally: raise, or set status="error", etc.
+
     return story_data, "completed"
 
 
@@ -1294,7 +1313,7 @@ Respond with ONLY the descriptor text, exactly {desired_length} characters. No e
     return output_text
 
 
-def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes):
+def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_context, font_desc, all_rendered_boxes, margin_x, margin_y, design_width, design_height):
     total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
     cumulative_curve_lengths = np.insert(np.cumsum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))), 0, 0)
 
@@ -1363,6 +1382,16 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, pangocairo_co
 
                 rotated_box = shapely_rotate(box, angle * (180 / math.pi), origin=(0, 0), use_radians=False)
                 translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
+
+                # ── NEW: bounce the char if it crosses the 0.625‑in safety zone ──
+                if (translated_box.bounds[0] < margin_x or                 # left
+                    translated_box.bounds[2] > design_width  - margin_x or # right
+                    translated_box.bounds[1] < margin_y or                 # top
+                    translated_box.bounds[3] > design_height - margin_y
+                    ):  # bottom
+                    distance_along_curve += 1      # scoot 1 px along path
+                    continue                       # try again at new spot
+                # ───────────────────────────────────────────────
 
                 # Check overlap
                 for other_box in rendered_boxes + all_rendered_boxes:
@@ -2221,3 +2250,49 @@ def end_svg_group(cr, output_format):
     if output_format == "svg":
         cr.tag_end(cairo.TAG_LINK)
 # --- End Helper ---
+
+
+from PIL import Image
+import numpy as np
+
+def verify_safe_margin(
+        path: str,
+        bg_rgb: tuple,
+        dpi: int = 300,
+        margin_in: float = 0.625,
+        tolerance_px: int = 0   # allow tiny bleed if you like
+    ):
+    """
+    Opens the finished image and checks that every edge has at least
+    `margin_in` inches of background (± `tolerance_px`).
+
+    Raises ValueError if any side is short; returns a dict if all good.
+    """
+    img = Image.open(path).convert("RGB")
+    arr = np.asarray(img)
+
+    # distance from solid background colour
+    dist = np.linalg.norm(arr - np.array(bg_rgb), axis=2)
+    content = dist > 15                    # tweak threshold if needed
+
+    rows = np.where(content.any(1))[0]
+    cols = np.where(content.any(0))[0]
+
+    top    = rows.min()
+    bottom = img.height - 1 - rows.max()
+    left   = cols.min()
+    right  = img.width  - 1 - cols.max()
+
+    target = int(round(margin_in * dpi))
+
+    margins = dict(top=top, right=right, bottom=bottom, left=left)
+    short   = {k:v for k,v in margins.items()
+               if v < (target - tolerance_px)}
+
+    # if short:
+    #     raise ValueError(
+    #         f"🚨  Margin shortfall: wanted ≥{target}px, "
+    #         f"but got {short}"
+    #     )
+
+    return margins

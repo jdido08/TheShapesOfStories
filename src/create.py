@@ -155,6 +155,7 @@ for row in rows:
         max_num_steps = 3
         step_k = 10
         has_border = True
+        fixed_margin_in_inches = 0.6
     elif product == "canvas" and size == "10x10":
         line_thickness = 33
         font_size = 14
@@ -172,6 +173,7 @@ for row in rows:
         max_num_steps = 3
         step_k = 10
         has_border = True
+        fixed_margin_in_inches = 0.6
     elif product == "print" and size == "8x10":
         line_thickness = 26
         font_size = 12
@@ -189,6 +191,7 @@ for row in rows:
         max_num_steps = 2
         step_k = 6
         has_border = False
+        fixed_margin_in_inches = 0.6
     else:
         raise ValueError
 
@@ -238,8 +241,9 @@ for row in rows:
                     height_in_inches = height_in_inches, #design width size
                     wrap_in_inches=wrap_in_inches,  # for canvas print outs 
                     wrap_background_color = border_color, #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
+                    fixed_margin_in_inches = fixed_margin_in_inches, #fixed margins for output
                     recursive_mode = True, #if you want to recurisvely generate story
-                    recursive_loops = 500, #the number of iterations 
+                    recursive_loops = 100, #the number of iterations 
                     llm_provider = "anthropic", #for generating descriptors
                     llm_model = "claude-3-5-sonnet-latest", #for generating descriptors 
                     output_format=file_format
