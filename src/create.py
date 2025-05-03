@@ -6,6 +6,7 @@ from story_style import get_story_style
 from story_shape import create_shape
 import json 
 import os
+import re
 
 # Load credentials from the YAML file
 def load_credentials_from_yaml(file_path):
@@ -41,9 +42,10 @@ for row in rows:
     # Assign each column value to a variable
     product = row.get("product")
     size = row.get("size")
+    print(size)
     line_type = row.get("line_type")
     file_format = row.get("file_format")
-    title = row.get("title")
+    title = str(row.get("title"))
     author = row.get("author")
     protagonist = row.get("protagonist")
     year = row.get("year")
@@ -98,6 +100,10 @@ for row in rows:
     
     #next create story data
 
+    # Normalize the title to replace curly apostrophes with straight ones
+    title = title.replace("’", "'")  # Normalize typographic apostrophes
+    title = title.replace(",", "")
+    
     #we should check if exsits first if not then create it 
     story_data_output_path_base = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/"
     potential_story_data_file_path = title.lower().replace(' ', '-') + "_" + protagonist.lower().replace(' ', '-')
@@ -117,19 +123,19 @@ for row in rows:
             output_path = story_data_output_path_base)
 
     ### YOU JUST NEED 12x12 and then you shrinnk it down 
-    # size     | 6x6 | 12x12 | 10x10
-    # wrap     | 1.5 | 3     | 1.5
-    # t/b band | 1.5 | 1.5   | 1.5
+    # size     | 6x6 | 12x12 | 10x10 | 8x10
+    # wrap     | 1.5 | 3     | 1.5   |  ?
+    # t/b band | 1.5 | 1.5   | 1.5   |  ?
     # ----------------------------------
-    # arc      | 8   | 16    | 14
-    # title    | 24  | 48    | 40
-    # protag   | 12  | 24    | 20
-    # top      | 24  | 48    | 20
-    # bottom   | 6   | 12    | 12
+    # arc      | 8   | 16    | 14    |  12
+    # title    | 24  | 48    | 40    |  32
+    # protag   | 12  | 24    | 20    |  16
+    # top      | 24  | 48    | 20    |  16
+    # bottom   | 6   | 12    | 12    |  12
     #-----------------------------------
-    # line     | 20  | 40    | 33
-    # border   | ?   | 150   | 150
-    # gap      | 20  | 40    | 33
+    # line     | 20  | 40    | 33    |  26
+    # border   | ?   | 150   | 150   |  150
+    # gap      | 20  | 40    | 33    |
     #-----------------------------------
 
     if product == "canvas" and size == "12x12":
@@ -146,6 +152,9 @@ for row in rows:
         width_in_inches = 12
         height_in_inches = 12
         wrap_in_inches = 3
+        max_num_steps = 3
+        step_k = 10
+        has_border = True
     elif product == "canvas" and size == "10x10":
         line_thickness = 33
         font_size = 14
@@ -156,10 +165,30 @@ for row in rows:
         top_text_font_size = 20
         bottom_text_font_size = 12
         top_and_bottom_text_band = 1
-        border_thickness = 150
+        border_thickness = 150 #use thicker border
         width_in_inches = 10
         height_in_inches = 10
         wrap_in_inches = 1.5
+        max_num_steps = 3
+        step_k = 10
+        has_border = True
+    elif product == "print" and size == "8x10":
+        line_thickness = 26
+        font_size = 12
+        title_font_size = 32 #value is 32, other values: 26, 22, 20 (very small)
+        gap_above_title = 70 #value was 26
+        protagonist_font_size = 16
+        top_text = author + ", " + str(year)
+        top_text_font_size = 12
+        bottom_text_font_size = 12
+        top_and_bottom_text_band = 1
+        border_thickness = 75 #use thinner border 
+        width_in_inches = 8
+        height_in_inches = 10
+        wrap_in_inches = 0
+        max_num_steps = 2
+        step_k = 6
+        has_border = False
     else:
         raise ValueError
 
@@ -168,7 +197,8 @@ for row in rows:
     new_story_data_path, story_shape_path = create_shape(story_data_path = story_data_path,
                     product = product,
                     x_delta=0.015, #number of points in the line 
-                    step_k = 10, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
+                    step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
+                    max_num_steps = max_num_steps,
                     line_type = line_type, #values line or char
                     line_thickness = line_thickness, #only used if line_type = line
                     line_color = font_color, #only used if line_type = line
@@ -201,7 +231,7 @@ for row in rows:
                     bottom_text_font_size = bottom_text_font_size,
                     bottom_text_font_color = "#000000",
                     top_and_bottom_text_band = top_and_bottom_text_band, #this determines the band which top and center text is centered on above/below design; if you want to center along full wrap in inches set value to wrap_in_inches else standard is 1.5 
-                    border=True, #True or False
+                    border=has_border, #True or False
                     border_thickness= border_thickness, #only applicable if border is set to True
                     border_color=border_color, #only applicable if border is set to True
                     width_in_inches = width_in_inches,  #design width size
@@ -215,3 +245,4 @@ for row in rows:
                     output_format=file_format
                 ) #options png or svg
     
+

@@ -32,6 +32,7 @@ def create_shape(story_data_path,
                 product = "canvas",
                 x_delta = 0.015,
                 step_k = 15,
+                max_num_steps = 3, #for step by step function; set to 2 for 8x10 and 3 for 12x12
                 font_style="",
                 font_size=72,
                 font_color = (0, 0, 0), #default to black
@@ -137,7 +138,8 @@ def create_shape(story_data_path,
     story_shape_background_color = "background-color-" + background_value_hex
     story_shape_font_color = "font-color-" + font_color_hex
     story_shape_border_color = "border-color-" + border_color_hex
-    story_shape_font = "font-"+font
+    story_shape_font = "font-"+font_style
+    print(font_style)
 
     if title_text == "":
         story_shape_title_display = "title-display-yes"
@@ -155,7 +157,7 @@ def create_shape(story_data_path,
     # while status == "processing":
     for i in range(recursive_loops):
         # print(story_data['story_components'][1]['modified_end_time'])
-        story_data = transform_story_data(story_data, x_delta, step_k)
+        story_data = transform_story_data(story_data, x_delta, step_k, max_num_steps)
 
         story_data, status = create_shape_single_pass(
                     story_data=story_data, 
@@ -442,9 +444,9 @@ def create_shape_single_pass(story_data,
 
      # Set margins in inches and convert to pixels
     # Now define margins *inside* that design region
-    margin_ratio = 0.05
-    margin_x = int(margin_ratio * design_width)
-    margin_y = int(margin_ratio * design_height)
+    fixed_margin_in_inches = 0.5
+    margin_x = int(fixed_margin_in_inches * dpi)
+    margin_y = int(fixed_margin_in_inches * dpi)
 
     # Determine data range for x and y
     x_min = min(x_values)
@@ -535,6 +537,7 @@ def create_shape_single_pass(story_data,
         from scipy.interpolate import CubicSpline
         import numpy as np
         import copy
+        begin_svg_group(cr, "main-text-path", output_format)
         
         
 
@@ -804,9 +807,9 @@ def create_shape_single_pass(story_data,
 
                 #this really only works if like this was suppose to be the last story segment
                 # we hit x max and want to extend y
-                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,3) != round(y_og[-1],3))):
+                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,2) != round(y_og[-1],2))):
                     new_x = x_og[-1]
-                    
+                    print(round(new_y,3), " != ", round(y_og[-1],3)) 
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
 
@@ -818,7 +821,7 @@ def create_shape_single_pass(story_data,
                 
                 # #we hit y max / min and need to extend x
                 elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
-                    
+                    print("#we hit y max / min and need to extend x")
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
@@ -885,7 +888,7 @@ def create_shape_single_pass(story_data,
 
                     component['modified_end_time'] = original_arc_end_time_values[-1]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
-
+                    
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
@@ -935,6 +938,10 @@ def create_shape_single_pass(story_data,
 
             component['status'] = status
 
+        # --- MODIFICATION: End main text group ---
+        end_svg_group(cr, output_format)
+        # -----------------------------------------
+
     if has_title == "YES":
         # -- Prepare the title layout --
         final_layout = PangoCairo.create_layout(cr)
@@ -959,10 +966,20 @@ def create_shape_single_pass(story_data,
         # Put the title’s top bounding box at 'title_band_top'
         title_y = title_band_top
 
+
+
+         # --- MODIFICATION: Start Title Group ---
+        begin_svg_group(cr, "title-group", output_format)
+        # ---------------------------------------
+
         # Draw the title at bottom-left
         cr.move_to(title_x, title_y)
         cr.set_source_rgb(*title_font_color)
         PangoCairo.show_layout(cr, final_layout)
+
+        # --- MODIFICATION: End Title Group ---
+        end_svg_group(cr, output_format)
+        # ----------------------------
 
         # ------------------------------------------------
         # Draw the protagonist name at bottom-right
@@ -996,9 +1013,17 @@ def create_shape_single_pass(story_data,
             # Right‐align X so the right edge is near (margin_x + drawable_width)
             prot_x = margin_x + drawable_width - prot_text_width
 
+            # --- MODIFICATION: Start Name Group ---
+            begin_svg_group(cr, "name-group", output_format)
+            # ----
+
             cr.move_to(prot_x, prot_y)
             cr.set_source_rgb(*protagonist_font_color)
             PangoCairo.show_layout(cr, prot_layout)
+
+            # --- MODIFICATION: End Name Group ---
+            end_svg_group(cr, output_format)
+            # -----
 
 
     # MAKE NOTES ON TOP AND BOTTOM OF CANVAS -- only applies when wrap_in_inches > 0
@@ -1448,7 +1473,7 @@ def scale_y_values(y_values, new_min, new_max):
    
 
 
-def get_component_arc_function(x1, x2, y1, y2, arc, step_k=15):
+def get_component_arc_function(x1, x2, y1, y2, arc, step_k=15, max_num_steps=3):
 
     def exponential_step_function(x):
         # 1) If out of range, return None
@@ -1491,7 +1516,7 @@ def get_component_arc_function(x1, x2, y1, y2, arc, step_k=15):
         elif slope < 3.0:
             num_steps = 2
         else:
-            num_steps = 3
+            num_steps = max_num_steps
         
         
         # 3) We create the sub-intervals
@@ -1521,6 +1546,100 @@ def get_component_arc_function(x1, x2, y1, y2, arc, step_k=15):
         # If x somehow equals x2 exactly, let's ensure we return y2
         return y2
 
+
+    def s_curve_step_function(x):
+        """
+        Returns an S-curve-based step interpolation for the interval [x1, x2],
+        subdivided into multiple 'step' segments. Each sub-interval uses a
+        smoothstep function for a gentle transition, rather than a sharp jump.
+
+        Args:
+            x (float): The x-value at which we want the interpolated y.
+            x1, x2 (float): The start and end x-values of the overall segment.
+            y1, y2 (float): The start and end y-values at x1 and x2.
+            max_num_steps (int): Maximum number of steps to use for steep slopes.
+            step_k (float): Optional steepness factor for controlling how sharply
+                            the step transitions occur.
+
+        Returns:
+            float or None:
+                - The interpolated y-value if x is within [x1, x2].
+                - None if x is outside that range.
+
+        Behavior:
+            1. Computes slope = (|y2 - y1| / |x2 - x1|).
+            2. Decides how many sub-steps to create:
+            - If slope < 0.5, use 1 step.
+            - If slope < 3.0, use min(2, max_num_steps).
+            - Else, use max_num_steps.
+            3. Splits [x1, x2] into 'num_steps' sub-intervals (x_edges).
+            4. For each sub-interval, uses a smoothstep-like function to
+            ease from the sub-interval's base (y_base) to y_base + (dy).
+            5. Returns y2 if x == x2 exactly (to handle any rounding issues).
+
+        Example:
+            Suppose (x1, y1) = (0, 0), (x2, y2) = (10, 5), and slope is moderate.
+            We might get 2 steps:
+                - Step 1 covers x in [0..5], step 2 covers x in [5..10].
+                - Within each step, we do a smooth S-curve from y_base to y_base + dy.
+        """
+
+        # 1) If x is out of [x1, x2], return None.
+        if not (min(x1, x2) <= x <= max(x1, x2)):
+            return None
+
+        # 2) Handle the edge case where x1 == x2.
+        dx = x2 - x1
+        if abs(dx) < 1e-12:  # effectively vertical line
+            # If x1 == x2 and x is that same value, just return y1 (or y2).
+            return y1
+
+        # 3) Calculate slope and decide number of steps.
+        dy_abs = abs(y2 - y1)
+        slope = float('inf') if abs(dx) < 1e-12 else (dy_abs / abs(dx))
+
+        if slope < 0.5:
+            num_steps = 1
+        elif slope < 3.0:
+            #num_steps = min(2, max_num_steps)
+            num_steps = 2
+        else:
+            num_steps = max_num_steps
+
+        # 4) Subdivide the interval [x1, x2].
+        x_edges = np.linspace(x1, x2, num_steps + 1)
+        total_dy = (y2 - y1)
+        dy_per_step = total_dy / num_steps
+
+        # 5) Identify which sub-interval x falls into.
+        for i in range(num_steps):
+            start, end = x_edges[i], x_edges[i + 1]
+
+            # Ensure start <= end for the loop logic, even if x2 < x1.
+            if start > end:
+                start, end = end, start
+
+            if start <= x <= end:
+                # Base y for this step
+                y_base = y1 + i * dy_per_step
+
+                # alpha in [0..1] within this sub-interval
+                alpha = (x - x_edges[i]) / (x_edges[i + 1] - x_edges[i])
+
+                # Option A: Standard smoothstep
+                # local_y = y_base + dy_per_step * (alpha**2 * (3 - 2*alpha))
+
+                # Option B: Use step_k to adjust steepness if desired.
+                # The code below is a simple variation: alpha^(n) * ( (n+1) - n*alpha ).
+                # Adjust n = step_k / 10.0 or pick your own formula.
+                n = max(1.0, step_k / 10.0)  # avoid n=0
+                smooth_factor = (alpha**n) * ((n + 1) - n * alpha)
+
+                local_y = y_base + dy_per_step * smooth_factor
+                return local_y
+
+        # 6) If we got here, x might be exactly x2 (float rounding).
+        return y2
 
 
     def smooth_step_function(x):
@@ -1739,15 +1858,15 @@ def get_component_arc_function(x1, x2, y1, y2, arc, step_k=15):
     else:
         # Existing code for other arcs
         if arc in['Step-by-Step Increase', 'Step-by-Step Decrease']:
-            #return step_function
-            #return smooth_step_function
             return exponential_step_function
+            #return s_curve_step_function
         elif arc in ['Straight Increase']:
             return smooth_exponential_increase_function
         elif arc in ['Straight Decrease']:
             return smooth_exponential_decrease_function
         elif arc in ['Linear Increase','Linear Decrease','Gradual Increase', 'Gradual Decrease', 'Linear Flat']:
-            return linear_function
+            #return linear_function #3/8/2025
+            return curvy_down_up #replacing linear function with s-curve function because it avoid gaps in designs
         elif arc in ['Concave Down, Increase', 'Rapid-to-Gradual Increase']:
             return concave_down_increasing_function
         elif arc in ['Concave Down, Decrease', 'Gradual-to-Rapid Decrease']:
@@ -1775,7 +1894,7 @@ def get_story_arc(x, functions_list):
     return None  # Return None if x is outside the range of all functions
 
 
-def transform_story_data(data, x_delta, step_k):
+def transform_story_data(data, x_delta, step_k, max_num_steps ):
     # Convert JSON to DataFrame
     try:
         df = pd.json_normalize(
@@ -1846,7 +1965,8 @@ def transform_story_data(data, x_delta, step_k):
             story_component_end_emotional_scores[0],
             story_component_end_emotional_scores[1],
             story_component_arc,
-            step_k
+            step_k,
+            max_num_steps
         )
         story_arc_functions_list.append(component_arc_function)
 
@@ -1877,7 +1997,8 @@ def transform_story_data(data, x_delta, step_k):
             story_component_end_emotional_scores[0],
             story_component_end_emotional_scores[1],
             story_component_arc, 
-            step_k
+            step_k,
+            max_num_steps
         )
         result = np.array([get_story_arc(x, [component_arc_function]) for x in x_values])
 
@@ -2038,8 +2159,8 @@ def validate_descriptors(descriptors_text, protagonist, lower_bound, upper_bound
         if not words:
             return False, "Contains phrase without words"
         
-        if len(words) > 4:
-            return False, f"Phrase '{phrase}' has more than 4 words"
+        if len(words) > 5:
+            return False, f"Phrase '{phrase}' has more than 5 words"
         if len(words) < 1:
             return False, f"Phrase '{phrase}' has no words"
             
@@ -2087,3 +2208,16 @@ def pango_font_exists(font_name):
             return True
 
     return False
+
+# Utility to safely add attributes using tags
+def begin_svg_group(cr, group_id, output_format):
+    if output_format == "svg":
+        # Using TAG_LINK is standard for adding attributes like id, class, href
+        cr.tag_begin(cairo.TAG_LINK, f'id="{group_id}"')
+        # You could add fill/stroke attributes here too if needed globally for the group
+        # Example: cr.tag_begin(cairo.TAG_LINK, f'id="{group_id}" fill="white"')
+
+def end_svg_group(cr, output_format):
+    if output_format == "svg":
+        cr.tag_end(cairo.TAG_LINK)
+# --- End Helper ---

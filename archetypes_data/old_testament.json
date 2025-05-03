@@ -1,0 +1,34 @@
+{
+    "title": "Old Testament",
+    "protagonist": "Protagonist",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament.",
+            "end_emotional_score": 0,
+            "arc": "",
+            "modified_end_time":0,
+            "modified_end_emotional_score":0
+            
+        },
+        {
+            "end_time": 1,
+            "description": "Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament.",
+            "end_emotional_score": 5,
+            "arc": "Step-by-Step Increase",
+            "chars_Arial_48": 0,
+            "modified_end_time":1,
+            "modified_end_emotional_score":5
+        },
+        {
+            "end_time": 2,
+            "description": "Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament. Old Testament.",
+            "end_emotional_score": -10,
+            "arc": "Straight Decrease",
+            "chars_Arial_48": 0,
+            "modified_end_time":2,
+            "modified_end_emotional_score":-10
+        }
+    ],
+    "chars_Arial_48": 0
+}

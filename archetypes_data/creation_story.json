@@ -1,0 +1,24 @@
+{
+    "title": "Creation Story",
+    "protagonist": "Protagonist",
+    "story_components": [
+        {
+            "end_time": 1,
+            "description": "Creation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story. reation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story. reation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story",
+            "end_emotional_score": 0,
+            "arc": "",
+            "modified_end_time":1,
+            "modified_end_emotional_score":0
+        },
+        {
+            "end_time": 2,
+            "description": "Creation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story. reation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story. reation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story. Creation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story. reation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story. reation Story. Creation Story. Creation Story. Creation Story . Creation Story. Creation Story",
+            "end_emotional_score": 10,
+            "arc": "Linear Increase",
+            "chars_Arial_48": 0,
+            "modified_end_time":2,
+            "modified_end_emotional_score":10
+        }
+    ],
+    "chars_Arial_48": 0
+}

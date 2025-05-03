@@ -1,0 +1,30 @@
+{
+    "title": "Man in Hole",
+    "protagonist": "Protagonist",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "#N/A",
+            "end_emotional_score": 2,
+            "arc": "#N/A",
+            "modified_end_time":0,
+            "modified_end_emotional_score":2
+        },
+        {
+            "end_time": 50,
+            "description": "Man falls into a hole. His life suddently becomes worse and then gradually worse as he experiences living in the hole.",
+            "end_emotional_score": -5,
+            "arc": "Rapid-to-Gradual Decrease",
+            "modified_end_time":50,
+            "modified_end_emotional_score":-5
+        },
+        {
+            "end_time": 100,
+            "description": "Man slowly climbs out of hole and his outlook become better and better as he makes more progress.",
+            "end_emotional_score": 2,
+            "arc": "Gradual-to-Rapid Increase",
+            "modified_end_time":100,
+            "modified_end_emotional_score":2
+        }
+    ]
+}

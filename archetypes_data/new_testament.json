@@ -1,0 +1,51 @@
+{
+    "title": "New Testament",
+    "protagonist": "Protagonist",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament.",
+            "end_emotional_score": 0,
+            "arc": "",
+            "modified_end_time":0,
+            "modified_end_emotional_score":0
+        },
+        {
+            "end_time": 7,
+            "description": "New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament.",
+            "end_emotional_score": 5,
+            "arc": "Linear Increase",
+            "chars_Arial_48": 0,
+            "modified_end_time":7,
+            "modified_end_emotional_score":5
+        },
+        {
+            "end_time": 8,
+            "description": "New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament.",
+            "end_emotional_score": -5,
+            "arc": "Straight Decrease",
+            "chars_Arial_48": 0,
+            "modified_end_time":8,
+            "modified_end_emotional_score":-5
+        },
+        {
+            "end_time": 9,
+            "description": "New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament.",
+            "end_emotional_score": -5,
+            "arc": "Linear Flat",
+            "chars_Arial_48": 0,
+            "modified_end_time":9,
+            "modified_end_emotional_score":-5
+        },
+        {
+            "end_time": 10,
+            "description": "New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament. New Testament.",
+            "end_emotional_score": 8,
+            "arc": "Concave Up, Increase",
+            "chars_Arial_48": 0,
+            "modified_end_time":10,
+            "modified_end_emotional_score":8
+        }
+    ],
+    "chars_Arial_48": 0
+}

@@ -1,0 +1,60 @@
+{
+    "title": "Cinderella",
+    "protagonist": "Cinderella",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "Orphaned and mistreated. Orphaned and mistreated. Orphaned and mistreated. Orphaned and mistreated. Orphaned and mistreated",
+            "end_emotional_score": -5,
+            "arc": "#N/A",
+            "modified_end_time":0,
+            "modified_end_emotional_score":-5
+        },
+        {
+            "end_time": 20,
+            "description": "Lives with cruel step-mother and step-sisters. Lives with cruel step-mother and step-sisters. ",
+            "end_emotional_score": -5,
+            "arc": "Linear Flat",
+            "chars_Arial_48": 0,
+            "modified_end_time":5,
+            "modified_end_emotional_score":-5
+        },
+        {
+            "end_time": 50,
+            "description": "Meets fairy godmother. Meets fairy godmother. Meets fairy godmother. Meets fairy godmother. Meets fairy godmother. Meets fairy godmother",
+            "end_emotional_score": 2,
+            "arc": "Step-by-Step Increase",
+            "chars_Arial_48": 0,
+            "modified_end_time":50,
+            "modified_end_emotional_score":2
+        },
+        {
+            "end_time": 70,
+            "description": ". Goes to ball and meets Prince Charming. Goes to ball and meets Prince Charming. Goes to ball and meets Prince Charming. Goes to ball and meets Prince Charming. Goes to ball and meets Prince Charming",
+            "end_emotional_score": 5,
+            "arc": "Concave Down, Increase",
+            "chars_Arial_48": 0,
+            "modified_end_time":70,
+            "modified_end_emotional_score":5
+        },
+        {
+            "end_time": 71,
+            "description": "Clock Strikes Midnight. Clock Strikes Midnight. Clock Strikes Midnight. Clock Strikes Midnight. Clock Strikes Midnight. Clock Strikes Midnight. Clock Strikes Midnight.",
+            "end_emotional_score": -3,
+            "arc": "Straight Decrease",
+            "chars_Arial_48": 0,
+            "modified_end_time":71,
+            "modified_end_emotional_score":-3
+        },
+        {
+            "end_time": 100,
+            "description": "Fits in shoe and reunites with Prince. Fits in shoe and reunites with Prince. Fits in shoe and reunites with Prince. Fits in shoe and reunites with Prince. Fits in shoe and reunites with Prince. Fits in shoe and reunites with Prince. Fits in shoe and reunites with Prince. Fits in shoe and reunites with Prince. ",
+            "end_emotional_score": 10,
+            "arc": "Concave Up, Increase",
+            "chars_Arial_48": 0,
+            "modified_end_time":100,
+            "modified_end_emotional_score":10
+        }
+    ],
+    "chars_Arial_48": 0
+}

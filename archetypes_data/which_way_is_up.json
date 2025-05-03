@@ -1,0 +1,24 @@
+{
+    "title": "Which Way Is Up?",
+    "protagonist": "Protagonist",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up?",
+            "end_emotional_score": 1,
+            "arc": "",
+            "modified_end_time":0,
+            "modified_end_emotional_score":1
+        },
+        {
+            "end_time": 2,
+            "description": "Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up? Which Way Is Up?",
+            "end_emotional_score": 1,
+            "arc": "Linear Flat",
+            "chars_Arial_48": 0,
+            "modified_end_time":2,
+            "modified_end_emotional_score":1
+        }
+    ],
+    "chars_Arial_48": 0
+}

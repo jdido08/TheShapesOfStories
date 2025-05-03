@@ -1,0 +1,25 @@
+{
+    "title": "From Bad to Worse",
+    "protagonist": "Protagonist",
+    "story_components": [
+        {
+            "end_time": 0,
+            "description": "From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse.",
+            "end_emotional_score": -2,
+            "arc": "",
+            "modified_end_time":0,
+            "modified_end_emotional_score":-2
+            
+        },
+        {
+            "end_time": 1,
+            "description": "From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse. From Bad to Worse.",
+            "end_emotional_score": -10,
+            "arc": "Concave Down, Decrease",
+            "chars_Arial_48": 0,
+            "modified_end_time":1,
+            "modified_end_emotional_score":-10
+        }
+    ],
+    "chars_Arial_48": 0
+}
