@@ -4,6 +4,7 @@ import yaml
 import tiktoken
 from langchain_community.llms import OpenAI
 from langchain_community.chat_models import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 import re
 
 #Models:
@@ -40,6 +41,21 @@ def get_llm(provider: str, model: str, config: dict, max_tokens: int = 1024):
         llm = ChatAnthropic(model=model, 
                             anthropic_api_key=anthropic_api_key,
                             max_tokens=max_tokens)
+    elif provider in {"google", "gemini"}:
+        # Google Gemini (via Google Generative AI)
+        # models gemini-2.5-pro-preview-03-25
+        google_api_key = config.get("google_gemini_key")  # or fall back to env var
+        if not google_api_key and not os.getenv("GOOGLE_API_KEY"):
+            raise ValueError("google_api_key must be specified in the config or env")
+
+        # ChatGoogleGenerativeAI uses `max_output_tokens` rather than `max_tokens`
+        llm = ChatGoogleGenerativeAI(
+          model=model,                    # e.g. "gemini-pro", "gemini-1.5-flash-latest"
+            google_api_key=google_api_key,  # optional if env var is set
+             model_kwargs={
+            "max_output_tokens": max_tokens,           # e.g. 1024
+            "response_format": {"type": "json_object"} # force raw JSON
+        })   # keeps your current signature unchanged        )
     else:
         raise ValueError(f"Unsupported provider: {provider}")
     return llm
