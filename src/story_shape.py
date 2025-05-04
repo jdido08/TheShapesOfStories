@@ -56,6 +56,13 @@ def create_shape(story_data_path,
                 protagonist_font_color= (0, 0 , 0),
                 protagonist_font_bold = False,
                 protagonist_font_underline = False,
+                author_text="", # Optional, defaults to story_data['author']
+                author_font_style="Cormorant Garamond", # Defaults to title font style if empty
+                author_font_size=12, # Suggest smaller than title
+                author_font_color='#000000', # Use hex, defaults to title color
+                author_font_bold=False,
+                author_font_underline=False,
+                author_padding=5, # Vertical space BETWEEN title and author
                 top_text = "", #only applies when wrapped > 0; if "" will default to author, year
                 top_text_font_style = "Cormorant Garamond",
                 top_text_font_size = "24",
@@ -84,6 +91,7 @@ def create_shape(story_data_path,
         "Body Font": font_style,
         "Title Font": title_font_style,
         "Protagonist Font": protagonist_font_style,
+        "Author Font":author_font_style,
         "Top Text Font": top_text_font_style,
         "Bottom Text Font": bottom_text_font_style,
     }
@@ -102,6 +110,7 @@ def create_shape(story_data_path,
     line_color = hex_to_rgb(line_color)
     title_font_color = hex_to_rgb(title_font_color)
     protagonist_font_color = hex_to_rgb(protagonist_font_color)
+    author_font_color = hex_to_rgb(author_font_color)
     top_text_font_color = hex_to_rgb(top_text_font_color)
     bottom_text_font_color = hex_to_rgb(bottom_text_font_color)
     border_color = hex_to_rgb(border_color)
@@ -185,6 +194,13 @@ def create_shape(story_data_path,
                     protagonist_font_color= protagonist_font_color,
                     protagonist_font_bold = protagonist_font_bold,
                     protagonist_font_underline = protagonist_font_underline,
+                    author_text=author_text, # Optional, defaults to story_data['author']
+                    author_font_style=author_font_style, # Defaults to title font style if empty
+                    author_font_size=author_font_size, # Suggest smaller than title
+                    author_font_color=author_font_color, # Use hex, defaults to title color
+                    author_font_bold=author_font_bold,
+                    author_font_underline=author_font_underline,
+                    author_padding=author_padding, 
                     top_text = top_text, #only applies when wrapped > 0; if "" will default to author, year
                     top_text_font_style = top_text_font_style,
                     top_text_font_size = top_text_font_size,
@@ -282,6 +298,13 @@ def create_shape_single_pass(story_data,
                 protagonist_font_color= (0, 0 , 0),
                 protagonist_font_bold = False,
                 protagonist_font_underline = False,
+                author_text="", # Optional, defaults to story_data['author']
+                author_font_style="Cormorant Garamond", # Defaults to title font style if empty
+                author_font_size=12, # Suggest smaller than title
+                author_font_color='#000000', # Use hex, defaults to title color
+                author_font_bold=False,
+                author_font_underline=False,
+                author_padding=5, # Vertical space BETWEEN title and author
                 top_text = "", #only applies when wrapped > 0; if "" will default to author, year
                 top_text_font_style = "Cormorant Garamond",
                 top_text_font_size = "24",
@@ -365,6 +388,12 @@ def create_shape_single_pass(story_data,
     protagonist_font_desc = Pango.FontDescription(f"{protagonist_font_style} {protagonist_font_size_for_300dpi}")
     if protagonist_font_bold == True:
         protagonist_font_desc.set_weight(Pango.Weight.BOLD)
+
+    # Prepare Author Font Desc (using effective style passed in)
+    author_font_size_for_300dpi = author_font_size * (300 / 96)
+    author_font_desc = Pango.FontDescription(f"{author_font_style} {author_font_size_for_300dpi}")
+    if author_font_bold: author_font_desc.set_weight(Pango.Weight.BOLD)
+
 
     top_text_font_size_for_300dpi = top_text_font_size * (300/96)
     top_text_font_desc = Pango.FontDescription(f"{top_text_font_style} {top_text_font_size_for_300dpi}")
@@ -460,39 +489,58 @@ def create_shape_single_pass(story_data,
     y_range = y_max - y_min
 
    # 3) If we have a title, measure its pixel height
-    if(title_text == ""):
-        title_text = story_data.get('title', '')
 
+     # --- MODIFIED: Calculate Title/Author Band Height ---
     measured_title_height = 0
+    measured_author_height = 0
+    title_band_height = 0 # Total height reserved at the bottom
+    effective_author_text = "" # Store measured author text
 
     if has_title == "YES":
-        # measure text height
-        layout_temp = PangoCairo.create_layout(cr)
-        layout_temp.set_font_description(title_font_desc)
-        layout_temp.set_text(title_text, -1)
-        _, measured_title_height = layout_temp.get_pixel_size()
+        effective_title_text = title_text if title_text else story_data.get('title', '')
+        if effective_title_text:
+            layout_temp_title = PangoCairo.create_layout(cr)
+            layout_temp_title.set_font_description(title_font_desc)
+            layout_temp_title.set_text(effective_title_text, -1)
+            _, measured_title_height = layout_temp_title.get_pixel_size()
+            title_band_height += measured_title_height # Start with title height
 
-        if title_font_underline == True:
-            attr_list = Pango.AttrList()
-            underline_attr = Pango.attr_underline_new(Pango.Underline.SINGLE)
-            attr_list.insert(underline_attr)
-            layout_temp.set_attributes(attr_list)
+            if author_text != "":
+                effective_author_text = author_text
+                if effective_author_text:
+                    layout_temp_author = PangoCairo.create_layout(cr)
+                    layout_temp_author.set_font_description(author_font_desc)
+                    layout_temp_author.set_text(effective_author_text, -1)
+                    _, measured_author_height = layout_temp_author.get_pixel_size()
+                    # Add padding *between* title and author, then author height
+                    title_band_height += author_padding + measured_author_height
+                else:
+                    # No author text, just add the title's own bottom padding
+                    title_band_height += title_padding
+            else:
+                # No author requested, add title's own bottom padding
+                 title_band_height += title_padding
+        else:
+            # No title text, band height is 0
+            has_title = "NO" # Cannot draw title if text is empty
+            has_author = "NO" # Cannot draw author if title isn't drawn
 
-        title_band_height = measured_title_height + title_padding
+    # If title_band_height is still 0 (no title/author), set has_title/has_author to NO
+    if title_band_height == 0:
+        has_title = "NO"
+        has_author = "NO"
 
-        # arcs stop short of that band
-        # arcs fill up to: design_height - 2*margin_y - (title_band_height + gap_above_title)
-
-    else:
-        # no title, so no band
-        title_band_height = 0
 
     drawable_width = design_width - 2 * margin_x
     drawable_height = (design_height
-                    - 2 * margin_y
-                    - title_band_height
-                    - gap_above_title)
+                       - 2 * margin_y
+                       - title_band_height # Use the combined height
+                       - gap_above_title)
 
+    if drawable_height <= 0:
+         raise ValueError("Drawable height is zero or negative. Check margins, font sizes, paddings.")
+    # --- END MODIFIED BAND HEIGHT & DRAWABLE AREA ---
+    
     # 4) Compute scale factors & map your story arcs into [margin_y, margin_y+drawable_height]
     x_values = story_data['x_values']
     y_values = story_data['y_values']
@@ -946,88 +994,99 @@ def create_shape_single_pass(story_data,
         end_svg_group(cr, output_format)
         # -----------------------------------------
 
+   #  --- Draw Title, Author, Protagonist ---
+    # These variables will store the calculated positions needed later
+    title_y = 0
+    title_text_height = 0
+    author_y = 0
+    author_text_height = 0
+
     if has_title == "YES":
-        # -- Prepare the title layout --
-        final_layout = PangoCairo.create_layout(cr)
-        final_layout.set_font_description(title_font_desc)
-        final_layout.set_text(title_text, -1)
+        # --- Draw Title ---
+        final_layout_title = PangoCairo.create_layout(cr)
+        final_layout_title.set_font_description(title_font_desc)
+        final_layout_title.set_text(effective_title_text, -1)
+       
+        if title_font_underline:
+            attr_list_title = Pango.AttrList(); underline_attr_title = Pango.attr_underline_new(Pango.Underline.SINGLE); attr_list_title.insert(underline_attr_title); final_layout_title.set_attributes(attr_list_title)
 
-        # Create an attribute list and add an underline attribute.
-        if title_font_underline == True:
-            attr_list = Pango.AttrList()
-            underline_attr = Pango.attr_underline_new(Pango.Underline.SINGLE)
-            attr_list.insert(underline_attr)
-            final_layout.set_attributes(attr_list)
-
-        # Measure the title's bounding box
-        title_text_width, title_text_height = final_layout.get_pixel_size()
-
-        # The top of the "title band" area
+        title_text_width, title_text_height = final_layout_title.get_pixel_size() # Store measured height
         title_band_top = margin_y + drawable_height + gap_above_title
-
-        # Left-aligned X for the title
         title_x = margin_x
-        # Put the title’s top bounding box at 'title_band_top'
-        title_y = title_band_top
+        title_y = title_band_top # Store title Y position
 
-
-
-         # --- MODIFICATION: Start Title Group ---
         begin_svg_group(cr, "title-group", output_format)
-        # ---------------------------------------
-
-        # Draw the title at bottom-left
         cr.move_to(title_x, title_y)
-        cr.set_source_rgb(*title_font_color)
-        PangoCairo.show_layout(cr, final_layout)
-
-        # --- MODIFICATION: End Title Group ---
+        cr.set_source_rgb(*title_font_color) # Use RGB
+        PangoCairo.show_layout(cr, final_layout_title)
         end_svg_group(cr, output_format)
-        # ----------------------------
+        # --- End Draw Title ---
 
-        # ------------------------------------------------
-        # Draw the protagonist name at bottom-right
-        # ------------------------------------------------
-        if protagonist_text == "":
-            protagonist_text = story_data.get('protagonist', '')
+        # --- Draw Author ---
+        if effective_author_text != "":
+            final_layout_author = PangoCairo.create_layout(cr)
+            final_layout_author.set_font_description(author_font_desc)
+            final_layout_author.set_text(effective_author_text, -1)
+            if author_font_underline:
+                # ... (add underline attribute) ...
+                 attr_list_author = Pango.AttrList(); underline_attr_author = Pango.attr_underline_new(Pango.Underline.SINGLE); attr_list_author.insert(underline_attr_author); final_layout_author.set_attributes(attr_list_author)
 
-        if protagonist_text:
-            # Prepare protagonist layout
+
+            author_text_width, author_text_height = final_layout_author.get_pixel_size() # Store measured height
+            author_x = title_x
+            author_y = title_y + title_text_height + author_padding # Store author Y
+
+            begin_svg_group(cr, "author-group", output_format)
+            cr.move_to(author_x, author_y)
+            cr.set_source_rgb(*author_font_color) # Use RGB
+            PangoCairo.show_layout(cr, final_layout_author)
+            end_svg_group(cr, output_format)
+        # --- End Draw Author ---
+
+        # --- Draw Protagonist ---
+        effective_protagonist_text = protagonist_text if protagonist_text else story_data.get('protagonist', '')
+        if effective_protagonist_text:
             prot_layout = PangoCairo.create_layout(cr)
             prot_layout.set_font_description(protagonist_font_desc)
-            prot_layout.set_text(protagonist_text, -1)
+            prot_layout.set_text(effective_protagonist_text, -1)
+            if protagonist_font_underline:
+                # ... (add underline attribute) ...
+                attr_list_prot = Pango.AttrList(); underline_attr_prot = Pango.attr_underline_new(Pango.Underline.SINGLE); attr_list_prot.insert(underline_attr_prot); prot_layout.set_attributes(attr_list_prot)
 
-            # Create an attribute list and add an underline attribute.
-            if protagonist_font_underline == True:
-                attr_list = Pango.AttrList()
-                underline_attr = Pango.attr_underline_new(Pango.Underline.SINGLE)
-                attr_list.insert(underline_attr)
-                prot_layout.set_attributes(attr_list)
-
-            # Measure the protagonist text
             prot_text_width, prot_text_height = prot_layout.get_pixel_size()
 
-            # The bottom edge of the title box is:
-            title_bottom_line = title_y + title_text_height
+            # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+            # --- THE SINGLE PLACE TO CHANGE PROTAGONIST ALIGNMENT ---
 
-            # Position the protagonist text so that its *bottom* aligns with the title’s bottom
-            # i.e., top of its bounding box = (title_bottom_line - protagonist box’s height)
-            prot_y = title_bottom_line - prot_text_height
+            # Option 1: Align Protagonist Bottom with TITLE Bottom
+            target_bottom_line = title_y + title_text_height
 
-            # Right‐align X so the right edge is near (margin_x + drawable_width)
-            prot_x = margin_x + drawable_width - prot_text_width
+            # Option 2: Align Protagonist Bottom with AUTHOR Bottom
+            # To use this: COMMENT OUT the line above and UNCOMMENT the 4 lines below.
+            # Make sure 'has_author="YES"' and author text exists when uncommenting!
+            # if effective_author_text != "":
+            #     target_bottom_line = author_y + author_text_height
+            # else: # Fallback if author isn't shown but you tried to align
+            #     target_bottom_line = title_y + title_text_height
 
-            # --- MODIFICATION: Start Name Group ---
-            begin_svg_group(cr, "name-group", output_format)
-            # ----
+            # --- END OF ALIGNMENT CHANGE SECTION ---
+            # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+            # Calculate protagonist Y based on the chosen target line
+            prot_y = target_bottom_line - prot_text_height
+            prot_x = margin_x + drawable_width - prot_text_width # Right aligned
+
+            begin_svg_group(cr, "protagonist-group", output_format)
             cr.move_to(prot_x, prot_y)
-            cr.set_source_rgb(*protagonist_font_color)
+            cr.set_source_rgb(*protagonist_font_color) # Use RGB
             PangoCairo.show_layout(cr, prot_layout)
-
-            # --- MODIFICATION: End Name Group ---
             end_svg_group(cr, output_format)
-            # -----
+        # --- End Draw Protagonist ---
+
+
+        # --- MODIFICATION: End Title Group ---
+       # --- End Title/Author/Protagonist Block ---
+
 
 
     # MAKE NOTES ON TOP AND BOTTOM OF CANVAS -- only applies when wrap_in_inches > 0

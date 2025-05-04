@@ -62,8 +62,8 @@ for row in rows:
             story_title = title, 
             author = author,
             protagonist = protagonist, 
-            llm_provider = "google", #"anthropic",  
-            llm_model = "gemini-2.5-pro-preview-03-25"
+            llm_provider = "anthropic", #google", 
+            llm_model = "claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
         )
         story_style = json.loads(story_style)
         design_rationale = story_style.get('design_rationale')
@@ -121,8 +121,8 @@ for row in rows:
             year=year, 
             protagonist=protagonist,
             output_path = story_data_output_path_base,
-            llm_provider="google",
-            llm_model="gemini-2.5-pro-preview-03-25"
+            llm_provider = "anthropic", #google", 
+            llm_model = "claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
             )
 
     ### YOU JUST NEED 12x12 and then you shrinnk it down 
@@ -147,6 +147,7 @@ for row in rows:
         title_font_size = 48
         gap_above_title = 40
         protagonist_font_size = 24
+        author_font_size = 24
         top_text = author + ", " + str(year)
         top_text_font_size = 48
         bottom_text_font_size = 12
@@ -165,6 +166,7 @@ for row in rows:
         title_font_size = 40
         gap_above_title = 33
         protagonist_font_size = 20
+        author_font_size = 20
         top_text = author + ", " + str(year)
         top_text_font_size = 20
         bottom_text_font_size = 12
@@ -183,6 +185,7 @@ for row in rows:
         title_font_size = 32 #value is 32, other values: 26, 22, 20 (very small)
         gap_above_title = 70 #value was 26
         protagonist_font_size = 16
+        author_font_size = 16
         top_text = author + ", " + str(year)
         top_text_font_size = 12
         bottom_text_font_size = 12
@@ -202,7 +205,7 @@ for row in rows:
     print("creating story shape")
     new_story_data_path, story_shape_path = create_shape(story_data_path = story_data_path,
                     product = product,
-                    x_delta=0.015, #number of points in the line 
+                    x_delta= 0.02,#0.015, #number of points in the line 
                     step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                     max_num_steps = max_num_steps,
                     line_type = line_type, #values line or char
@@ -228,6 +231,15 @@ for row in rows:
                     protagonist_font_color=font_color,
                     protagonist_font_bold = False, #can be True or False
                     protagonist_font_underline = False, #can be True or False
+
+                    author_text="", # Optional, defaults to story_data['author']
+                    author_font_style=font, # Defaults to title font style if empty
+                    author_font_size=author_font_size, # Suggest smaller than title
+                    author_font_color=font_color, # Use hex, defaults to title color
+                    author_font_bold=False,
+                    author_font_underline=False,
+                    author_padding=5, 
+
                     top_text = top_text, #only applies when wrapped > 0; if "" will default to author, year
                     top_text_font_style = font,
                     top_text_font_size = top_text_font_size,
@@ -247,8 +259,8 @@ for row in rows:
                     fixed_margin_in_inches = fixed_margin_in_inches, #fixed margins for output
                     recursive_mode = True, #if you want to recurisvely generate story
                     recursive_loops = 500, #the number of iterations 
-                    llm_provider = "google",#"anthropic", #for generating descriptors
-                    llm_model = "gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
+                    llm_provider = "anthropic",#"google" #for generating descriptors
+                    llm_model = "claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     output_format=file_format
                 ) #options png or svg
     
