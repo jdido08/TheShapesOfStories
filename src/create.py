@@ -205,7 +205,7 @@ for row in rows:
     print("creating story shape")
     new_story_data_path, story_shape_path = create_shape(story_data_path = story_data_path,
                     product = product,
-                    x_delta= 0.02,#0.015, #number of points in the line 
+                    x_delta= 0.015,#0.015, #number of points in the line 
                     step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                     max_num_steps = max_num_steps,
                     line_type = line_type, #values line or char
@@ -232,7 +232,7 @@ for row in rows:
                     protagonist_font_bold = False, #can be True or False
                     protagonist_font_underline = False, #can be True or False
 
-                    author_text="", # Optional, defaults to story_data['author']
+                    author_text=author, # Optional, defaults to story_data['author']
                     author_font_style=font, # Defaults to title font style if empty
                     author_font_size=author_font_size, # Suggest smaller than title
                     author_font_color=font_color, # Use hex, defaults to title color
