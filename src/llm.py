@@ -6,6 +6,7 @@ from langchain_community.llms import OpenAI
 from langchain_community.chat_models import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 import re
+from langchain_groq import ChatGroq
 
 #Models:
 # openai - https://platform.openai.com/docs/models
@@ -26,7 +27,7 @@ def get_llm(provider: str, model: str, config: dict, max_tokens: int = 1024):
         # Import the chat model from the community chat models module.
         #from langchain_community.chat_models import ChatOpenAI
         from langchain_openai import ChatOpenAI
-        openai_api_key = config.get("openai_key_vonnegutgraphs")
+        openai_api_key = config.get("openai_key")
         if not openai_api_key:
             raise ValueError("openai_key_vonnegutgraphs must be specified in the config")
         # Pass the API key as a parameter.
@@ -56,6 +57,18 @@ def get_llm(provider: str, model: str, config: dict, max_tokens: int = 1024):
             "max_output_tokens": max_tokens,           # e.g. 1024
             "response_format": {"type": "json_object"} # force raw JSON
         })   # keeps your current signature unchanged        )
+    elif provider == "groq":
+        
+        groq_api_key = config.get("groq_key")
+        if not groq_api_key:
+            # You can also allow it to be set as an environment variable
+            # groq_api_key = os.getenv("GROQ_API_KEY")
+            # if not groq_api_key:
+            raise ValueError("groq_api_key must be specified in the config")
+        llm = ChatGroq(model_name=model, # Groq uses model_name
+                       groq_api_key=groq_api_key,
+                       max_tokens=max_tokens) # ChatGroq uses max_tokens
+        
     else:
         raise ValueError(f"Unsupported provider: {provider}")
     return llm

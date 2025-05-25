@@ -70,6 +70,18 @@ poster_layout_templates = {
     },
 
     # --- 4 Stories ---
+     "stories4_4x1_grid": {
+        "description": "Four stories in a 4x1 grid.",
+        "num_stories": 4,
+        "base_rows": 4,
+        "base_cols": 1,
+        "grid_template": [
+            {'base_row': 0, 'base_col': 0, 'row_span': 1, 'col_span': 1, 'content_index': 0},
+            {'base_row': 1, 'base_col': 0, 'row_span': 1, 'col_span': 1, 'content_index': 1},
+            {'base_row': 2, 'base_col': 0, 'row_span': 1, 'col_span': 1, 'content_index': 2},
+            {'base_row': 3, 'base_col': 0, 'row_span': 1, 'col_span': 1, 'content_index': 3},
+        ]
+    },
     "stories4_2x2_grid": {
         "description": "Four stories in a 2x2 grid.",
         "num_stories": 4,

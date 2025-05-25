@@ -209,15 +209,21 @@ The descriptions in the example output demonstrate the minimum expected level of
     # Instead of building an LLMChain, use the pipe operator:
     runnable = prompt | llm
 
-    # Then invoke with the required inputs:
-    output = runnable.invoke({
-        "author_name": author_name,
-        "story_title": story_title,
-        "protagonist": protagonist,
-        "story_summary": story_summary,
-    })
+    try:
+        output = runnable.invoke({
+            "author_name": author_name,
+            "story_title": story_title,
+            "protagonist": protagonist,
+            "story_summary": story_summary,
+        })
+        # If output is a AIMessage, its `response_metadata` might have info
+        if hasattr(output, "response_metadata"):
+            print("LLM Response Metadata:", output.response_metadata)
 
-    print(output)
+    except Exception as e:
+        print(f"Error during LLM call: {e}")
+        if hasattr(e, 'response') and hasattr(e.response, 'prompt_feedback'): # Example for some libraries
+            print("Prompt Feedback:", e.response.prompt_feedback)
 
     # If the output is an object with a 'content' attribute, extract it.
     if hasattr(output, "content"):

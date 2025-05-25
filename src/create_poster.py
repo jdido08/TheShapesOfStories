@@ -547,22 +547,22 @@ if __name__ == "__main__":
     dummy_image_folder = os.path.join(poster_output_folder, "dummy_story_shapes")
     os.makedirs(dummy_image_folder, exist_ok=True)
 
-    poster_w_inches = 24 
-    poster_h_inches = 36 
+    poster_w_inches = 18 
+    poster_h_inches = 24 
     print_dpi = 300
-    preview_dpi = 72 
+    preview_dpi = 300 
 
     poster_general_margin_in = 1.0 # General margin for grid from poster edges
-    grid_cell_spacing_in = 0.15  # Spacing between grid cells
+    grid_cell_spacing_in = 0.5  # Spacing between grid cells
     
     # --- Text Element Configuration ---
-    main_title_text = "The Shapes of Awesome Stories"
+    main_title_text = "Ernest Hemingway"
     title_font_path_config = None 
     title_font_size_config = 100 # Test with large font
     title_color_config = '#222222'
 
     #subtitle_text_config = "A Deep Dive into Narrative Structures"
-    subtitle_text_config = "" # Test with no subtitle
+    subtitle_text_config = "The Shapes of Stories" # Test with no subtitle
     subtitle_font_path_config = None
     subtitle_font_size_config = 40
     subtitle_color_config = '#444444'
@@ -573,7 +573,7 @@ if __name__ == "__main__":
     padding_text_to_grid_in = 0.5   # Padding between text block and grid
 
     # Step 2: Choose a Layout Template
-    chosen_template_name = "stories5_two_top_three_bottom" 
+    chosen_template_name = "stories4_4x1_grid" 
     # chosen_template_name = "stories4_hero_left_three_stacked_right"
 
     if chosen_template_name not in poster_layout_templates:
@@ -635,38 +635,46 @@ if __name__ == "__main__":
     # For now, we'll use calculate_cell_content_size with initial poster dimensions,
     # understanding that create_poster will handle the true final sizing and placement.
     # The dummy images are mainly for having *something* to pass to create_poster.
-    print("\n--- Calculating Initial Target Sizes for Dummy Story Shapes (Print DPI) ---")
-    required_sizes = {} 
-    for i, cell_def in enumerate(grid_def_template):
-        idx, rs, cs = cell_def['content_index'], cell_def['row_span'], cell_def['col_span']
-        size = calculate_cell_content_size(
-            poster_w_inches, poster_h_inches, print_dpi, poster_general_margin_in, 
-            grid_cell_spacing_in, base_r_template, base_c_template, rs, cs
-        )
-        required_sizes[idx] = size if size else (50,50) # Fallback
-        # if size: print(f"  - Dummy for idx {idx} (Cell {i}, Span {rs}x{cs}): ~{size[0]}x{size[1]}px")
+    # print("\n--- Calculating Initial Target Sizes for Dummy Story Shapes (Print DPI) ---")
+    # required_sizes = {} 
+    # for i, cell_def in enumerate(grid_def_template):
+    #     idx, rs, cs = cell_def['content_index'], cell_def['row_span'], cell_def['col_span']
+    #     size = calculate_cell_content_size(
+    #         poster_w_inches, poster_h_inches, print_dpi, poster_general_margin_in, 
+    #         grid_cell_spacing_in, base_r_template, base_c_template, rs, cs
+    #     )
+    #     required_sizes[idx] = size if size else (50,50) # Fallback
+    #     # if size: print(f"  - Dummy for idx {idx} (Cell {i}, Span {rs}x{cs}): ~{size[0]}x{size[1]}px")
 
-    story_files = [None] * num_expected_stories
-    print("\n--- Preparing/Checking Dummy Story Shape Image Paths ---")
-    for i in range(num_expected_stories):
-        s = required_sizes.get(i, (50,50))
-        dw, dh = max(1,s[0]), max(1,s[1]) # Ensure positive
-        name = f"dummy_idx{i}_{dw}x{dh}.png"
-        path = os.path.join(dummy_image_folder, name)
-        if not os.path.exists(path):
-            try:
-                img = Image.new('RGB', (dw, dh), (210,210,230))
-                dr = ImageDraw.Draw(img)
-                try: f = ImageFont.load_default(size=max(10,int(min(dw,dh)/8)))
-                except: f = ImageFont.load_default()
-                txt = f"idx {i}\n{dw}x{dh}"
-                try:
-                    bb = dr.textbbox((0,0),txt,font=f,align="center")
-                    dr.text(((dw-(bb[2]-bb[0]))/2, (dh-(bb[3]-bb[1]))/2), txt, (0,0,0), f, align="center")
-                except: dr.text((5,5),txt,(0,0,0),f)
-                img.save(path)
-            except Exception as e: print(f"Err dummy {i}: {e}"); path=None
-        story_files[i] = path
+    # story_files = [None] * num_expected_stories
+    # print("\n--- Preparing/Checking Dummy Story Shape Image Paths ---")
+    # for i in range(num_expected_stories):
+    #     s = required_sizes.get(i, (50,50))
+    #     dw, dh = max(1,s[0]), max(1,s[1]) # Ensure positive
+    #     name = f"dummy_idx{i}_{dw}x{dh}.png"
+    #     path = os.path.join(dummy_image_folder, name)
+    #     if not os.path.exists(path):
+    #         try:
+    #             img = Image.new('RGB', (dw, dh), (210,210,230))
+    #             dr = ImageDraw.Draw(img)
+    #             try: f = ImageFont.load_default(size=max(10,int(min(dw,dh)/8)))
+    #             except: f = ImageFont.load_default()
+    #             txt = f"idx {i}\n{dw}x{dh}"
+    #             try:
+    #                 bb = dr.textbbox((0,0),txt,font=f,align="center")
+    #                 dr.text(((dw-(bb[2]-bb[0]))/2, (dh-(bb[3]-bb[1]))/2), txt, (0,0,0), f, align="center")
+    #             except: dr.text((5,5),txt,(0,0,0),f)
+    #             img.save(path)
+    #         except Exception as e: print(f"Err dummy {i}: {e}"); path=None
+    #     story_files[i] = path
+
+
+    story_files = [
+        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-the-old-man-and-the-sea_protagonist-santiago_product-print_size-16x4.64_line-type-char_char_background-color-#1B3F8B_font-color-#F0F4F5_border-color-#45776B_font-Lora_title-display-yes.png",
+        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-a-farewell-to-arms_protagonist-frederic-henry_product-print_size-16x4.64_line-type-char_char_background-color-#4A5D4C_font-color-#FFFFFF_border-color-#8B0000_font-Futura_title-display-yes.png",
+        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-16x4.64_line-type-char_char_background-color-#994636_font-color-#CAD2C5_border-color-#2D2424_font-Bitter_title-display-yes.png",
+        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-the-sun-also-rises_protagonist-jake-barnes_product-print_size-16x4.64_line-type-char_char_background-color-#C17F59_font-color-#1B2B3A_border-color-#7C4B2A_font-Futura_title-display-yes.png"
+    ]
     
     # Step 7: Create Actual Poster
     print("\n--- Generating Actual Poster ---")
