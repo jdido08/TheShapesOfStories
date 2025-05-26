@@ -27,6 +27,7 @@ from gi.repository import Pango, PangoCairo
 import anthropic
 import yaml
 
+CURRENT_DPI = 300
 
 def create_shape(story_data_path,
                 product = "canvas",
@@ -364,41 +365,40 @@ def create_shape_single_pass(story_data,
     new_min_x, new_max_x = 1, 10
     new_min_y, new_max_y = -10, 10
 
-    dpi = 300
-
+  
     # total print area
     total_width_in = width_in_inches + 2*wrap_in_inches
     total_height_in = height_in_inches + 2*wrap_in_inches
 
-    total_width_px = int(total_width_in * dpi)
-    total_height_px = int(total_height_in * dpi)
+    total_width_px = int(total_width_in * CURRENT_DPI)
+    total_height_px = int(total_height_in * CURRENT_DPI)
 
 
     #SETUP FONTS
     from gi.repository import Pango
-    font_size_for_300dpi = font_size * (300 / 96)
+    font_size_for_300dpi = font_size * (CURRENT_DPI / 72)
     font_desc = Pango.FontDescription(f"{font_style} {font_size_for_300dpi}")
 
-    title_font_size_for_300dpi = title_font_size * (300 / 96)
+    title_font_size_for_300dpi = title_font_size * (CURRENT_DPI / 72)
     title_font_desc = Pango.FontDescription(f"{title_font_style} {title_font_size_for_300dpi}")
     if title_font_bold == True:
         title_font_desc.set_weight(Pango.Weight.BOLD)
 
-    protagonist_font_size_for_300dpi = protagonist_font_size * (300/96)
+    protagonist_font_size_for_300dpi = protagonist_font_size * (CURRENT_DPI/72)
     protagonist_font_desc = Pango.FontDescription(f"{protagonist_font_style} {protagonist_font_size_for_300dpi}")
     if protagonist_font_bold == True:
         protagonist_font_desc.set_weight(Pango.Weight.BOLD)
 
     # Prepare Author Font Desc (using effective style passed in)
-    author_font_size_for_300dpi = author_font_size * (300 / 96)
+    author_font_size_for_300dpi = author_font_size * (CURRENT_DPI / 72)
     author_font_desc = Pango.FontDescription(f"{author_font_style} {author_font_size_for_300dpi}")
     if author_font_bold: author_font_desc.set_weight(Pango.Weight.BOLD)
 
 
-    top_text_font_size_for_300dpi = top_text_font_size * (300/96)
+    top_text_font_size_for_300dpi = top_text_font_size * (CURRENT_DPI/72)
     top_text_font_desc = Pango.FontDescription(f"{top_text_font_style} {top_text_font_size_for_300dpi}")
 
-    bottom_text_font_size_for_300dpi = bottom_text_font_size * (300/96)
+    bottom_text_font_size_for_300dpi = bottom_text_font_size * (CURRENT_DPI/72)
     bottom_text_font_desc = Pango.FontDescription(f"{bottom_text_font_style} {bottom_text_font_size_for_300dpi}")
 
     # Create a Cairo surface and context
@@ -414,10 +414,10 @@ def create_shape_single_pass(story_data,
     pangocairo_context = PangoCairo.create_context(cr)
 
     # Calculate dimensions
-    design_offset_x = wrap_in_inches * dpi
-    design_offset_y = wrap_in_inches * dpi
-    design_width = int(width_in_inches * dpi)
-    design_height = int(height_in_inches * dpi)
+    design_offset_x = wrap_in_inches * CURRENT_DPI
+    design_offset_y = wrap_in_inches * CURRENT_DPI
+    design_width = int(width_in_inches * CURRENT_DPI)
+    design_height = int(height_in_inches * CURRENT_DPI)
 
     # Paint wrap areas
     if wrap_in_inches > 0:
@@ -425,21 +425,21 @@ def create_shape_single_pass(story_data,
         cr.set_source_rgb(*wrap_background_color)
         
         # Top wrap area
-        cr.rectangle(0, 0, total_width_px, wrap_in_inches * dpi)
+        cr.rectangle(0, 0, total_width_px, wrap_in_inches * CURRENT_DPI)
         cr.fill()
         
         # Bottom wrap area
-        bottom_y = total_height_px - (wrap_in_inches * dpi)
-        cr.rectangle(0, bottom_y, total_width_px, wrap_in_inches * dpi)
+        bottom_y = total_height_px - (wrap_in_inches * CURRENT_DPI)
+        cr.rectangle(0, bottom_y, total_width_px, wrap_in_inches * CURRENT_DPI)
         cr.fill()
         
         # Left wrap area
-        cr.rectangle(0, wrap_in_inches * dpi, wrap_in_inches * dpi, height_in_inches * dpi)
+        cr.rectangle(0, wrap_in_inches * CURRENT_DPI, wrap_in_inches * CURRENT_DPI, height_in_inches * CURRENT_DPI)
         cr.fill()
         
         # Right wrap area
-        right_x = total_width_px - (wrap_in_inches * dpi)
-        cr.rectangle(right_x, wrap_in_inches * dpi, wrap_in_inches * dpi, height_in_inches * dpi)
+        right_x = total_width_px - (wrap_in_inches * CURRENT_DPI)
+        cr.rectangle(right_x, wrap_in_inches * CURRENT_DPI, wrap_in_inches * CURRENT_DPI, height_in_inches * CURRENT_DPI)
         cr.fill()
         
         cr.restore()
@@ -477,8 +477,8 @@ def create_shape_single_pass(story_data,
 
      # Set margins in inches and convert to pixels
     # Now define margins *inside* that design region
-    margin_x = round(fixed_margin_in_inches * dpi)
-    margin_y = round(fixed_margin_in_inches * dpi)
+    margin_x = round(fixed_margin_in_inches * CURRENT_DPI)
+    margin_y = round(fixed_margin_in_inches * CURRENT_DPI)
 
     # Determine data range for x and y
     x_min = min(x_values)
@@ -903,7 +903,7 @@ def create_shape_single_pass(story_data,
                 #normal mode
                 if (new_x >= old_min_x and new_x <= old_max_x 
                     and new_y >= old_min_y and new_y <= old_max_y
-                    and recursive_mode and component['char_spacing_factor'] == 1.0):
+                    and recursive_mode and component['char_spacing_factor'] == 1.0): 
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
 
@@ -938,7 +938,7 @@ def create_shape_single_pass(story_data,
                     return story_data, "processing"
                 
                 # #we hit y max / min and need to extend x
-                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode and component['char_spacing_factor'] == 1.0):
+                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode and component['char_spacing_factor'] == 1.0): 
                     print("#we hit y max / min and need to extend x")
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
@@ -985,11 +985,9 @@ def create_shape_single_pass(story_data,
                             component['arc_text_valid_message'] = detailed_message
                             print(f"INDEX {index}: {detailed_message}")
 
-                            if output_format == "svg":
-                                surface.flush()   # flush the partial drawing, but do *not* finalize!
-                            else:
-                                surface.write_to_png(story_shape_path)
-                            return story_data, "processing"
+                            if output_format == "svg": surface.flush()
+                            else: surface.write_to_png(story_shape_path)
+                            return story_data, "processing" # Re-run create_shape_single_pass
                         else:
                             component['arc_text_valid'] = False 
                             component['spacing_adjustment_attempts'] = 0
@@ -1000,7 +998,9 @@ def create_shape_single_pass(story_data,
                                     f"Final spacing: {component.get('char_spacing_factor', 1.0)}. Text may be cramped.")
                             component['arc_text_valid_message'] = detailed_message
                             print(f"INDEX {index}: WARNING - {detailed_message}")
-                            return story_data, "processing"
+                            if output_format == "svg": surface.flush()
+                            else: surface.write_to_png(story_shape_path)
+                            return story_data, "processing" # Re-run create_shape_single_pass
 
 
             #curve is too long so need to shorten it
@@ -1112,7 +1112,7 @@ def create_shape_single_pass(story_data,
                                                 f"New spacing: {component['char_spacing_factor']}.")
                             component['arc_text_valid_message'] = detailed_message
                             print(f"INDEX {index}: {detailed_message}")
-                            print(f"new modified end: {component['modified_end_time']}")
+                            #print(f"new modified end: {component['modified_end_time']}")
                             if output_format == "svg": surface.flush()
                             else: surface.write_to_png(story_shape_path)
                             return story_data, "processing" # Re-run create_shape_single_pass
@@ -1262,7 +1262,7 @@ def create_shape_single_pass(story_data,
 
       
         x_top_center = total_width_px / 2
-        band_height_top = top_and_bottom_text_band * dpi  # 1.5" band
+        band_height_top = top_and_bottom_text_band * CURRENT_DPI  # 1.5" band
         band_start_top = design_offset_y - band_height_top  # upper edge of top band
         band_end_top   = design_offset_y                    # shape starts here
 
@@ -1313,7 +1313,7 @@ def create_shape_single_pass(story_data,
             margins = verify_safe_margin(
                 path=story_shape_path,
                 bg_rgb=tuple(int(c*255) for c in background_value),
-                dpi=300,                    # ← match your real DPI
+                dpi=CURRENT_DPI,                    # ← match your real DPI
                 margin_in=fixed_margin_in_inches,
                 tolerance_px=0             # or 1–2 px if you prefer
             )
@@ -1807,7 +1807,7 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text,
     if abs(char_spacing_factor - 1.0) > 0.001: # Check if char_spacing_factor is meaningfully different from 1.0
         # Widen the tolerance band symmetrically.
         # adjustment_tolerance_factor: Additional tolerance on each side (in effective char widths)
-        adjustment_tolerance_factor = 2
+        adjustment_tolerance_factor = 1.75
         
         lower_bound_for_correct -= adjustment_tolerance_factor * average_char_width_effective
         upper_bound_for_correct += adjustment_tolerance_factor * average_char_width_effective
@@ -1828,10 +1828,10 @@ def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text,
     #       f"Bounds: ({lower_bound_for_correct:.2f}, {upper_bound_for_correct:.2f})")
 
     if remaining_curve_length < lower_bound_for_correct:
-        # print("Verdict: curve_too_short")
+        print("Verdict: curve_too_short by ", (lower_bound_for_correct - remaining_curve_length))
         return "curve_too_short"
     elif remaining_curve_length > upper_bound_for_correct:
-        # print("Verdict: curve_too_long")
+        print("Verdict: curve_too_long by  ", (remaining_curve_length - upper_bound_for_correct))
         return "curve_too_long"
     else:
         # print("Verdict: curve_correct_length")
@@ -2647,7 +2647,7 @@ import numpy as np
 def verify_safe_margin(
         path: str,
         bg_rgb: tuple,
-        dpi: int = 300,
+        dpi: int = CURRENT_DPI,
         margin_in: float = 0.625,
         tolerance_px: int = 0   # allow tiny bleed if you like
     ):
