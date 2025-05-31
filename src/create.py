@@ -7,6 +7,7 @@ from story_shape import create_shape
 import json 
 import os
 import re
+import time 
 
 
 import math # ensure math is imported if not already
@@ -139,6 +140,7 @@ rows = worksheet.get_all_records()
 #loop through all rows but really should just be first row
 for row in rows:
     print("starting...")
+    start_time = time.perf_counter()
     # Assign each column value to a variable
     product = row.get("product")
     size = row.get("size")
@@ -392,5 +394,7 @@ for row in rows:
                     #llm_model = "gemini-2.5-pro-preview-05-06", #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
                     output_format=file_format
                 ) #options png or svg
-    
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+    print(f"The script took {elapsed_time:.4f} seconds to execute.")
 

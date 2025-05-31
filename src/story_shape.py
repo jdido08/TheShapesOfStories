@@ -28,6 +28,7 @@ import anthropic
 import yaml
 
 CURRENT_DPI = 300
+MAX_SPACING_ADJUSTMENT_ATTEMPTS = 30
 
 def create_shape(story_data_path,
                 product = "canvas",
@@ -347,6 +348,28 @@ def create_shape_single_pass(story_data,
     - recursive_mode: whether to keep adjusting arcs if they're too short/long
     """
 
+    ### START OF DEBUG ###
+    # --- ADD DEBUG COLORS ---
+    debug_segment_colors_rgb = [
+        hex_to_rgb("#FF0000"), # Red
+        hex_to_rgb("#00FF00"), # Green
+        hex_to_rgb("#0000FF"), # Blue
+        hex_to_rgb("#FFFF00"), # Yellow
+        hex_to_rgb("#FF00FF"), # Magenta
+        hex_to_rgb("#00FFFF"), # Cyan
+        hex_to_rgb("#FFA500"), # Orange
+        hex_to_rgb("#800080"), # Purple
+        hex_to_rgb("#A52A2A"), # Brown
+        hex_to_rgb("#FFFFFF")  # White (for markers, if background is dark)
+    ]
+    color_cycle = itertools.cycle(debug_segment_colors_rgb)
+    marker_color_rgb = hex_to_rgb("#000000") # Black for markers, or choose a contrast color
+    if sum(background_value) < 1.5: # If background is dark-ish
+        marker_color_rgb = hex_to_rgb("#FFFFFF") # Use white markers
+
+
+    ### END OF DEBUG ###
+
     # Extract the overall x_values and y_values (scaled from transform_story_data)
     x_values = story_data['x_values']  # Scaled x_values (from 1 to 10)
     y_values = story_data['y_values']  # Scaled y_values (from -10 to 10)
@@ -607,16 +630,9 @@ def create_shape_single_pass(story_data,
             arc_y_values = component.get('arc_y_values', [])
             description = component.get('description', '')
 
-            # --- INITIALIZE/FETCH char_spacing_factor for THIS component ---
-            if 'char_spacing_factor' not in component:
-                component['char_spacing_factor'] = 1.0 # Default if not set
-            current_char_spacing_factor = component['char_spacing_factor']
+            if 'adjust_spacing' not in component:
+                component['adjust_spacing'] = False
 
-            # --- INITIALIZE spacing_adjustment_attempts for THIS component ---
-            if 'spacing_adjustment_attempts' not in component:
-                component['spacing_adjustment_attempts'] = 0
-            # No need to read it into a local variable, just use component['spacing_adjustment_attempts']
-            
             if 'arc_manual_override' not in component:
                 component['arc_manual_override'] = False
 
@@ -662,13 +678,62 @@ def create_shape_single_pass(story_data,
             cr.set_source_rgba(0, 0, 0, 0)  # invisible
             cr.stroke()
 
+
+            ### START OF BEBUG ###
+            # --- DEBUG: DRAW THE CURVE SEGMENT ITSELF (thin line in its color) ---
+            current_segment_color_debug = next(color_cycle) # Get color for this debug segment
+            cr.save()
+            cr.set_source_rgb(*current_segment_color_debug)
+            cr.set_line_width(max(2, line_thickness / 5)) # Draw a thinner line for the segment path itself for debug
+            cr.move_to(arc_x_values_scaled[0], arc_y_values_scaled[0])
+            for sx_seg, sy_seg in zip(arc_x_values_scaled[1:], arc_y_values_scaled[1:]):
+                cr.line_to(sx_seg, sy_seg)
+            cr.stroke()
+            cr.restore()
+
+            # --- DEBUG: DRAW MARKERS FOR START AND END OF THIS SCALED SEGMENT ---
+            # Marker at the start of this segment
+            current_segment_color_debug = next(color_cycle) # Get color for this debug segment
+            cr.save()
+            cr.set_source_rgb(*current_segment_color_debug) # Use a contrasting marker color
+            cr.arc(arc_x_values_scaled[0], arc_y_values_scaled[0], 7, 0, 2 * math.pi) # 7px radius circle
+            cr.fill()
+            # Optionally, add a number to the marker
+            layout_marker_idx = PangoCairo.create_layout(cr)
+            font_desc_marker = Pango.FontDescription(f"Sans Bold 12") # Small font for index
+            layout_marker_idx.set_font_description(font_desc_marker)
+            layout_marker_idx.set_text(str(index), -1)
+            mk_w, mk_h = layout_marker_idx.get_pixel_size()
+            cr.move_to(arc_x_values_scaled[0] + 10, arc_y_values_scaled[0] - mk_h / 2) # Offset slightly
+            PangoCairo.show_layout(cr, layout_marker_idx)
+            cr.restore()
+
+            # Marker at the end of this segment
+            cr.save()
+            cr.set_source_rgb(*marker_color_rgb)
+            cr.arc(arc_x_values_scaled[-1], arc_y_values_scaled[-1], 7, 0, 2 * math.pi)
+            cr.fill()
+            cr.restore()
+
+            ### END OF BEBUG ###
+
+
+
+
+
+
+
+
+
+
+
             # Now set real color for text
             cr.set_source_rgb(*font_color)
 
             # Calculate arc length
             arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled)
             #ADDING 5/18/2025
-            average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled)
+            #average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled)
 
 
             # If arc_text not generated yet, do so
@@ -761,6 +826,12 @@ def create_shape_single_pass(story_data,
 
                     component['arc_text'] = descriptors_text
                     component['actual_arc_text_chars'] = len(descriptors_text)
+                    component['spaces_in_arc_text'] = component['arc_text'].count(' ')
+                    component['spaces_width_multiplier'] = {}
+                    component['space_to_modify'] = 0
+                    for space_index in range(component['spaces_in_arc_text']):
+                        component['spaces_width_multiplier'][space_index] = 1.0
+                    component['spacing_adjustment_attempts'] = 0 # Reset total attempts for this new text
                     component['arc_text_valid'] = descriptors_valid
                     component['arc_text_valid_message'] = descriptor_message
 
@@ -805,61 +876,54 @@ def create_shape_single_pass(story_data,
             arc_sample_text += " " + descriptors_text
 
             # --- START OF NEW CALCULATIONS FOR DETAILED MESSAGES ---
-            if descriptors_text:
-                current_avg_char_width = get_average_char_width(pangocairo_context, font_desc, descriptors_text)
-            else:
-                current_avg_char_width = get_average_char_width(pangocairo_context, font_desc, "a")
+            # if descriptors_text:
+            #     current_avg_char_width = get_average_char_width(pangocairo_context, font_desc, descriptors_text)
+            # else:
+            #     current_avg_char_width = get_average_char_width(pangocairo_context, font_desc, "a")
 
-            if current_avg_char_width > 0:
-                ideal_chars_for_this_curve = estimate_characters_fit(arc_length, current_avg_char_width, average_rotation_angle)
-            else:
-                ideal_chars_for_this_curve = 0
+            # if current_avg_char_width > 0:
+            #     ideal_chars_for_this_curve = estimate_characters_fit(arc_length, current_avg_char_width, average_rotation_angle)
+            # else:
+            #     ideal_chars_for_this_curve = 0
 
-            actual_chars_in_current_text = len(descriptors_text)
-            # --- END OF NEW CALCULATIONS ---
+            # actual_chars_in_current_text = len(descriptors_text)
+            # # --- END OF NEW CALCULATIONS ---
 
-             # Convert to NumPy arrays before passing to draw_text_on_curve
-            arc_x_values_scaled_np = np.array(arc_x_values_scaled)
-            arc_y_values_scaled_np = np.array(arc_y_values_scaled)
+            #  # Convert to NumPy arrays before passing to draw_text_on_curve
+            # arc_x_values_scaled_np = np.array(arc_x_values_scaled)
+            # arc_y_values_scaled_np = np.array(arc_y_values_scaled)
 
-            # Calculate arc length
-            # arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled) # Original
-            arc_length = calculate_arc_length(arc_x_values_scaled_np, arc_y_values_scaled_np) # Use NP array
+            # # Calculate arc length
+            # # arc_length = calculate_arc_length(arc_x_values_scaled, arc_y_values_scaled) # Original
+            # arc_length = calculate_arc_length(arc_x_values_scaled_np, arc_y_values_scaled_np) # Use NP array
             
-            #ADDING 5/18/2025
-            # average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled) # Original
-            average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled_np, arc_y_values_scaled_np) # Use NP array
+            # #ADDING 5/18/2025
+            # # average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled) # Original
+            # average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled_np, arc_y_values_scaled_np) # Use NP array
 
-
+            if 'oscillation_count' not in component:
+                component['oscillation_count'] = 0
+            
             
             # Draw text on curve
             curve_length_status = draw_text_on_curve(
-                cr,
-                arc_x_values_scaled_np, # Pass the NumPy array
-                arc_y_values_scaled_np, # Pass the NumPy array
-                descriptors_text,
-                pangocairo_context,
-                font_desc,
-                all_rendered_boxes,
-                margin_x, margin_y, design_width, design_height, #These are for boundary checks
-                # NEW Parameters for boundary check within draw_text_on_curve
-                title_band_height, 
-                gap_above_title,
-                # NEW Parameter for character spacing adjustment
-                char_spacing_factor=current_char_spacing_factor # Pass the factor
+                cr=cr,
+                x_values_scaled=arc_x_values_scaled,
+                y_values_scaled=arc_y_values_scaled,
+                text=descriptors_text,
+                pangocairo_context=pangocairo_context,
+                font_desc=font_desc,
+                all_rendered_boxes=all_rendered_boxes,
+                margin_x=margin_x, 
+                margin_y=margin_y, 
+                design_width=design_width, 
+                design_height=design_height,
+                spaces_width_multiplier=component['spaces_width_multiplier'],
+                adjust_spacing=component['adjust_spacing']
             )
 
-            # --- SPACING ADJUSTMENT LOGIC ---
-            # Initialize spacing adjustment attempts if not present
-            if 'spacing_adjustment_attempts' not in component:
-                component['spacing_adjustment_attempts'] = 0
-            
-            max_spacing_adjustment_attempts = 500 # e.g., 0.025 * 20 = +/-0.5 total adjustment range
-            spacing_adjustment_step = 0.1     # Smaller steps for finer control
-
-            # Flag to check if geometry adjustment was successful in this iteration
-            geometry_adjusted_in_this_iteration = False
-
+            min_space_multipler = min(component['spaces_width_multiplier'].values())
+            max_space_multipler = max(component['spaces_width_multiplier'].values())
             #print(curve_length_status)
             # Check if curve too short/long, do your recursion logic...
             if curve_length_status == "curve_too_short":
@@ -903,14 +967,9 @@ def create_shape_single_pass(story_data,
                 #normal mode
                 if (new_x >= old_min_x and new_x <= old_max_x 
                     and new_y >= old_min_y and new_y <= old_max_y
-                    and recursive_mode and component['char_spacing_factor'] == 1.0): 
+                    and recursive_mode):
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
-
-                    component['char_spacing_factor'] = 1.0
-                    component['spacing_adjustment_attempts'] = 0
-                    current_char_spacing_factor = 1.0
-
                     
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
@@ -920,16 +979,11 @@ def create_shape_single_pass(story_data,
 
                 #this really only works if like this was suppose to be the last story segment
                 # we hit x max and want to extend y
-                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,2) != round(y_og[-1],2)) and component['char_spacing_factor'] == 1.0):
+                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,2) != round(y_og[-1],2))):
                     new_x = x_og[-1]
                     print(round(new_y,3), " != ", round(y_og[-1],3)) 
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
-
-                    component['char_spacing_factor'] = 1.0
-                    component['spacing_adjustment_attempts'] = 0
-                    current_char_spacing_factor = 1.0
-
 
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
@@ -938,23 +992,33 @@ def create_shape_single_pass(story_data,
                     return story_data, "processing"
                 
                 # #we hit y max / min and need to extend x
-                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode and component['char_spacing_factor'] == 1.0): 
+                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
                     print("#we hit y max / min and need to extend x")
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
-
-                    component['char_spacing_factor'] = 1.0
-                    component['spacing_adjustment_attempts'] = 0
-                    current_char_spacing_factor = 1.0
-
 
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
                     return story_data, "processing"
-                
+            
+                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and min_space_multipler > .8:
+                    component['adjust_spacing'] = True
+                    component['space_to_modify'] = component['space_to_modify'] + 1
+                    if component['space_to_modify'] > component['spaces_in_arc_text']:
+                        component['space_to_modify'] = 0
+                    component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] - 0.05
+                    component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+                    
+
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
+                    return story_data, "processing"
+            
                 else: #this means: "curve too short but can't change due to constraints"
                     #so we actually want less chars than we initially thought
                     if output_format == "svg":
@@ -965,42 +1029,11 @@ def create_shape_single_pass(story_data,
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
                     else:
-                        if component['spacing_adjustment_attempts'] < max_spacing_adjustment_attempts:
-
-                            #this mean we're oscilating 
-                            if component.get('status', "") == "Curve too long, geometry fixed. Adjusting spacing.":
-                                spacing_adjustment_step_factor = component.get('spacing_adjustment_step_factor', 1.0) * 10
-                            else:
-                                spacing_adjustment_step_factor = component.get('spacing_adjustment_step_factor', 1.0)
-                            component['spacing_adjustment_step_factor'] = spacing_adjustment_step_factor
-
-                            component['char_spacing_factor'] = component.get('char_spacing_factor', 1.0) - (spacing_adjustment_step / spacing_adjustment_step_factor) # Text too long, make it denser
-                            component['char_spacing_factor'] = max(0.7, min(1.5, component['char_spacing_factor']))
-                            component['spacing_adjustment_attempts'] += 1
-                            component['status'] = "Curve too short, geometry fixed. Adjusting spacing."
-
-                            detailed_message = (f"Curve too short, geometry fixed. Adjusting spacing. "
-                                    f"Attempt: {component['spacing_adjustment_attempts']}/{max_spacing_adjustment_attempts}. "
-                                    f"New spacing: {component['char_spacing_factor']}.")
-                            component['arc_text_valid_message'] = detailed_message
-                            print(f"INDEX {index}: {detailed_message}")
-
-                            if output_format == "svg": surface.flush()
-                            else: surface.write_to_png(story_shape_path)
-                            return story_data, "processing" # Re-run create_shape_single_pass
-                        else:
-                            component['arc_text_valid'] = False 
-                            component['spacing_adjustment_attempts'] = 0
-                            component['char_spacing_factor'] = 1.0
-                            component['spacing_adjustment_step_factor'] = 1.0
-                            current_char_spacing_factor = 1.0
-                            detailed_message = (f"Curve too short, geometry fixed. Max spacing attempts reached. "
-                                    f"Final spacing: {component.get('char_spacing_factor', 1.0)}. Text may be cramped.")
-                            component['arc_text_valid_message'] = detailed_message
-                            print(f"INDEX {index}: WARNING - {detailed_message}")
-                            if output_format == "svg": surface.flush()
-                            else: surface.write_to_png(story_shape_path)
-                            return story_data, "processing" # Re-run create_shape_single_pass
+                        component['arc_text_valid'] = False
+                        component['arc_text_valid_message'] = "curve too short but can't change due to constraints"
+                        print("curve too short but can't change due to constraints")
+                        #status = "curve too short but can't change due to constraints"
+                        return story_data, "processing"
 
 
             #curve is too long so need to shorten it
@@ -1021,17 +1054,11 @@ def create_shape_single_pass(story_data,
                     and original_arc_end_emotional_score_values[-1] < old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode
                     and original_arc_end_time_index_length >= 0 
-                    and original_arc_end_emotional_score_index_length >= 0
-                    and component['char_spacing_factor'] == 1.0):
+                    and original_arc_end_emotional_score_index_length >= 0):
                     
                     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
                     
-                    component['char_spacing_factor'] = 1.0
-                    component['spacing_adjustment_attempts'] = 0
-                    current_char_spacing_factor = 1.0
-
-
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
@@ -1044,18 +1071,11 @@ def create_shape_single_pass(story_data,
                     and original_arc_end_emotional_score_values[-1] < old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode 
                     and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)
-                    and original_arc_end_emotional_score_index_length >= 0
-                    and component['char_spacing_factor'] == 1.0):
+                    and original_arc_end_emotional_score_index_length >= 0):
 
                     component['modified_end_time'] = original_arc_end_time_values[-1]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
                     
-                    component['char_spacing_factor'] = 1.0
-                    component['spacing_adjustment_attempts'] = 0
-                    current_char_spacing_factor = 1.0
-
-
-
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
@@ -1080,7 +1100,21 @@ def create_shape_single_pass(story_data,
                 #         surface.write_to_png(story_shape_path)
                 #     return story_data, "processing"
 
-                else: #s
+                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and max_space_multipler < 1.5:
+                    component['adjust_spacing'] = True
+                    component['space_to_modify'] = component['space_to_modify'] + 1
+                    if component['space_to_modify'] > component['spaces_in_arc_text']:
+                        component['space_to_modify'] = 0
+                    component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] + 0.05
+                    component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
+                    return story_data, "processing"
+
+                else: # this means: curve too long but can't change due to constraints
                     # so we want more chars than we initially thought so let's up the number of chars
                     # so we need recalc descriptors and ask for longer 
                     if output_format == "svg":
@@ -1091,45 +1125,10 @@ def create_shape_single_pass(story_data,
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
                     else:
-                        if component['spacing_adjustment_attempts'] < max_spacing_adjustment_attempts:
-
-                            #this mean we're oscilating 
-                            if component.get('status', "") == "Curve too short, geometry fixed. Adjusting spacing.":
-                                spacing_adjustment_step_factor = component.get('spacing_adjustment_step_factor', 1.0) * 10
-                            else:
-                                spacing_adjustment_step_factor = component.get('spacing_adjustment_step_factor', 1.0)
-                            component['spacing_adjustment_step_factor'] = spacing_adjustment_step_factor
-
-                            
-                            component['char_spacing_factor'] = component.get('char_spacing_factor', 1.0) + (spacing_adjustment_step / spacing_adjustment_step_factor) # Text too short, make it sparser
-                            component['char_spacing_factor'] = max(0.7, min(5, component['char_spacing_factor']))
-                            component['spacing_adjustment_attempts'] += 1
-                            component['status'] = "Curve too long, geometry fixed. Adjusting spacing."
-
-
-                            detailed_message = (f"Curve too long, geometry fixed. Adjusting spacing. "
-                                                f"Attempt: {component['spacing_adjustment_attempts']}/{max_spacing_adjustment_attempts}. "
-                                                f"New spacing: {component['char_spacing_factor']}.")
-                            component['arc_text_valid_message'] = detailed_message
-                            print(f"INDEX {index}: {detailed_message}")
-                            #print(f"new modified end: {component['modified_end_time']}")
-                            if output_format == "svg": surface.flush()
-                            else: surface.write_to_png(story_shape_path)
-                            return story_data, "processing" # Re-run create_shape_single_pass
-                        else:
-                            component['arc_text_valid'] = False
-                            component['spacing_adjustment_attempts'] = 0
-                            component['char_spacing_factor'] = 1.0
-                            component['spacing_adjustment_step_factor'] = 1.0
-                            current_char_spacing_factor = 1.0
-
-                            detailed_message = (f"Curve too long, geometry fixed. Max spacing attempts reached. "
-                                                f"Final spacing: {component.get('char_spacing_factor', 1.0)}. Text may have excess space.")
-                            component['arc_text_valid_message'] = detailed_message
-                            print(f"INDEX {index}: WARNING - {detailed_message}")
-                            if output_format == "svg": surface.flush()
-                            else: surface.write_to_png(story_shape_path)
-                            return story_data, "processing" # Re-run create_shape_single_pass
+                        component['arc_text_valid'] = False
+                        component['arc_text_valid_message'] = "curve too long but can't change due to constraints"
+                        print("curve too long but can't change due to constraints")
+                        return story_data, "processing"
 
             elif curve_length_status == "curve_correct_length":
                 if output_format == "svg":
@@ -1139,6 +1138,7 @@ def create_shape_single_pass(story_data,
                 status = 'All phrases fit exactly on the curve.'
 
             component['status'] = status
+
 
         # --- MODIFICATION: End main text group ---
         end_svg_group(cr, output_format)
@@ -1332,19 +1332,19 @@ def calculate_arc_length(arc_x_values, arc_y_values):
     total_length = np.sum(segment_lengths)
     return total_length
 
-# def get_average_char_width(pangocairo_context, font_desc, sample_text=None):
-#     layout = Pango.Layout.new(pangocairo_context)
-#     layout.set_font_description(font_desc)
+def get_average_char_width(pangocairo_context, font_desc, sample_text=None):
+    layout = Pango.Layout.new(pangocairo_context)
+    layout.set_font_description(font_desc)
 
-#     if sample_text is None or sample_text == "":
-#         sample_text = (
-#             "Nervous. First Day. Office. Challenges. Potential."
-#         )
-#     layout.set_text(sample_text, -1)
-#     total_width = layout.get_pixel_size()[0]
-#     num_chars = len(sample_text.replace(" ", ""))
-#     average_char_width = total_width / num_chars
-#     return average_char_width
+    if sample_text is None or sample_text == "":
+        sample_text = (
+            "Nervous. First Day. Office. Challenges. Potential."
+        )
+    layout.set_text(sample_text, -1)
+    total_width = layout.get_pixel_size()[0]
+    num_chars = len(sample_text.replace(" ", ""))
+    average_char_width = total_width / num_chars
+    return average_char_width
 
 
 def estimate_characters_fit(arc_length, average_char_width, average_rotation_angle=0, spacing=1.0):
@@ -1530,312 +1530,35 @@ import shapely.affinity
 import re
 from gi.repository import Pango, PangoCairo # Ensure these are imported at the top of your file
 
-# Helper function (if not already defined elsewhere, or ensure it's accessible)
-def get_average_char_width(pangocairo_context, font_desc, sample_text=None):
+
+# Ensure these are imported at the top of your story_shape.py
+import numpy as np
+import math
+from shapely.geometry import Polygon
+from shapely.affinity import rotate as shapely_rotate
+import shapely.affinity
+import re
+from gi.repository import Pango, PangoCairo
+
+# ... (your other helper functions like get_average_char_width, pango_font_exists etc.)
+# story_shape.py (helper function, can be near other Pango helpers)
+
+# story_shape.py
+
+# ... (other imports)
+
+def get_standard_space_width(pangocairo_context, font_desc):
+    """
+    Gets the pixel width of a standard space character for the given font,
+    without any dynamic char_spacing_factor or space_width_multiplier applied.
+    """
     layout = Pango.Layout.new(pangocairo_context)
     layout.set_font_description(font_desc)
+    layout.set_text(" ", -1)  # A single space character
+    width, _ = layout.get_pixel_size()
+    # It's possible for a font to have a zero-width space, handle defensively.
+    return width if width > 0 else 1 # Return at least 1px to avoid division by zero later
 
-    if sample_text is None or sample_text == "":
-        sample_text = (
-            "Nervous. First Day. Office. Challenges. Potential." # A reasonable default
-        )
-    layout.set_text(sample_text, -1)
-    
-    # Handle empty sample_text gracefully
-    if not sample_text:
-        return 10 # Or some other default non-zero width
-        
-    num_chars = len(sample_text.replace(" ", "")) # Count non-space characters
-    if num_chars == 0: # If only spaces or empty
-        # Estimate based on a single typical character like 'a' if sample_text was just spaces
-        layout.set_text("a", -1) 
-        total_width = layout.get_pixel_size()[0]
-        return total_width 
-        
-    total_width = layout.get_pixel_size()[0]
-    average_char_width = total_width / num_chars if num_chars > 0 else 10 # Avoid division by zero
-    return average_char_width
-
-
-def draw_text_on_curve(cr, x_values_scaled, y_values_scaled, text, 
-                       pangocairo_context, font_desc, all_rendered_boxes, 
-                       margin_x, margin_y, design_width, design_height,
-                       title_band_height, # NEW - For accurate bottom boundary
-                       gap_above_title,   # NEW - For accurate bottom boundary
-                       char_spacing_factor=1.0):
-    """
-    Draws text along a curve defined by (x_values_scaled, y_values_scaled).
-    Adjusts spacing between characters using char_spacing_factor.
-    Handles collision detection and boundary checks.
-
-    Args:
-        cr: Cairo context.
-        x_values_scaled, y_values_scaled: Numpy arrays of scaled curve coordinates.
-        text: The string to draw.
-        pangocairo_context: PangoCairo context.
-        font_desc: Pango.FontDescription for the text.
-        all_rendered_boxes: List of Shapely Polygons for existing rendered text (for collision).
-        margin_x, margin_y: Margins from the edge of the design area.
-        design_width, design_height: Dimensions of the design area (excluding canvas wrap).
-        char_spacing_factor: Multiplier for character width to adjust spacing.
-
-    Returns:
-        str: "curve_correct_length", "curve_too_short", or "curve_too_long".
-    """
-    if not isinstance(x_values_scaled, np.ndarray):
-        x_values_scaled = np.array(x_values_scaled)
-    if not isinstance(y_values_scaled, np.ndarray):
-        y_values_scaled = np.array(y_values_scaled)
-
-    if not x_values_scaled.size or not y_values_scaled.size or len(x_values_scaled) < 2:
-        # Not enough points to define a curve
-        if text: # If there's text but no curve to draw on
-             return "curve_too_short" # Or some other appropriate error status
-        return "curve_correct_length" # No text, no curve, nothing to do
-
-    total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
-    cumulative_curve_lengths = np.insert(np.cumsum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))), 0, 0)
-
-    idx_on_curve = 0
-    distance_along_curve = 0.0 # Use float for precision
-
-    def get_tangent_angle(x_vals, y_vals, idx):
-        if len(x_vals) < 2: return 0 # Not enough points for an angle
-        if idx == 0:
-            dx = x_vals[1] - x_vals[0]
-            dy = y_vals[1] - y_vals[0]
-        elif idx >= len(x_vals) - 1: # Use >= to handle if idx is last point
-            dx = x_vals[-1] - x_vals[-2]
-            dy = y_vals[-1] - y_vals[-2]
-        else:
-            dx = x_vals[idx + 1] - x_vals[idx - 1] # Centered difference for smoother tangent
-            dy = y_vals[idx + 1] - y_vals[idx - 1]
-        
-        if dx == 0 and dy == 0: # Points are coincident
-            if idx > 0: # Try to use previous segment's angle
-                 return get_tangent_angle(x_vals, y_vals, idx -1)
-            return 0 # Default to horizontal if no other info
-
-        angle = math.atan2(dy, dx)
-        return angle
-
-    # Split text into phrases based on ". " or end of string
-    phrases = re.findall(r'.+?(?:\. |$)', text) 
-    phrases = [phrase for phrase in phrases if phrase.strip()] # Remove empty phrases
-
-    char_positions = [] # Store (x, y, angle, char, char_width_measured, char_height)
-    rendered_boxes_for_this_arc = [] # Store Shapely Polygons for this arc's text for local collision
-    all_text_fits = True
-
-    for phrase_idx, phrase in enumerate(phrases):
-        temp_char_positions_for_phrase = []
-        temp_rendered_boxes_for_phrase = []
-        
-        # Store state before attempting to place this phrase
-        saved_idx_on_curve = idx_on_curve
-        saved_distance_along_curve = distance_along_curve
-        
-        phrase_fits_this_attempt = True
-
-        for char_idx, char in enumerate(phrase):
-            layout = Pango.Layout.new(pangocairo_context)
-            layout.set_font_description(font_desc)
-            layout.set_text(char, -1)
-            char_width_measured, char_height = layout.get_pixel_size()
-            
-            # Effective width includes spacing factor - this is how much we advance on the curve
-            char_width_effective = char_width_measured * char_spacing_factor
-
-            # Find position for this character
-            char_placed_successfully = False
-            while idx_on_curve < len(cumulative_curve_lengths) - 1:
-                segment_start_distance = cumulative_curve_lengths[idx_on_curve]
-                segment_end_distance = cumulative_curve_lengths[idx_on_curve + 1]
-                segment_length = segment_end_distance - segment_start_distance
-
-                if segment_length <= 1e-6: # Segment is too short or zero length
-                    idx_on_curve += 1
-                    continue
-
-                # Ratio along the current segment
-                # distance_into_segment = distance_along_curve - segment_start_distance
-                # We want to place the *center* of the char_width_effective at distance_along_curve + char_width_effective / 2
-                target_center_distance_on_curve = distance_along_curve + (char_width_effective / 2.0)
-
-                if target_center_distance_on_curve > segment_end_distance and idx_on_curve < len(cumulative_curve_lengths) - 2 :
-                    # If target center is beyond current segment, try next segment
-                    idx_on_curve +=1
-                    continue
-
-                distance_into_segment = target_center_distance_on_curve - segment_start_distance
-                ratio = distance_into_segment / segment_length
-
-
-                if not (0 <= ratio <= 1.0): # Check if target center is within current segment
-                    # This condition means we might have overshot, or the character is too large for remaining segment
-                    if target_center_distance_on_curve > total_curve_length: # No more curve left
-                        phrase_fits_this_attempt = False; break 
-                    if ratio > 1.0 and idx_on_curve < len(cumulative_curve_lengths) - 2: # Try next segment
-                        idx_on_curve += 1
-                        continue
-                    elif ratio < 0: # This shouldn't happen if distance_along_curve is advancing
-                        # Potentially try advancing distance_along_curve slightly and retrying
-                        distance_along_curve += 1 # Small nudge
-                        continue
-                    else: # Cannot place char in this segment or remaining curve
-                        phrase_fits_this_attempt = False; break 
-                
-                # Interpolate position (x, y)
-                x = x_values_scaled[idx_on_curve] + ratio * (x_values_scaled[idx_on_curve + 1] - x_values_scaled[idx_on_curve])
-                y = y_values_scaled[idx_on_curve] + ratio * (y_values_scaled[idx_on_curve + 1] - y_values_scaled[idx_on_curve])
-                angle = get_tangent_angle(x_values_scaled, y_values_scaled, idx_on_curve)
-
-                # Bounding box for collision uses char_width_measured (the actual glyph size)
-                # The box is centered at (0,0) before rotation and translation
-                half_w = char_width_measured / 2.0
-                half_h = char_height / 2.0
-                box = Polygon([
-                    (-half_w, -half_h), (half_w, -half_h),
-                    (half_w, half_h), (-half_w, half_h)
-                ])
-
-                rotated_box = shapely_rotate(box, math.degrees(angle), origin=(0, 0), use_radians=False)
-                translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
-
-                # Boundary check
-                b = translated_box.bounds # (minx, miny, maxx, maxy)
-                
-                # Calculate the effective bottom boundary for arcs
-                # Arc drawing area starts at margin_y and ends before gap_above_title and title_band_height
-                arc_drawable_bottom_y = design_height - margin_y - title_band_height - gap_above_title
-
-                if (b[0] < margin_x or                       # Left boundary
-                    b[2] > (design_width - margin_x) or      # Right boundary
-                    b[1] < margin_y or                       # Top boundary (actual top margin of drawing area)
-                    b[3] > arc_drawable_bottom_y):           # Bottom boundary for arcs
-                    # Character is out of bounds. Try to nudge along the curve.
-                    distance_along_curve += 1 # Nudge by 1 pixel
-                    continue 
-
-                # Collision check with all previously rendered boxes (from other arcs AND this arc)
-                collision = False
-                for other_box in all_rendered_boxes + rendered_boxes_for_this_arc:
-                    if translated_box.intersects(other_box):
-                        collision = True
-                        break
-                
-                if collision:
-                    distance_along_curve += 1 # Nudge by 1 pixel if collision
-                    # Don't break inner char loop, re-evaluate position in while loop
-                    continue
-                
-                # If no collision and in bounds:
-                temp_char_positions_for_phrase.append((x, y, angle, char, char_width_measured, char_height))
-                temp_rendered_boxes_for_phrase.append(translated_box)
-                
-                distance_along_curve += char_width_effective # Advance by the full effective width
-                char_placed_successfully = True
-                break # Character placed, move to next character in phrase
-
-            if not char_placed_successfully: # Inner while loop exhausted, couldn't place char
-                phrase_fits_this_attempt = False
-                break # Break from character loop for this phrase
-
-        if phrase_fits_this_attempt:
-            char_positions.extend(temp_char_positions_for_phrase)
-            rendered_boxes_for_this_arc.extend(temp_rendered_boxes_for_phrase)
-        else:
-            # Rollback this phrase: an optimization could be to not even add to temp lists
-            # but since they are local to phrase, this is fine.
-            # Crucially, reset the main distance and index.
-            idx_on_curve = saved_idx_on_curve
-            distance_along_curve = saved_distance_along_curve
-            all_text_fits = False
-            break # Break from phrase loop, text for this arc doesn't fit
-
-    # Add the boxes rendered in this arc to the global list for subsequent arcs
-    all_rendered_boxes.extend(rendered_boxes_for_this_arc)
-
-    # Render all successfully positioned characters for this arc
-    for x, y, angle, char_glyph, char_w_measured, char_h_measured in char_positions:
-        cr.save()
-        cr.translate(x, y)
-        cr.rotate(angle)
-
-        layout = PangoCairo.create_layout(cr) # Create new layout for each char to be safe
-        layout.set_font_description(font_desc)
-        layout.set_text(char_glyph, -1)
-        
-        # Translate to center the glyph before drawing
-        cr.translate(-char_w_measured / 2.0, -char_h_measured / 2.0) 
-        PangoCairo.show_layout(cr, layout)
-        cr.restore()
-
-  # --- Determine status with new tolerance ---
-    average_char_width_measured = get_average_char_width(pangocairo_context, font_desc, text if text else "a")
-    average_char_width_effective = average_char_width_measured * char_spacing_factor
-    remaining_curve_length = total_curve_length - distance_along_curve
-
-    if not all_text_fits:
-        # This means some characters couldn't be placed at all, usually due to 
-        # collisions or hitting boundaries after nudging. Definitely "curve_too_short".
-        # print(f"Debug: Not all text fits. distance_along_curve={distance_along_curve}, total_curve_length={total_curve_length}")
-        return "curve_too_short"
-
-    # Define base tolerance factors for when char_spacing_factor is 1.0 (default)
-    # base_lower_factor: How much text can overhang (as a multiple of effective char width). Negative means overhang.
-    # base_upper_factor: How much empty space is allowed (as a multiple of effective char width).
-    
-    # Original values from your code for 0.95 <= csf <= 1.05:
-    # base_lower_factor_original = -0.1
-    # base_upper_factor_original = 2.5
-
-    # Proposed new default values:
-    # Allow a bit more overhang, but be slightly stricter on excessive empty space by default.
-    base_lower_factor = -0.75  # Max allowed overhang: 0.75 effective char widths
-    base_upper_factor = 1.25   # Max allowed empty space: 1.25 effective char widths
-                               # Default "correct" window width: (1.25 - (-0.75)) = 2.0 * W_eff
-
-    lower_bound_for_correct = base_lower_factor * average_char_width_effective
-    upper_bound_for_correct = base_upper_factor * average_char_width_effective
-    
-    # If char_spacing_factor is being actively adjusted (i.e., not its default 1.0),
-    # we make the "correct_length" band wider. This helps prevent rapid oscillations
-    # between "too_short" and "too_long" when the system is trying to fine-tune spacing,
-    # especially when geometry changes are constrained.
-    # A small epsilon is used to avoid float comparison issues with 1.0.
-    if abs(char_spacing_factor - 1.0) > 0.001: # Check if char_spacing_factor is meaningfully different from 1.0
-        # Widen the tolerance band symmetrically.
-        # adjustment_tolerance_factor: Additional tolerance on each side (in effective char widths)
-        adjustment_tolerance_factor = 1.75
-        
-        lower_bound_for_correct -= adjustment_tolerance_factor * average_char_width_effective
-        upper_bound_for_correct += adjustment_tolerance_factor * average_char_width_effective
-        
-        # With these adjustments, if char_spacing_factor != 1.0:
-        # New lower_bound_for_correct = (base_lower_factor - adjustment_tolerance_factor) * W_eff
-        #                             = (-0.75 - 0.75) * W_eff = -1.5 * W_eff
-        # New upper_bound_for_correct = (base_upper_factor + adjustment_tolerance_factor) * W_eff
-        #                             = ( 1.25 + 0.75) * W_eff =  2.0 * W_eff
-        # The "correct" window width during spacing adjustment: (2.0 - (-1.5)) = 3.5 * W_eff
-        # This is wider than the default 2.0 * W_eff, providing more stability.
-        # This replaces the previous more complex/asymmetrical adjustments using 1.05/0.95 thresholds and -5/5 multipliers.
-
-    # --- Final Verdict Based on Adjusted Bounds ---
-    # You can uncomment these print statements for debugging the fit status
-    # print(f"Debug (spacing {char_spacing_factor:.3f}): Rem: {remaining_curve_length:.2f}, "
-    #       f"AvgCharEff: {average_char_width_effective:.2f}, "
-    #       f"Bounds: ({lower_bound_for_correct:.2f}, {upper_bound_for_correct:.2f})")
-
-    if remaining_curve_length < lower_bound_for_correct:
-        print("Verdict: curve_too_short by ", (lower_bound_for_correct - remaining_curve_length))
-        return "curve_too_short"
-    elif remaining_curve_length > upper_bound_for_correct:
-        print("Verdict: curve_too_long by  ", (remaining_curve_length - upper_bound_for_correct))
-        return "curve_too_long"
-    else:
-        # print("Verdict: curve_correct_length")
-        return "curve_correct_length"
 
 
 #### THE OLD STORY FUNCTION CODE ###
@@ -2685,3 +2408,379 @@ def verify_safe_margin(
     #     )
 
     return margins
+
+
+
+# Place this helper function somewhere accessible, e.g., near draw_text_on_curve
+def get_standard_space_width(pangocairo_context, font_desc):
+    """
+    Gets the pixel width of a standard space character for the given font.
+    """
+    layout = Pango.Layout.new(pangocairo_context)
+    layout.set_font_description(font_desc)
+    layout.set_text(" ", -1)  # A single space character
+    width, _ = layout.get_pixel_size()
+    # It's possible for a font to have a zero-width space, handle defensively.
+    return width if width > 0 else 1 # Return at least 1px to avoid division by zero later
+
+
+def draw_text_on_curve(
+        cr, 
+        x_values_scaled, 
+        y_values_scaled, 
+        text, 
+        pangocairo_context, 
+        font_desc, 
+        all_rendered_boxes, 
+        margin_x, 
+        margin_y, 
+        design_width, 
+        design_height,
+        spaces_width_multiplier,
+        adjust_spacing):
+    
+    total_curve_length = np.sum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled)))
+    cumulative_curve_lengths = np.insert(np.cumsum(np.hypot(np.diff(x_values_scaled), np.diff(y_values_scaled))), 0, 0)
+
+    idx_on_curve = 0
+    distance_along_curve = 0
+
+    def get_tangent_angle(x_vals, y_vals, idx):
+        if idx == 0:
+            dx = x_vals[1] - x_vals[0]
+            dy = y_vals[1] - y_vals[0]
+        elif idx == len(x_vals) - 1:
+            dx = x_vals[-1] - x_vals[-2]
+            dy = y_vals[-1] - y_vals[-2]
+        else:
+            dx = x_vals[idx + 1] - x_vals[idx - 1]
+            dy = y_vals[idx + 1] - y_vals[idx - 1]
+        angle = math.atan2(dy, dx)
+        return angle
+
+    import re
+    phrases = re.findall(r'.+?(?:\. |$)', text)
+    phrases = [phrase for phrase in phrases if phrase.strip()]
+
+    char_positions = []
+    rendered_boxes = []
+    all_text_fits = True
+
+    space_count = 0
+    for phrase in phrases:
+        temp_char_positions = []
+        temp_rendered_boxes = []
+        saved_idx_on_curve = idx_on_curve
+        saved_distance_along_curve = distance_along_curve
+        phrase_fits = True
+
+        for char in phrase:
+            layout = Pango.Layout.new(pangocairo_context)
+            layout.set_font_description(font_desc)
+            layout.set_text(char, -1)
+            char_width, char_height = layout.get_pixel_size()
+
+            if adjust_spacing == True and char == ' ':
+                char_width = get_standard_space_width(pangocairo_context, font_desc) * spaces_width_multiplier[space_count]
+                space_count = space_count + 1
+
+            while idx_on_curve < len(cumulative_curve_lengths) - 1:
+                segment_start_distance = cumulative_curve_lengths[idx_on_curve]
+                segment_end_distance = cumulative_curve_lengths[idx_on_curve + 1]
+                segment_distance = segment_end_distance - segment_start_distance
+
+                if segment_distance == 0:
+                    idx_on_curve += 1
+                    continue
+
+                ratio = (distance_along_curve - segment_start_distance) / segment_distance
+
+                if ratio < 0 or ratio > 1:
+                    idx_on_curve += 1
+                    continue
+
+                x = x_values_scaled[idx_on_curve] + ratio * (x_values_scaled[idx_on_curve + 1] - x_values_scaled[idx_on_curve])
+                y = y_values_scaled[idx_on_curve] + ratio * (y_values_scaled[idx_on_curve + 1] - y_values_scaled[idx_on_curve])
+                angle = get_tangent_angle(x_values_scaled, y_values_scaled, idx_on_curve)
+
+                box = Polygon([
+                    (-char_width / 2, -char_height / 2),
+                    (char_width / 2, -char_height / 2),
+                    (char_width / 2, char_height / 2),
+                    (-char_width / 2, char_height / 2)
+                ])
+
+                rotated_box = shapely_rotate(box, angle * (180 / math.pi), origin=(0, 0), use_radians=False)
+                translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
+
+                # ── NEW: bounce the char if it crosses the 0.625‑in safety zone ──
+                if (translated_box.bounds[0] < margin_x or                 # left
+                    translated_box.bounds[2] > design_width  - margin_x or # right
+                    translated_box.bounds[1] < margin_y or                 # top
+                    translated_box.bounds[3] > design_height - margin_y
+                    ):  # bottom
+                    distance_along_curve += 1      # scoot 1 px along path
+                    continue                       # try again at new spot
+                # ───────────────────────────────────────────────
+
+                # Check overlap
+                for other_box in rendered_boxes + all_rendered_boxes:
+                    if translated_box.intersects(other_box):
+                        distance_along_curve += 1
+                        break
+                else:
+                    temp_char_positions.append((x, y, angle, char, char_width, char_height))
+                    temp_rendered_boxes.append(translated_box)
+                    rendered_boxes.append(translated_box)
+                    all_rendered_boxes.append(translated_box)
+
+                    distance_along_curve += char_width
+                    break
+            else:
+                # No space left on the curve
+                phrase_fits = False
+                break
+
+        if phrase_fits:
+            char_positions.extend(temp_char_positions)
+        else:
+            # rollback
+            idx_on_curve = saved_idx_on_curve
+            distance_along_curve = saved_distance_along_curve
+            rendered_boxes = rendered_boxes[:len(rendered_boxes) - len(temp_rendered_boxes)]
+            all_rendered_boxes = all_rendered_boxes[:len(all_rendered_boxes) - len(temp_rendered_boxes)]
+            all_text_fits = False
+            break
+
+    # Render characters
+    for x, y, angle, char, char_width, char_height in char_positions:
+        cr.save()
+        cr.translate(x, y)
+        cr.rotate(angle)
+
+        layout = PangoCairo.create_layout(cr)
+        layout.set_font_description(font_desc)
+        layout.set_text(char, -1)
+        cr.translate(-char_width / 2, -char_height / 2) 
+        PangoCairo.show_layout(cr, layout)
+        cr.restore()
+
+    average_char_width = get_average_char_width(pangocairo_context, font_desc, text)
+    remaining_curve_length = total_curve_length - distance_along_curve
+
+    if not all_text_fits:
+        curve_length_status = "curve_too_short"
+    elif remaining_curve_length > average_char_width:
+        curve_length_status = "curve_too_long"
+    else:
+        curve_length_status = "curve_correct_length"
+
+    return curve_length_status
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def _layout_single_phrase_on_curve(
+    cr, x_values_scaled_np, y_values_scaled_np, phrase_text,
+    pangocairo_context, font_desc,
+    initial_distance_on_curve, initial_idx_on_curve,
+    total_curve_length, cumulative_curve_lengths,
+    base_char_spacing_factor, space_width_multiplier, standard_space_width,
+    existing_rendered_boxes, # Boxes from previous phrases IN THE SAME ARC or previous arcs
+    margin_x, margin_y, design_width, design_height,
+    arc_drawable_bottom_y # Pre-calculated effective bottom boundary
+):
+    """
+    Attempts to lay out a single phrase on the curve.
+
+    Returns:
+        tuple: (
+            bool_success,
+            final_distance_on_curve,
+            final_idx_on_curve,
+            list_of_char_render_info,  # [(x, y, angle, char, char_w_measured, char_h_measured), ...]
+            list_of_new_boxes_for_this_phrase
+        )
+    bool_success is True if the entire phrase was laid out without going off curve
+                 or causing collisions/boundary issues.
+    """
+    
+    # --- This part is largely from your existing draw_text_on_curve's inner loop ---
+    # --- with modifications for space_width_multiplier ---
+    
+    # Helper to get tangent angle (reuse your existing one)
+    def get_tangent_angle(x_vals, y_vals, idx):
+        # (Your existing get_tangent_angle implementation)
+        if len(x_vals) < 2: return 0
+        if idx == 0:
+            dx = x_vals[1] - x_vals[0]
+            dy = y_vals[1] - y_vals[0]
+        elif idx >= len(x_vals) - 1:
+            dx = x_vals[-1] - x_vals[-2]
+            dy = y_vals[-1] - y_vals[-2]
+        else:
+            dx = x_vals[idx + 1] - x_vals[idx - 1]
+            dy = y_vals[idx + 1] - y_vals[idx - 1]
+        if dx == 0 and dy == 0:
+            if idx > 0: return get_tangent_angle(x_vals, y_vals, idx - 1)
+            return 0
+        return math.atan2(dy, dx)
+
+    distance_on_curve = initial_distance_on_curve
+    idx_on_curve = initial_idx_on_curve
+    
+    char_render_info_list = []
+    new_boxes_for_this_phrase = []
+
+    for char_idx, char_glyph in enumerate(phrase_text):
+        layout = Pango.Layout.new(pangocairo_context)
+        layout.set_font_description(font_desc)
+        layout.set_text(char_glyph, -1)
+        char_width_measured, char_height = layout.get_pixel_size()
+
+        char_width_effective = char_width_measured * base_char_spacing_factor
+        if char_glyph == ' ':
+            # Use the standard_space_width scaled by multipliers
+            char_width_effective = standard_space_width * space_width_multiplier * base_char_spacing_factor
+            # Ensure space has some width, even if char_width_measured for space was 0 (unlikely for normal space)
+            if char_width_effective <=0 : char_width_effective = base_char_spacing_factor # minimal width
+
+
+        # --- Find position for this character (your existing robust logic) ---
+        char_placed_successfully = False
+        # Temp store for nudging if collision/boundary issues
+        original_distance_on_curve_for_char = distance_on_curve 
+        
+        # Retry loop for nudging on collision/boundary
+        max_nudges = 5 # Limit nudges to prevent infinite loops
+        for nudge_attempt in range(max_nudges + 1):
+            current_distance_on_curve_for_placement = original_distance_on_curve_for_char + nudge_attempt * 1.0 # Nudge 1px
+
+            # Ensure we don't fall off the curve before even placing the char center
+            if current_distance_on_curve_for_placement + (char_width_effective / 2.0) > total_curve_length:
+                return False, distance_on_curve, idx_on_curve, char_render_info_list, new_boxes_for_this_phrase
+            
+            temp_idx_on_curve = idx_on_curve # Use a temp var for finding segment for this char
+            
+            char_found_segment = False
+            while temp_idx_on_curve < len(cumulative_curve_lengths) - 1:
+                segment_start_distance = cumulative_curve_lengths[temp_idx_on_curve]
+                segment_end_distance = cumulative_curve_lengths[temp_idx_on_curve + 1]
+                segment_length = segment_end_distance - segment_start_distance
+
+                if segment_length <= 1e-6:
+                    temp_idx_on_curve += 1
+                    continue
+
+                target_center_distance_on_curve = current_distance_on_curve_for_placement + (char_width_effective / 2.0)
+
+                if target_center_distance_on_curve > segment_end_distance and temp_idx_on_curve < len(cumulative_curve_lengths) - 2:
+                    temp_idx_on_curve += 1
+                    continue
+                
+                distance_into_segment = target_center_distance_on_curve - segment_start_distance
+                ratio = distance_into_segment / segment_length if segment_length > 1e-6 else 0.0
+
+
+                if not (0 <= ratio <= 1.0):
+                    if target_center_distance_on_curve > total_curve_length:
+                        return False, distance_on_curve, idx_on_curve, char_render_info_list, new_boxes_for_this_phrase # Off curve
+                    if ratio > 1.0 and temp_idx_on_curve < len(cumulative_curve_lengths) - 2:
+                        temp_idx_on_curve += 1
+                        continue
+                    # Cannot place char in this segment or remaining curve under current conditions
+                    break # Break from while temp_idx_on_curve loop, will lead to nudge or phrase fail
+
+
+                x = x_values_scaled_np[temp_idx_on_curve] + ratio * (x_values_scaled_np[temp_idx_on_curve + 1] - x_values_scaled_np[temp_idx_on_curve])
+                y = y_values_scaled_np[temp_idx_on_curve] + ratio * (y_values_scaled_np[temp_idx_on_curve + 1] - y_values_scaled_np[temp_idx_on_curve])
+                angle = get_tangent_angle(x_values_scaled_np, y_values_scaled_np, temp_idx_on_curve)
+                
+                char_found_segment = True # Found a potential segment
+
+                # Bounding box for collision
+                half_w = char_width_measured / 2.0
+                half_h = char_height / 2.0
+                box = Polygon([(-half_w, -half_h), (half_w, -half_h), (half_w, half_h), (-half_w, half_h)])
+                rotated_box = shapely_rotate(box, math.degrees(angle), origin=(0, 0), use_radians=False)
+                translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
+
+                # Boundary check
+                b = translated_box.bounds
+                if (b[0] < margin_x or b[2] > (design_width - margin_x) or
+                    b[1] < margin_y or b[3] > arc_drawable_bottom_y):
+                    # Out of bounds, this nudge attempt failed for this character
+                    char_found_segment = False # Mark as not properly placed
+                    break # Break from while temp_idx_on_curve, will try next nudge_attempt
+
+                # Collision check
+                collision = False
+                for other_box in existing_rendered_boxes + new_boxes_for_this_phrase: # Check against ALL so far
+                    if translated_box.intersects(other_box):
+                        collision = True
+                        break
+                
+                if collision:
+                    # Collision, this nudge attempt failed for this character
+                    char_found_segment = False # Mark as not properly placed
+                    break # Break from while temp_idx_on_curve, will try next nudge_attempt
+
+                # If no collision and in bounds for this nudge:
+                char_render_info_list.append((x, y, angle, char_glyph, char_width_measured, char_height))
+                new_boxes_for_this_phrase.append(translated_box)
+                
+                # IMPORTANT: Update main distance_on_curve and idx_on_curve only if successful
+                distance_on_curve = current_distance_on_curve_for_placement + char_width_effective 
+                idx_on_curve = temp_idx_on_curve # Update the main index on curve
+                char_placed_successfully = True
+                break # Break from while temp_idx_on_curve loop (found segment and placed)
+            # End of: while temp_idx_on_curve < len(cumulative_curve_lengths) - 1
+
+            if char_placed_successfully:
+                break # Break from nudge_attempt loop for this character
+            
+            if not char_found_segment and not char_placed_successfully: 
+                # This means even after checking segments, no valid placement was found for the current nudge.
+                # If it was the last nudge, this char fails.
+                if nudge_attempt == max_nudges:
+                    return False, initial_distance_on_curve, initial_idx_on_curve, char_render_info_list, new_boxes_for_this_phrase
+
+        # End of: for nudge_attempt in range(max_nudges + 1)
+
+        if not char_placed_successfully:
+            # All nudges failed for this character, so the phrase fails
+            return False, initial_distance_on_curve, initial_idx_on_curve, char_render_info_list, new_boxes_for_this_phrase
+    # End of: for char_idx, char_glyph in enumerate(phrase_text)
+
+    return True, distance_on_curve, idx_on_curve, char_render_info_list, new_boxes_for_this_phrase
