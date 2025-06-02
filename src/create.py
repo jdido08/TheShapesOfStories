@@ -10,7 +10,7 @@ import re
 import time 
 
 
-import math # ensure math is imported if not already
+import math # ensure math is imported if if component['space_to_modify'] >t already
 
 def get_scaled_print_parameters(new_width_in, new_height_in, dpi=300):
     """
@@ -387,7 +387,7 @@ for row in rows:
                     wrap_background_color = border_color, #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
                     fixed_margin_in_inches = fixed_margin_in_inches, #fixed margins for output
                     recursive_mode = True, #if you want to recurisvely generate story
-                    recursive_loops = 200, #the number of iterations 
+                    recursive_loops = 100, #the number of iterations 
                     llm_provider = "anthropic",#"groq",#"openai", #anthropic",#"google" #for generating descriptors
                     llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     #llm_provider = "google", #"anthropic", #google", 

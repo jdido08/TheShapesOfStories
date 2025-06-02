@@ -28,7 +28,7 @@ import anthropic
 import yaml
 
 CURRENT_DPI = 300
-MAX_SPACING_ADJUSTMENT_ATTEMPTS = 30
+MAX_SPACING_ADJUSTMENT_ATTEMPTS = 1000
 
 def create_shape(story_data_path,
                 product = "canvas",
@@ -169,6 +169,10 @@ def create_shape(story_data_path,
     # while status == "processing":
     for i in range(recursive_loops):
         # print(story_data['story_components'][1]['modified_end_time'])
+        print("loop #", i)
+        if story_data is None:
+            print("STORY DATA NONE")
+
         story_data = transform_story_data(story_data, x_delta, step_k, max_num_steps)
 
         story_data, status = create_shape_single_pass(
@@ -350,22 +354,22 @@ def create_shape_single_pass(story_data,
 
     ### START OF DEBUG ###
     # --- ADD DEBUG COLORS ---
-    debug_segment_colors_rgb = [
-        hex_to_rgb("#FF0000"), # Red
-        hex_to_rgb("#00FF00"), # Green
-        hex_to_rgb("#0000FF"), # Blue
-        hex_to_rgb("#FFFF00"), # Yellow
-        hex_to_rgb("#FF00FF"), # Magenta
-        hex_to_rgb("#00FFFF"), # Cyan
-        hex_to_rgb("#FFA500"), # Orange
-        hex_to_rgb("#800080"), # Purple
-        hex_to_rgb("#A52A2A"), # Brown
-        hex_to_rgb("#FFFFFF")  # White (for markers, if background is dark)
-    ]
-    color_cycle = itertools.cycle(debug_segment_colors_rgb)
-    marker_color_rgb = hex_to_rgb("#000000") # Black for markers, or choose a contrast color
-    if sum(background_value) < 1.5: # If background is dark-ish
-        marker_color_rgb = hex_to_rgb("#FFFFFF") # Use white markers
+    # debug_segment_colors_rgb = [
+    #     hex_to_rgb("#FF0000"), # Red
+    #     hex_to_rgb("#00FF00"), # Green
+    #     hex_to_rgb("#0000FF"), # Blue
+    #     hex_to_rgb("#FFFF00"), # Yellow
+    #     hex_to_rgb("#FF00FF"), # Magenta
+    #     hex_to_rgb("#00FFFF"), # Cyan
+    #     hex_to_rgb("#FFA500"), # Orange
+    #     hex_to_rgb("#800080"), # Purple
+    #     hex_to_rgb("#A52A2A"), # Brown
+    #     hex_to_rgb("#FFFFFF")  # White (for markers, if background is dark)
+    # ]
+    # color_cycle = itertools.cycle(debug_segment_colors_rgb)
+    # marker_color_rgb = hex_to_rgb("#000000") # Black for markers, or choose a contrast color
+    # if sum(background_value) < 1.5: # If background is dark-ish
+    #     marker_color_rgb = hex_to_rgb("#FFFFFF") # Use white markers
 
 
     ### END OF DEBUG ###
@@ -635,6 +639,9 @@ def create_shape_single_pass(story_data,
 
             if 'arc_manual_override' not in component:
                 component['arc_manual_override'] = False
+            
+            if 'spacing_factor' not in component:
+                component['spacing_factor'] = 1
 
             if not arc_x_values or not arc_y_values:
                 continue
@@ -681,39 +688,39 @@ def create_shape_single_pass(story_data,
 
             ### START OF BEBUG ###
             # --- DEBUG: DRAW THE CURVE SEGMENT ITSELF (thin line in its color) ---
-            current_segment_color_debug = next(color_cycle) # Get color for this debug segment
-            cr.save()
-            cr.set_source_rgb(*current_segment_color_debug)
-            cr.set_line_width(max(2, line_thickness / 5)) # Draw a thinner line for the segment path itself for debug
-            cr.move_to(arc_x_values_scaled[0], arc_y_values_scaled[0])
-            for sx_seg, sy_seg in zip(arc_x_values_scaled[1:], arc_y_values_scaled[1:]):
-                cr.line_to(sx_seg, sy_seg)
-            cr.stroke()
-            cr.restore()
+            # current_segment_color_debug = next(color_cycle) # Get color for this debug segment
+            # cr.save()
+            # cr.set_source_rgb(*current_segment_color_debug)
+            # cr.set_line_width(max(2, line_thickness / 5)) # Draw a thinner line for the segment path itself for debug
+            # cr.move_to(arc_x_values_scaled[0], arc_y_values_scaled[0])
+            # for sx_seg, sy_seg in zip(arc_x_values_scaled[1:], arc_y_values_scaled[1:]):
+            #     cr.line_to(sx_seg, sy_seg)
+            # cr.stroke()
+            # cr.restore()
 
-            # --- DEBUG: DRAW MARKERS FOR START AND END OF THIS SCALED SEGMENT ---
-            # Marker at the start of this segment
-            current_segment_color_debug = next(color_cycle) # Get color for this debug segment
-            cr.save()
-            cr.set_source_rgb(*current_segment_color_debug) # Use a contrasting marker color
-            cr.arc(arc_x_values_scaled[0], arc_y_values_scaled[0], 7, 0, 2 * math.pi) # 7px radius circle
-            cr.fill()
-            # Optionally, add a number to the marker
-            layout_marker_idx = PangoCairo.create_layout(cr)
-            font_desc_marker = Pango.FontDescription(f"Sans Bold 12") # Small font for index
-            layout_marker_idx.set_font_description(font_desc_marker)
-            layout_marker_idx.set_text(str(index), -1)
-            mk_w, mk_h = layout_marker_idx.get_pixel_size()
-            cr.move_to(arc_x_values_scaled[0] + 10, arc_y_values_scaled[0] - mk_h / 2) # Offset slightly
-            PangoCairo.show_layout(cr, layout_marker_idx)
-            cr.restore()
+            # # --- DEBUG: DRAW MARKERS FOR START AND END OF THIS SCALED SEGMENT ---
+            # # Marker at the start of this segment
+            # current_segment_color_debug = next(color_cycle) # Get color for this debug segment
+            # cr.save()
+            # cr.set_source_rgb(*current_segment_color_debug) # Use a contrasting marker color
+            # cr.arc(arc_x_values_scaled[0], arc_y_values_scaled[0], 7, 0, 2 * math.pi) # 7px radius circle
+            # cr.fill()
+            # # Optionally, add a number to the marker
+            # layout_marker_idx = PangoCairo.create_layout(cr)
+            # font_desc_marker = Pango.FontDescription(f"Sans Bold 12") # Small font for index
+            # layout_marker_idx.set_font_description(font_desc_marker)
+            # layout_marker_idx.set_text(str(index), -1)
+            # mk_w, mk_h = layout_marker_idx.get_pixel_size()
+            # cr.move_to(arc_x_values_scaled[0] + 10, arc_y_values_scaled[0] - mk_h / 2) # Offset slightly
+            # PangoCairo.show_layout(cr, layout_marker_idx)
+            # cr.restore()
 
-            # Marker at the end of this segment
-            cr.save()
-            cr.set_source_rgb(*marker_color_rgb)
-            cr.arc(arc_x_values_scaled[-1], arc_y_values_scaled[-1], 7, 0, 2 * math.pi)
-            cr.fill()
-            cr.restore()
+            # # Marker at the end of this segment
+            # cr.save()
+            # cr.set_source_rgb(*marker_color_rgb)
+            # cr.arc(arc_x_values_scaled[-1], arc_y_values_scaled[-1], 7, 0, 2 * math.pi)
+            # cr.fill()
+            # cr.restore()
 
             ### END OF BEBUG ###
 
@@ -826,19 +833,28 @@ def create_shape_single_pass(story_data,
 
                     component['arc_text'] = descriptors_text
                     component['actual_arc_text_chars'] = len(descriptors_text)
-                    component['spaces_in_arc_text'] = component['arc_text'].count(' ')
-                    component['spaces_width_multiplier'] = {}
-                    component['space_to_modify'] = 0
-                    for space_index in range(component['spaces_in_arc_text']):
-                        component['spaces_width_multiplier'][space_index] = 1.0
-                    component['spacing_adjustment_attempts'] = 0 # Reset total attempts for this new text
                     component['arc_text_valid'] = descriptors_valid
                     component['arc_text_valid_message'] = descriptor_message
+
+                    
+                   
 
                     actual_chars = len(descriptors_text)
 
                     if descriptors_valid == True:
-                         print("#", reasonable_descriptiors_attempts,".) Descriptors Valid: ", descriptors_text, "(",actual_chars,"/",str(upper_bound-3),") -- LLM Char Target: ", llm_target_chars )
+                        print("#", reasonable_descriptiors_attempts,".) Descriptors Valid: ", descriptors_text, "(",actual_chars,"/",str(upper_bound-3),") -- LLM Char Target: ", llm_target_chars )
+
+                        component['spaces_in_arc_text'] = component['arc_text'].count(' ')
+                        component['spaces_width_multiplier'] = {}
+                        component['space_to_modify'] = 0
+                        for space_index in range(component['spaces_in_arc_text']):
+                            component['spaces_width_multiplier'][space_index] = 1.0
+                        component['spacing_adjustment_attempts'] = 0 # Reset total attempts for this new text
+                        component['spacing_factor'] = 1
+                        component['adjust_spacing'] = False
+                        component['modified_end_time'] = component['end_time']
+                        component['modified_end_emotional_score'] = component['end_emotional_score']
+                    
                     else:
                         print("#", reasonable_descriptiors_attempts,".) Descriptors NOT Valid: ", descriptors_text, "Target Chars: ", llm_target_chars, " Error: ",  descriptor_message)
 
@@ -862,10 +878,15 @@ def create_shape_single_pass(story_data,
                     reasonable_descriptiors_attempts = reasonable_descriptiors_attempts + 1
 
                 if descriptors_valid == False:
+                    if story_data is None:
+                        print("STORY DATA NONE -- 9")
+
                     return story_data, "error"
                 
                 if component['arc_text_attempts'] > 10:
                     print("Max attempts to create descriptors exceeded")
+                    if story_data is None:
+                        print("STORY DATA NONE -- 10")
                     return story_data, "error"
                 
             else:
@@ -901,8 +922,6 @@ def create_shape_single_pass(story_data,
             # # average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled, arc_y_values_scaled) # Original
             # average_rotation_angle = calculate_average_rotation_angle(arc_x_values_scaled_np, arc_y_values_scaled_np) # Use NP array
 
-            if 'oscillation_count' not in component:
-                component['oscillation_count'] = 0
             
             
             # Draw text on curve
@@ -954,6 +973,9 @@ def create_shape_single_pass(story_data,
                     print("X_og: ", x_og)
                     # You can decide to either return an error status, skip the adjustment, or use a fallback
                     # For instance, set the status to "error" or simply continue:
+                    if story_data is None:
+                        print("STORY DATA NONE -- 11")
+
                     return story_data, "error"  # or handle it in another way
 
                 #print("X: ", x_og)
@@ -967,7 +989,8 @@ def create_shape_single_pass(story_data,
                 #normal mode
                 if (new_x >= old_min_x and new_x <= old_max_x 
                     and new_y >= old_min_y and new_y <= old_max_y
-                    and recursive_mode):
+                    and recursive_mode
+                    and component['adjust_spacing'] == False):
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
                     
@@ -975,13 +998,17 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+                    if story_data is None:
+                        print("STORY DATA NONE -- 12")
+
                     return story_data, "processing"
 
                 #this really only works if like this was suppose to be the last story segment
                 # we hit x max and want to extend y
-                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,2) != round(y_og[-1],2))):
+                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,2) != round(y_og[-1],2))
+                      and component['adjust_spacing'] == False):
                     new_x = x_og[-1]
-                    print(round(new_y,3), " != ", round(y_og[-1],3)) 
+                    #print(round(new_y,3), " != ", round(y_og[-1],3)) 
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
 
@@ -989,11 +1016,15 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+                    if story_data is None:
+                        print("STORY DATA NONE -- 13")
+
                     return story_data, "processing"
                 
                 # #we hit y max / min and need to extend x
-                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode):
-                    print("#we hit y max / min and need to extend x")
+                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode 
+                      and component['adjust_spacing'] == False):
+                    #print("#we hit y max / min and need to extend x")
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
@@ -1002,21 +1033,46 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+
+                    if story_data is None:
+                        print("STORY DATA NONE -- 1")
+                    
                     return story_data, "processing"
             
-                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and min_space_multipler > .8:
+                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
                     component['adjust_spacing'] = True
-                    component['space_to_modify'] = component['space_to_modify'] + 1
-                    if component['space_to_modify'] > component['spaces_in_arc_text']:
-                        component['space_to_modify'] = 0
-                    component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] - 0.05
+
+                    #adjust current multiplier
+                    if component.get('status', "") == "expanding spacing":
+                        print("spacing factor change")
+                        component["spacing_factor"] = component["spacing_factor"] * 10
+                    
+                    try:
+                        new_multiplier = max(0.6, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+                    except:
+                        new_multiplier = max(0.6, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+                    
+                    if new_multiplier == .8:
+                        component['space_to_modify'] = component['space_to_modify'] + 1
+                        print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+                  
+
+                    #adjust future mulitplier
+                    #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] - 0.01
                     component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+
+                    component['status'] = "reducing spacing"
                     
 
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+
+                    if story_data is None:
+                        print("STORY DATA NONE -- 2")
                     return story_data, "processing"
             
                 else: #this means: "curve too short but can't change due to constraints"
@@ -1028,11 +1084,22 @@ def create_shape_single_pass(story_data,
 
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
+                    # if component['adjust_spacing'] == True:
+                    #     status = 'Close Enough!'
+                    #     #print("CLOSE ENOUGH!")
                     else:
                         component['arc_text_valid'] = False
                         component['arc_text_valid_message'] = "curve too short but can't change due to constraints"
                         print("curve too short but can't change due to constraints")
                         #status = "curve too short but can't change due to constraints"
+                        print("spacing attempts: ", component['spacing_adjustment_attempts'])
+                        print("max_space_multipler: ", min_space_multipler)
+                        print("spacing_factor: ", component['spacing_factor'])
+
+
+                        if story_data is None:
+                            print("STORY DATA NONE -- 3")
+
                         return story_data, "processing"
 
 
@@ -1054,7 +1121,8 @@ def create_shape_single_pass(story_data,
                     and original_arc_end_emotional_score_values[-1] < old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode
                     and original_arc_end_time_index_length >= 0 
-                    and original_arc_end_emotional_score_index_length >= 0):
+                    and original_arc_end_emotional_score_index_length >= 0
+                    and component['adjust_spacing'] == False):
                     
                     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
@@ -1063,6 +1131,10 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+
+                    if story_data is None:
+                        print("STORY DATA NONE -- 4")
+
                     return story_data, "processing"
                 
                 #cant touch x -- maybe want to remove
@@ -1071,7 +1143,8 @@ def create_shape_single_pass(story_data,
                     and original_arc_end_emotional_score_values[-1] < old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode 
                     and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)
-                    and original_arc_end_emotional_score_index_length >= 0):
+                    and original_arc_end_emotional_score_index_length >= 0
+                    and component['adjust_spacing'] == False):
 
                     component['modified_end_time'] = original_arc_end_time_values[-1]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
@@ -1080,6 +1153,10 @@ def create_shape_single_pass(story_data,
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+
+                    if story_data is None:
+                        print("STORY DATA NONE -- 5")
+
                     return story_data, "processing"
                 
                 # #cant touch y
@@ -1100,18 +1177,39 @@ def create_shape_single_pass(story_data,
                 #         surface.write_to_png(story_shape_path)
                 #     return story_data, "processing"
 
-                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and max_space_multipler < 1.5:
+                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
                     component['adjust_spacing'] = True
-                    component['space_to_modify'] = component['space_to_modify'] + 1
-                    if component['space_to_modify'] > component['spaces_in_arc_text']:
-                        component['space_to_modify'] = 0
-                    component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] + 0.05
+                    
+                    if component.get('status', "") == "reducing spacing":
+                        print("spacing factor change")
+                        component["spacing_factor"] = component["spacing_factor"] * 10
+                    
+                    try:
+                        new_multiplier = min(2.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+                    except:
+                        new_multiplier = min(2.5,component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+                    
+                    if new_multiplier == 2:
+                        component['space_to_modify'] = component['space_to_modify'] + 1
+                        print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+                    
+
+                     #adjust next multiplier
+                    #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] + 0.01
                     component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+                    
+                    component['status'] = "expanding spacing"
 
                     if output_format == "svg":
                         surface.flush()   # flush the partial drawing, but do *not* finalize!
                     else:
                         surface.write_to_png(story_shape_path)
+
+                    if story_data is None:
+                        print("STORY DATA NONE -- 6")
+
                     return story_data, "processing"
 
                 else: # this means: curve too long but can't change due to constraints
@@ -1124,10 +1222,20 @@ def create_shape_single_pass(story_data,
 
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
+                    # elif component['adjust_spacing'] == True:
+                    #     status = 'Close Enough'
+                        #print("CLOSE ENOUGH!")
                     else:
                         component['arc_text_valid'] = False
                         component['arc_text_valid_message'] = "curve too long but can't change due to constraints"
                         print("curve too long but can't change due to constraints")
+                        print("spacing attempts: ", component['spacing_adjustment_attempts'])
+                        print("max_space_multipler: ", max_space_multipler)
+                        print("spacing_factor: ", component['spacing_factor'])
+
+                        if story_data is None:
+                            print("STORY DATA NONE -- 7")
+
                         return story_data, "processing"
 
             elif curve_length_status == "curve_correct_length":
@@ -1321,7 +1429,8 @@ def create_shape_single_pass(story_data,
         except ValueError as e:
             print(e)
         # optionally: raise, or set status="error", etc.
-
+    if story_data is None:
+        print("STORY DATA NONE -- 8")
     return story_data, "completed"
 
 
@@ -2036,20 +2145,89 @@ def get_story_arc(x, functions_list):
 
 
 def transform_story_data(data, x_delta, step_k, max_num_steps ):
-    # Convert JSON to DataFrame
-    try:
-        df = pd.json_normalize(
-            data, 
-            record_path=['story_components'], 
-            meta=[
-                'title', 
-                'protagonist'
-            ],
-            record_prefix='story_component_'
-        )
-    except Exception as e:
-        print("Error:", e)
+    # # Convert JSON to DataFrame
+    # try:
+    #     df = pd.json_normalize(
+    #         data, 
+    #         record_path=['story_components'], 
+    #         meta=[
+    #             'title', 
+    #             'protagonist'
+    #         ],
+    #         record_prefix='story_component_'
+    #     )
+    # except Exception as e:
+    #     print("Error:", e)
+    #     print("NORMALIZE IS BREAKING!")
+    #     return None
+
+        # --- Start of transform_story_data ---
+    if not isinstance(data, dict):
+        print(f"transform_story_data FATAL: Input 'data' is not a dictionary. Type: {type(data)}")
+        return None 
+    
+    if 'story_components' not in data:
+        print(f"transform_story_data FATAL: 'story_components' key missing from input data. Keys: {list(data.keys())}")
         return None
+
+    if not isinstance(data['story_components'], list):
+        print(f"transform_story_data FATAL: 'story_components' is not a list. Type: {type(data['story_components'])}")
+        return None
+
+    components_for_df_creation = []
+    for comp_idx, component_data_item in enumerate(data['story_components']):
+        if not isinstance(component_data_item, dict):
+            print(f"transform_story_data WARNING: story_component at index {comp_idx} is not a dict. Skipping.")
+            continue 
+
+        mod_end_time = component_data_item.get('modified_end_time')
+        mod_emo_score = component_data_item.get('modified_end_emotional_score')
+        arc_type = component_data_item.get('arc') 
+        description = component_data_item.get('description', '#N/A') # Get description
+
+        # All components (including the first placeholder) need time and score.
+        if mod_end_time is None or mod_emo_score is None:
+            print(f"transform_story_data WARNING: Essential time/score missing in component {comp_idx}. Skipping. Data: {component_data_item}")
+            continue
+        
+        # If arc_type is None (e.g. for the first component if 'arc' key is missing), default to "#N/A"
+        # This ensures the key 'story_component_arc' will exist for all rows going into the DataFrame.
+        if arc_type is None:
+            arc_type = "#N/A"
+
+        essential_comp_info = {
+            # Fields that will be directly used or selected later with these exact names
+            'title': data.get('title', 'Unknown Title'), 
+            'protagonist': data.get('protagonist', 'Unknown Protagonist'),
+            'story_component_arc': arc_type, # Use the direct name
+            'story_component_description': description, # Use the direct name
+
+            # Fields that will be renamed later (or you can name them directly now)
+            # Using 'modified_...' prefix initially, then renaming, is fine if you prefer that pattern.
+            'story_component_modified_end_time': mod_end_time,
+            'story_component_modified_end_emotional_score': mod_emo_score,
+        }
+        components_for_df_creation.append(essential_comp_info)
+
+    if not components_for_df_creation or len(components_for_df_creation) < 2 :
+        print(f"transform_story_data ERROR: Not enough valid components ({len(components_for_df_creation)}) to create DataFrame for arc calculation.")
+        return None
+
+    try:
+        df = pd.DataFrame(components_for_df_creation)
+    except Exception as e:
+        print(f"transform_story_data ERROR: Creating DataFrame from components_for_df_creation failed: {e}")
+        return None
+    if not components_for_df_creation or len(components_for_df_creation) < 2 : # Need at least 2 points to form an arc
+        print(f"transform_story_data ERROR: Not enough valid components ({len(components_for_df_creation)}) to create DataFrame for arc calculation.")
+        return None
+
+    try:
+        df = pd.DataFrame(components_for_df_creation)
+    except Exception as e:
+        print(f"transform_story_data ERROR: Creating DataFrame from components_for_df_creation failed: {e}")
+        return None
+
 
     # Print the column names for debugging
     #print("DataFrame columns:", df.columns.tolist())
@@ -2481,7 +2659,20 @@ def draw_text_on_curve(
             char_width, char_height = layout.get_pixel_size()
 
             if adjust_spacing == True and char == ' ':
-                char_width = get_standard_space_width(pangocairo_context, font_desc) * spaces_width_multiplier[space_count]
+                before_char_width = char_width
+                #print("char_width before multiplier: ", char_width)
+                try:
+                    char_width = get_standard_space_width(pangocairo_context, font_desc) * spaces_width_multiplier[space_count]
+                    #print("multiplier: ", spaces_width_multiplier[space_count])
+                except:
+                    char_width = get_standard_space_width(pangocairo_context, font_desc) * spaces_width_multiplier[str(space_count)]
+                    #print("multiplier: ", spaces_width_multiplier[str(space_count)])
+                
+                after_char_width = char_width
+                #print("char width after multiplier: ", char_width, " | diff: ", (after_char_width - before_char_width) )
+                
+
+
                 space_count = space_count + 1
 
             while idx_on_curve < len(cumulative_curve_lengths) - 1:
@@ -2514,13 +2705,13 @@ def draw_text_on_curve(
                 translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
 
                 # ── NEW: bounce the char if it crosses the 0.625‑in safety zone ──
-                if (translated_box.bounds[0] < margin_x or                 # left
-                    translated_box.bounds[2] > design_width  - margin_x or # right
-                    translated_box.bounds[1] < margin_y or                 # top
-                    translated_box.bounds[3] > design_height - margin_y
-                    ):  # bottom
-                    distance_along_curve += 1      # scoot 1 px along path
-                    continue                       # try again at new spot
+                # if (translated_box.bounds[0] < margin_x or                 # left
+                #     translated_box.bounds[2] > design_width  - margin_x or # right
+                #     translated_box.bounds[1] < margin_y or                 # top
+                #     translated_box.bounds[3] > design_height - margin_y
+                #     ):  # bottom
+                #     distance_along_curve += 1      # scoot 1 px along path
+                #     continue                       # try again at new spot
                 # ───────────────────────────────────────────────
 
                 # Check overlap
@@ -2569,9 +2760,14 @@ def draw_text_on_curve(
     remaining_curve_length = total_curve_length - distance_along_curve
 
     if not all_text_fits:
+        print("curve_too_short | spacing, ", adjust_spacing)
         curve_length_status = "curve_too_short"
-    elif remaining_curve_length > average_char_width:
+    elif remaining_curve_length > average_char_width: #and adjust_spacing == False:
+        print("curve_too_long | spacing, ", adjust_spacing, " | remaining length: ", (remaining_curve_length - average_char_width), " | average_char_width", average_char_width)
         curve_length_status = "curve_too_long"
+    # elif remaining_curve_length > (average_char_width * 2) and adjust_spacing == True:
+    #     print("spacing true | remaining length: ", (remaining_curve_length - (average_char_width * 2)))
+    #     curve_length_status = "curve_too_long"
     else:
         curve_length_status = "curve_correct_length"
 
