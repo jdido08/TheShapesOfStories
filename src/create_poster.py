@@ -670,10 +670,10 @@ if __name__ == "__main__":
 
 
     story_files = [
+        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-the-sun-also-rises_protagonist-jake-barnes_product-print_size-16x4.64_line-type-char_char_background-color-#C17F59_font-color-#1B2B3A_border-color-#7C4B2A_font-Futura_title-display-yes.png",
         "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-the-old-man-and-the-sea_protagonist-santiago_product-print_size-16x4.64_line-type-char_char_background-color-#1B3F8B_font-color-#F0F4F5_border-color-#45776B_font-Lora_title-display-yes.png",
         "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-a-farewell-to-arms_protagonist-frederic-henry_product-print_size-16x4.64_line-type-char_char_background-color-#4A5D4C_font-color-#FFFFFF_border-color-#8B0000_font-Futura_title-display-yes.png",
-        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-16x4.64_line-type-char_char_background-color-#994636_font-color-#CAD2C5_border-color-#2D2424_font-Bitter_title-display-yes.png",
-        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-the-sun-also-rises_protagonist-jake-barnes_product-print_size-16x4.64_line-type-char_char_background-color-#C17F59_font-color-#1B2B3A_border-color-#7C4B2A_font-Futura_title-display-yes.png"
+        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-16x4.64_line-type-char_char_background-color-#994636_font-color-#CAD2C5_border-color-#2D2424_font-Bitter_title-display-yes.png"
     ]
     
     # Step 7: Create Actual Poster

@@ -1048,10 +1048,10 @@ def create_shape_single_pass(story_data,
                         component["spacing_factor"] = component["spacing_factor"] * 10
                     
                     try:
-                        new_multiplier = max(0.6, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
+                        new_multiplier = max(0.8, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
                         component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
                     except:
-                        new_multiplier = max(0.6, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
+                        new_multiplier = max(0.8, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
                         component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
                     
                     if new_multiplier == .8:
@@ -1185,13 +1185,13 @@ def create_shape_single_pass(story_data,
                         component["spacing_factor"] = component["spacing_factor"] * 10
                     
                     try:
-                        new_multiplier = min(2.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
+                        new_multiplier = min(1.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
                         component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
                     except:
-                        new_multiplier = min(2.5,component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
+                        new_multiplier = min(1.5,component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
                         component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
                     
-                    if new_multiplier == 2:
+                    if new_multiplier == 1.5:
                         component['space_to_modify'] = component['space_to_modify'] + 1
                         print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
                     
@@ -2704,6 +2704,7 @@ def draw_text_on_curve(
                 rotated_box = shapely_rotate(box, angle * (180 / math.pi), origin=(0, 0), use_radians=False)
                 translated_box = shapely.affinity.translate(rotated_box, xoff=x, yoff=y)
 
+                #CAUSED ALOT OF ISSUES !!!!!!!!!
                 # ── NEW: bounce the char if it crosses the 0.625‑in safety zone ──
                 # if (translated_box.bounds[0] < margin_x or                 # left
                 #     translated_box.bounds[2] > design_width  - margin_x or # right
