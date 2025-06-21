@@ -2,9 +2,10 @@ import os
 import json
 import yaml
 import tiktoken
-from langchain_community.llms import OpenAI
-from langchain_community.chat_models import ChatOpenAI
+# from langchain_community.llms import OpenAI
+# from langchain_community.chat_models import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
 import re
 from langchain_groq import ChatGroq
 
@@ -17,7 +18,7 @@ from langchain_groq import ChatGroq
 
 
 
-def load_config(config_path="config.yaml"):
+def load_config(config_path):
     with open(config_path, "r") as stream:
         return yaml.safe_load(stream)
 
@@ -53,10 +54,17 @@ def get_llm(provider: str, model: str, config: dict, max_tokens: int = 1024):
         llm = ChatGoogleGenerativeAI(
           model=model,                    # e.g. "gemini-pro", "gemini-1.5-flash-latest"
             google_api_key=google_api_key,  # optional if env var is set
-             model_kwargs={
-            "max_output_tokens": max_tokens,           # e.g. 1024
-            "response_format": {"type": "json_object"} # force raw JSON
-        })   # keeps your current signature unchanged        )
+            max_output_tokens=max_tokens,
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            #  model_kwargs={
+            # "response_format": {"type": "json_object"} # force raw JSON
+            # }
+        )   # keeps your current signature unchanged        )
     elif provider == "groq":
         
         groq_api_key = config.get("groq_key")

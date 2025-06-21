@@ -6,7 +6,7 @@ import tiktoken
 import json 
 import os 
 
-def analyze_story(author_name, story_title, protagonist, story_summary, llm_provider, llm_model):
+def analyze_story(config_path, author_name, story_title, protagonist, story_summary, llm_provider, llm_model):
     
 
     # The user_message includes placeholders that will be replaced by the function arguments
@@ -203,7 +203,7 @@ The descriptions in the example output demonstrate the minimum expected level of
     )
 
 
-    config = load_config()
+    config = load_config(config_path=config_path)
     llm = get_llm(llm_provider, llm_model, config, max_tokens=8192)
 
     # Instead of building an LLMChain, use the pipe operator:
@@ -294,10 +294,12 @@ def num_tokens_from_string(string: str, model: str) -> int:
     return num_tokens
 
 
-def create_story_data(input_path="", author="", year="", protagonist="", output_path="", 
+def create_story_data(config_path = "", summary_dir = "", summary_file="", author="", year="", protagonist="", output_path="", 
                       llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
 
-    with open(input_path, 'r', encoding='utf-8') as file:
+
+    summary_file_path = os.path.join(summary_dir, summary_file)
+    with open(summary_file_path, 'r', encoding='utf-8') as file:
         story_data = json.load(file)
     
     
@@ -328,7 +330,7 @@ def create_story_data(input_path="", author="", year="", protagonist="", output_
                 story_summary_source = summary_source
     
     #print(story_summary_source)
-    story_plot_data = analyze_story(author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
+    story_plot_data = analyze_story(config_path=config_path, author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
                                     llm_provider=llm_provider,llm_model=llm_model)
     story_plot_data = json.loads(story_plot_data)
     story_validity = validate_story_arcs(story_plot_data)

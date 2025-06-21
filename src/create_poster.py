@@ -553,7 +553,7 @@ if __name__ == "__main__":
     preview_dpi = 300 
 
     poster_general_margin_in = 1.0 # General margin for grid from poster edges
-    grid_cell_spacing_in = 0.5  # Spacing between grid cells
+    grid_cell_spacing_in = 0.2  # Spacing between grid cells
     
     # --- Text Element Configuration ---
     main_title_text = "Ernest Hemingway"
@@ -601,7 +601,7 @@ if __name__ == "__main__":
         dpi=preview_dpi, # Use the preview DPI here
         margin_in=poster_general_margin_in, 
         spacing_in=grid_cell_spacing_in,
-        background_color='#E0E0E0', 
+        background_color='#EAE6D9', 
         # Text Block
         poster_title=main_title_text,
         poster_title_font_path=title_font_path_config, 
@@ -619,61 +619,13 @@ if __name__ == "__main__":
         preview_cell_fill_color='#C8C8FA', # Slightly different fill
         preview_annotation_font_size_pt=9 # Smaller for more text
     )
-    
-    # The print statements inside create_layout_preview will now output the
-    # dimensions your PNGs should be if you were targeting the *preview_dpi_main*.
-    # To get sizes for your *print_dpi* (e.g., 300), you would ideally run create_layout_preview
-    # once with dpi=300 (and save it to a different filename, or just note the output).
-    # Or, you can manually scale the output from the preview_dpi run.
-    # Example: If preview at 72 DPI says 100x100px, for 300 DPI it's (100 * 300/72) x (100 * 300/72)
-
-    print("\n--- To get PNG sizes for PRINT, re-run preview with print_dpi or scale the above. ---")
-
-    # Step 4: Calculate Required Story Shape Sizes & Prepare Dummies
-    # This step becomes more complex if we want dummy sizes to be perfectly accurate
-    # before create_poster runs, as create_poster now calculates the final grid area.
-    # For now, we'll use calculate_cell_content_size with initial poster dimensions,
-    # understanding that create_poster will handle the true final sizing and placement.
-    # The dummy images are mainly for having *something* to pass to create_poster.
-    # print("\n--- Calculating Initial Target Sizes for Dummy Story Shapes (Print DPI) ---")
-    # required_sizes = {} 
-    # for i, cell_def in enumerate(grid_def_template):
-    #     idx, rs, cs = cell_def['content_index'], cell_def['row_span'], cell_def['col_span']
-    #     size = calculate_cell_content_size(
-    #         poster_w_inches, poster_h_inches, print_dpi, poster_general_margin_in, 
-    #         grid_cell_spacing_in, base_r_template, base_c_template, rs, cs
-    #     )
-    #     required_sizes[idx] = size if size else (50,50) # Fallback
-    #     # if size: print(f"  - Dummy for idx {idx} (Cell {i}, Span {rs}x{cs}): ~{size[0]}x{size[1]}px")
-
-    # story_files = [None] * num_expected_stories
-    # print("\n--- Preparing/Checking Dummy Story Shape Image Paths ---")
-    # for i in range(num_expected_stories):
-    #     s = required_sizes.get(i, (50,50))
-    #     dw, dh = max(1,s[0]), max(1,s[1]) # Ensure positive
-    #     name = f"dummy_idx{i}_{dw}x{dh}.png"
-    #     path = os.path.join(dummy_image_folder, name)
-    #     if not os.path.exists(path):
-    #         try:
-    #             img = Image.new('RGB', (dw, dh), (210,210,230))
-    #             dr = ImageDraw.Draw(img)
-    #             try: f = ImageFont.load_default(size=max(10,int(min(dw,dh)/8)))
-    #             except: f = ImageFont.load_default()
-    #             txt = f"idx {i}\n{dw}x{dh}"
-    #             try:
-    #                 bb = dr.textbbox((0,0),txt,font=f,align="center")
-    #                 dr.text(((dw-(bb[2]-bb[0]))/2, (dh-(bb[3]-bb[1]))/2), txt, (0,0,0), f, align="center")
-    #             except: dr.text((5,5),txt,(0,0,0),f)
-    #             img.save(path)
-    #         except Exception as e: print(f"Err dummy {i}: {e}"); path=None
-    #     story_files[i] = path
 
 
     story_files = [
-        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-the-sun-also-rises_protagonist-jake-barnes_product-print_size-16x4.64_line-type-char_char_background-color-#C17F59_font-color-#1B2B3A_border-color-#7C4B2A_font-Futura_title-display-yes.png",
-        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-the-old-man-and-the-sea_protagonist-santiago_product-print_size-16x4.64_line-type-char_char_background-color-#1B3F8B_font-color-#F0F4F5_border-color-#45776B_font-Lora_title-display-yes.png",
-        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-a-farewell-to-arms_protagonist-frederic-henry_product-print_size-16x4.64_line-type-char_char_background-color-#4A5D4C_font-color-#FFFFFF_border-color-#8B0000_font-Futura_title-display-yes.png",
-        "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-16x4.64_line-type-char_char_background-color-#994636_font-color-#CAD2C5_border-color-#2D2424_font-Bitter_title-display-yes.png"
+        "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-the-sun-also-rises_protagonist-jake-barnes_product-print_size-16x4.64_line-type-char_background-color-#F5F5DC_font-color-#36454F_border-color-#800020_font-Merriweather_title-display-yes.png",
+        "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-16x4.64_line-type-char_background-color-#2E4034_font-color-#DCD3C4_border-color-#8D4A27_font-Merriweather_title-display-yes.png",
+        "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-a-farewell-to-arms_protagonist-frederic-henry_product-print_size-16x4.64_line-type-char_background-color-#5D6D7E_font-color-#FFFFFF_border-color-#8B0000_font-Merriweather_title-display-yes.png",
+        "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-the-old-man-and-the-sea_protagonist-santiago_product-print_size-16x4.64_line-type-char_background-color-#0A3C4A_font-color-#F0EAD6_border-color-#C2B280_font-Merriweather_title-display-yes.png"
     ]
     
     # Step 7: Create Actual Poster

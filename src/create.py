@@ -10,6 +10,89 @@ import re
 import time 
 
 
+
+def pango_font_exists(font_name):
+    from gi.repository import Pango, PangoCairo
+    """
+    Checks whether the given font is available using Pango.
+    Returns True if the font is found, False otherwise.
+    """
+    if not font_name:
+        return True  # nothing to check if font_name is empty
+
+    # Get the default font map from PangoCairo.
+    font_map = PangoCairo.FontMap.get_default()
+    families = font_map.list_families()
+
+    # Iterate through the font families and see if any name matches (case-insensitive).
+    for family in families:
+        if font_name.lower() in family.get_name().lower():
+            return True
+
+    return False
+
+# ==============================================================================
+#           UNIFIED PATH CONFIGURATION (for Local & Colab)
+# ==============================================================================
+import os
+import sys
+
+# This dictionary will hold all our configured paths
+PATHS = {}
+
+# Check if we are running in the Google Colab environment
+if 'google.colab' in sys.modules:
+    print("Running in Google Colab environment.")
+    from google.colab import drive
+    drive.mount('/content/drive')
+    
+    # Set the base directory to the project folder in your Google Drive
+    BASE_DIR = '/content/drive/My Drive/'
+    
+else:
+    print("Running in a local environment.")
+    # Set the base directory to the project folder on your local machine
+    # You will need to update this path based on where your Google Drive folder is located.
+    # --- FIND YOUR LOCAL GOOGLE DRIVE PATH AND UPDATE THE LINE BELOW ---
+    
+    # Example for macOS:
+    local_drive_path = os.path.expanduser('~/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive')
+    if not os.path.exists(local_drive_path): # Fallback for older Google Drive versions
+        local_drive_path = '/Volumes/GoogleDrive/My Drive'
+
+    # Example for Windows:
+    # local_drive_path = 'G:\\My Drive' # Use a raw string or double backslashes
+    
+    #BASE_DIR = os.path.join(local_drive_path, 'Projects/TheShapesOfStories')
+    BASE_DIR = local_drive_path
+    print(BASE_DIR)
+
+# --- Define all other paths relative to the base directory ---
+PATHS['src'] = os.path.join(BASE_DIR, 'src')
+PATHS['summaries'] = os.path.join(BASE_DIR, 'data', 'summaries')
+PATHS['story_data'] = os.path.join(BASE_DIR, 'data', 'story_data')
+PATHS['shapes_output'] = os.path.join(BASE_DIR, 'data', 'story_shapes')
+PATHS['posters_output'] = os.path.join(BASE_DIR, 'data', 'posters')
+PATHS['config'] = os.path.join(BASE_DIR, 'config.yaml')
+
+# --- Automatically create output directories if they don't exist ---
+os.makedirs(PATHS['story_data'], exist_ok=True)
+os.makedirs(PATHS['shapes_output'], exist_ok=True)
+os.makedirs(PATHS['posters_output'], exist_ok=True)
+
+# --- Add the 'src' directory to the system path ---
+# This allows your scripts to import from each other using "from llm import ..."
+sys.path.append(PATHS['src'])
+
+# --- Verify that the base directory exists ---
+if not os.path.exists(BASE_DIR):
+    raise FileNotFoundError(f"The base directory was not found at: {BASE_DIR}\n"
+                            "Please check your path configuration for the current environment.")
+
+print(f"\nProject Base Directory: {BASE_DIR}")
+print("All paths configured successfully.")
+
+
 import math # ensure math is imported if if component['space_to_modify'] >t already
 
 def get_scaled_print_parameters(new_width_in, new_height_in, dpi=300):
@@ -43,7 +126,7 @@ def get_scaled_print_parameters(new_width_in, new_height_in, dpi=300):
         "wrap_in_inches": 0,           # Prints typically have no wrap
         "max_num_steps": 2,
         "step_k": 6,
-        "has_border": False,           # Prints typically don't have a drawn border like canvas
+        "has_border": True,           # Prints typically don't have a drawn border like canvas
         "fixed_margin_in_inches": 0.6
     }
 
@@ -69,26 +152,38 @@ def get_scaled_print_parameters(new_width_in, new_height_in, dpi=300):
     scaled_params = {}
 
     # Scale font sizes (points) - apply minimums
-    scaled_params["font_size"] = max(6, round(base_params["font_size"] * scaling_factor))
-    scaled_params["title_font_size"] = max(10, round(base_params["title_font_size"] * scaling_factor))
-    scaled_params["protagonist_font_size"] = max(7, round(base_params["protagonist_font_size"] * scaling_factor))
-    scaled_params["author_font_size"] = max(7, round(base_params["author_font_size"] * scaling_factor))
-    scaled_params["top_text_font_size"] = max(6, round(base_params["top_text_font_size"] * scaling_factor))
-    scaled_params["bottom_text_font_size"] = max(6, round(base_params["bottom_text_font_size"] * scaling_factor))
+    # scaled_params["font_size"] = max(6, round(base_params["font_size"] * scaling_factor))
+    # scaled_params["title_font_size"] = max(10, round(base_params["title_font_size"] * scaling_factor))
+    # scaled_params["protagonist_font_size"] = max(7, round(base_params["protagonist_font_size"] * scaling_factor))
+    # scaled_params["author_font_size"] = max(7, round(base_params["author_font_size"] * scaling_factor))
+    # scaled_params["top_text_font_size"] = max(6, round(base_params["top_text_font_size"] * scaling_factor))
+    # scaled_params["bottom_text_font_size"] = max(6, round(base_params["bottom_text_font_size"] * scaling_factor))
+    scaled_params["font_size"] = round(base_params["font_size"] * scaling_factor)
+    scaled_params["title_font_size"] = round(base_params["title_font_size"] * scaling_factor)
+    scaled_params["protagonist_font_size"] = round(base_params["protagonist_font_size"] * scaling_factor)
+    scaled_params["author_font_size"] = round(base_params["author_font_size"] * scaling_factor)
+    scaled_params["top_text_font_size"] = round(base_params["top_text_font_size"] * scaling_factor)
+    scaled_params["bottom_text_font_size"] = round(base_params["bottom_text_font_size"] * scaling_factor)
 
     # Scale pixel-defined values based on general scaling_factor
-    scaled_params["line_thickness"] = max(10, round(base_params["line_thickness"] * scaling_factor))
+    # scaled_params["line_thickness"] = max(10, round(base_params["line_thickness"] * scaling_factor))
+    scaled_params["line_thickness"] = round(base_params["line_thickness"] * scaling_factor)
 
     # Scale gap_above_title proportionally to the title font size change (in pixels)
     base_title_font_px = base_params["title_font_size"] * (dpi / 96.0) # Points to pixels
     new_title_font_px = scaled_params["title_font_size"] * (dpi / 96.0)
     
     gap_font_ratio = new_title_font_px / base_title_font_px if base_title_font_px > 0 else scaling_factor
-    scaled_params["gap_above_title"] = max(15, round(base_params["gap_above_title"] * gap_font_ratio))
+    # scaled_params["gap_above_title"] = max(15, round(base_params["gap_above_title"] * gap_font_ratio))
+    scaled_params["gap_above_title"] = round(base_params["gap_above_title"] * gap_font_ratio)
+
 
     # Scale inch-defined values
-    scaled_params["top_and_bottom_text_band"] = max(0.25, base_params["top_and_bottom_text_band"] * scaling_factor)
-    scaled_params["fixed_margin_in_inches"] = max(0.25, base_params["fixed_margin_in_inches"] * scaling_factor)
+    # scaled_params["top_and_bottom_text_band"] = max(0.25, base_params["top_and_bottom_text_band"] * scaling_factor)
+    # scaled_params["fixed_margin_in_inches"] = max(0.25, base_params["fixed_margin_in_inches"] * scaling_factor)
+    scaled_params["top_and_bottom_text_band"] = base_params["top_and_bottom_text_band"] * scaling_factor
+    scaled_params["fixed_margin_in_inches"] = base_params["fixed_margin_in_inches"] * scaling_factor
+
 
     # Scale max_num_steps (integer, visual density)
     scaled_max_steps = base_params["max_num_steps"] * scaling_factor
@@ -109,14 +204,23 @@ def get_scaled_print_parameters(new_width_in, new_height_in, dpi=300):
     
     return scaled_params
 
+# # Load credentials from the YAML file
+# def load_credentials_from_yaml(file_path):
+#     with open(file_path, "r") as yaml_file:
+#         config = yaml.safe_load(yaml_file)
+#     return config["google_sheets"]
+
+# CONFIG_FILE = "/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml"
+# creds_data = load_credentials_from_yaml(CONFIG_FILE)
+
 # Load credentials from the YAML file
 def load_credentials_from_yaml(file_path):
     with open(file_path, "r") as yaml_file:
         config = yaml.safe_load(yaml_file)
     return config["google_sheets"]
 
-CONFIG_FILE = "/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml"
-creds_data = load_credentials_from_yaml(CONFIG_FILE)
+# Use the configured path from the PATHS dictionary
+creds_data = load_credentials_from_yaml(PATHS['config'])
 
 # Define the correct scope
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
@@ -151,7 +255,7 @@ for row in rows:
     author = row.get("author")
     protagonist = row.get("protagonist")
     year = row.get("year")
-    summary_path = row.get("summary_path")
+    summary_file = row.get("summary_file")
     background_color = row.get("background_color (optional)")
     font_color = row.get("font_color (optional)")
     border_color = row.get("border_color (optional)")
@@ -202,32 +306,58 @@ for row in rows:
     else:
         print("story style provided")
 
-    
-    #next create story data
+
+    #CHECK ABOUT FONT
+    if 'google.colab' in sys.modules:
+        # 2. Use the `find_font` function to get the correct internal name
+        #    (This function was created in the cell above)
+        desired_family = font
+        font = find_font(font) #find font is function that exists in collab notebook only
+
+        # 3. Check if a font was found and then use it
+        if font:
+            print(f"Request: ('{desired_family}') -> Found best match: '{font}'")
+            
+        else:
+            print(f"ERROR: Could not find a suitable font for '{desired_family}'"
+                "Please check the library table in the cell above for available fonts.")
+            #next create story data
+    else:
+        if font and not pango_font_exists(font):
+            raise ValueError(f"'{font}' not found on this system.")
+
 
     # Normalize the title to replace curly apostrophes with straight ones
     title = title.replace("’", "'")  # Normalize typographic apostrophes
     title = title.replace(",", "")
     
     #we should check if exsits first if not then create it 
-    story_data_output_path_base = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/"
+    # story_data_output_path_base = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/"
+    # potential_story_data_file_path = title.lower().replace(' ', '-') + "_" + protagonist.lower().replace(' ', '-')
+    # check_path = story_data_output_path_base + potential_story_data_file_path + ".json"
+    
+    # Check if story data exists first, if not then create it 
     potential_story_data_file_path = title.lower().replace(' ', '-') + "_" + protagonist.lower().replace(' ', '-')
-    check_path = story_data_output_path_base + potential_story_data_file_path + ".json"
+    # Use the configured path
+    check_path = os.path.join(PATHS['story_data'], potential_story_data_file_path + ".json")
     print(check_path)
+
     if os.path.exists(check_path):
         story_data_path = check_path
         print("story data exists")
     else:
         #print("couldnt find")
         print("story data did not exist")
-        story_data, story_data_path = create_story_data(
-            input_path=summary_path,
+        story_data, story_data_path = create_story_data(config_path = PATHS['config'],
+            summary_dir = PATHS['summaries'],
+            summary_file=summary_file,
             author=author, 
             year=year, 
             protagonist=protagonist,
-            output_path = story_data_output_path_base,
-            llm_provider =  "google", #"openai",#, #"openai",, #"anthropic", #google", 
-            llm_model = "gemini-2.5-pro-preview-05-06", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+            #output_path = story_data_output_path_base,
+            output_path = PATHS['story_data'], # <-- CORRECTED
+            llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+            llm_model = "o3-2025-04-16"#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
             )
 
     ### YOU JUST NEED 12x12 and then you shrinnk it down 
@@ -305,6 +435,7 @@ for row in rows:
         fixed_margin_in_inches = 0.6
     elif product == "print" and size == "custom":
         print_params = get_scaled_print_parameters(width, height)
+        print(print_params)
         
         line_thickness = print_params["line_thickness"]
         font_size = print_params["font_size"]
@@ -332,7 +463,11 @@ for row in rows:
 
 
     print("creating story shape")
-    new_story_data_path, story_shape_path = create_shape(story_data_path = story_data_path,
+    new_story_data_path, story_shape_path = create_shape(
+                    config_path = PATHS['config'],
+                    output_dir = PATHS['shapes_output'], # <-- ADD THIS LINE
+                    story_data_dir=PATHS['story_data'],      # For reading/writing data files
+                    story_data_path = story_data_path,
                     product = product,
                     x_delta= 0.015,#0.015, #number of points in the line 
                     step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
@@ -397,4 +532,5 @@ for row in rows:
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
     print(f"The script took {elapsed_time:.4f} seconds to execute.")
+
 
