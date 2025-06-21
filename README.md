@@ -4,8 +4,6 @@ This project creates beautiful and insightful "story shape" visualizations that 
 
 The core idea is to plot a story's emotional highs and lows along a "Good & Ill Fortune" (y-axis) against the story's timeline from "Beginning" to "End" (x-axis). Unlike Vonnegut's theory, which groups stories into a few archetypal shapes, this project celebrates the unique fingerprint of every story, creating a visual representation of its specific narrative journey.
 
-![Example of a story shape visualization for "The Great Gatsby"](https://storage.googleapis.com/static.a-shared-assistant.online/host/v1/2024-06-21/1/2a06180b7916127c5952d7e82485c2c4998c0b70a3224b75225a072d628d0ba9.png)
-
 ## Features
 
 * **Automated Story Analysis**: Leverages Large Language Models (LLMs) to analyze a story summary, breaking it down into key emotional components and scoring the protagonist's fortune over time.
