@@ -4,7 +4,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 import platform
 
-from poster_layout_templates import poster_layout_templates
+from Future.poster_layout_templates import poster_layout_templates
 
 DEFAULT_DPI = 300
 
@@ -77,8 +77,6 @@ def calculate_cell_content_size( # KEEP THIS CORRECTED VERSION
     cell_total_block_width_px = (cell_col_span * base_content_width_float) + max(0, (cell_col_span - 1)) * spacing_px_val
     cell_total_block_height_px = (cell_row_span * base_content_height_float) + max(0, (cell_row_span - 1)) * spacing_px_val
     return (int(round(cell_total_block_width_px)), int(round(cell_total_block_height_px)))
-
-
 
 def create_layout_preview(
     poster_width_in,
@@ -556,19 +554,19 @@ if __name__ == "__main__":
     grid_cell_spacing_in = 0.2  # Spacing between grid cells
     
     # --- Text Element Configuration ---
-    main_title_text = "Ernest Hemingway"
+    main_title_text = "The Shapes of Ernest Hemingway"
     title_font_path_config = None 
-    title_font_size_config = 100 # Test with large font
+    title_font_size_config = 60 # Test with large font
     title_color_config = '#222222'
 
     #subtitle_text_config = "A Deep Dive into Narrative Structures"
-    subtitle_text_config = "The Shapes of Stories" # Test with no subtitle
+    subtitle_text_config = "" # Test with no subtitle
     subtitle_font_path_config = None
-    subtitle_font_size_config = 40
+    subtitle_font_size_config = 12
     subtitle_color_config = '#444444'
     
-    text_alignment = 'top' # 'top' or 'bottom'
-    padding_from_edge_in = 0.5      # Padding from poster edge to text block
+    text_alignment = 'bottom' # 'top' or 'bottom'
+    padding_from_edge_in = 1      # Padding from poster edge to text block
     padding_between_texts_in = 0.1  # Padding between title and subtitle
     padding_text_to_grid_in = 0.5   # Padding between text block and grid
 
