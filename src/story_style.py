@@ -5,8 +5,9 @@ import yaml
 import tiktoken
 import json 
 import os 
+from llm import load_config, get_llm, extract_json
 
-def get_story_style(story_title, author, protagonist, llm_provider, llm_model):
+def get_story_style(config_path,story_title, author, protagonist, llm_provider, llm_model):
 
 
     prompt_template = """
@@ -95,7 +96,7 @@ Output:
     )
 
 
-    config = load_config()
+    config = load_config(config_path=config_path)
     llm = get_llm(llm_provider, llm_model, config, max_tokens=1000)
 
     # Instead of building an LLMChain, use the pipe operator:

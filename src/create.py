@@ -8,7 +8,34 @@ import json
 import os
 import re
 import time 
+import platform
+from PIL import ImageFont
 
+
+from matplotlib import font_manager
+import sys
+
+def get_font_path(font_name):
+    """
+    Finds the full file path for a given font name using matplotlib's font manager.
+
+    Args:
+        font_name (str): The name of the font to find (e.g., "Merriweather").
+
+    Returns:
+        str: The full file path to the font. Exits script if font is not found.
+    """
+    try:
+        # findfont will search your system and return the best match.
+        # The FontProperties object is needed to properly query the font.
+        font_prop = font_manager.FontProperties(family=font_name)
+        return font_manager.findfont(font_prop)
+    except ValueError:
+        # This error is raised if findfont can't find any matching font.
+        print(f"--- FONT FINDER ERROR ---", file=sys.stderr)
+        print(f"The font '{font_name}' could not be found by the font manager.", file=sys.stderr)
+        print("Please ensure it is properly installed and its cache is updated.", file=sys.stderr)
+        sys.exit(1)
 
 
 def pango_font_exists(font_name):
@@ -30,6 +57,7 @@ def pango_font_exists(font_name):
             return True
 
     return False
+
 
 # ==============================================================================
 #           UNIFIED PATH CONFIGURATION (for Local & Colab)
@@ -268,6 +296,7 @@ for row in rows:
     if background_color == "" or font_color == "" or border_color == "" or font == "":
 
         story_style = get_story_style(
+            config_path = PATHS['config'],
             story_title = title, 
             author = author,
             protagonist = protagonist, 
@@ -331,6 +360,9 @@ for row in rows:
     title = title.replace("’", "'")  # Normalize typographic apostrophes
     title = title.replace(",", "")
     
+    #/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/harry-potter-and-the-philosopher's-stone_harry-potter.json
+    #/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/harry-potter-and-the-sorcerer's-stone_harry-potter_8x10.json
+    
     #we should check if exsits first if not then create it 
     # story_data_output_path_base = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/"
     # potential_story_data_file_path = title.lower().replace(' ', '-') + "_" + protagonist.lower().replace(' ', '-')
@@ -341,6 +373,7 @@ for row in rows:
     # Use the configured path
     check_path = os.path.join(PATHS['story_data'], potential_story_data_file_path + ".json")
     print(check_path)
+    print("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/harry-potter-and-the-sorcerer's-stone_harry-potter.json")
 
     if os.path.exists(check_path):
         story_data_path = check_path
@@ -415,12 +448,21 @@ for row in rows:
         has_border = True
         fixed_margin_in_inches = 0.6
     elif product == "print" and size == "8x10":
+
+        total_chars_line1 = len(title) + len(protagonist)
+        if total_chars_line1 > 45:
+             title_font_size = 14
+             protagonist_font_size = 10
+             author_font_size = 10
+        else:
+            title_font_size = 20
+            protagonist_font_size = 12
+            author_font_size = 12
+     
+
         line_thickness = 26
         font_size = 8
-        title_font_size = 20 #value is 32, other values: 26, 22, 20 (very small)
         gap_above_title = 70 #value was 26
-        protagonist_font_size = 12
-        author_font_size = 12
         top_text = author + ", " + str(year)
         top_text_font_size = 8
         bottom_text_font_size = 8
@@ -433,6 +475,7 @@ for row in rows:
         step_k = 6
         has_border = False
         fixed_margin_in_inches = 0.6
+    
     elif product == "print" and size == "custom":
         print_params = get_scaled_print_parameters(width, height)
         print(print_params)

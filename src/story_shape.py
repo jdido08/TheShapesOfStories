@@ -138,7 +138,7 @@ def create_shape(
     #check_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{path_title}_{path_protagonist}_{path_size}.json'
     # Use os.path.join with the new story_data_dir argument
     check_path = os.path.join(story_data_dir, f'{path_title}_{path_protagonist}_{path_size}.json')
-    
+    print(check_path)
     if os.path.exists(check_path):
         story_data_path = check_path
         print("Story Data for " , path_size ," exists")
@@ -1327,49 +1327,94 @@ def create_shape_single_pass(
         # --- End Draw Author ---
 
         # --- Draw Protagonist ---
+        # effective_protagonist_text = protagonist_text if protagonist_text else story_data.get('protagonist', '')
+        # if effective_protagonist_text:
+        #     prot_layout = PangoCairo.create_layout(cr)
+        #     prot_layout.set_font_description(protagonist_font_desc)
+        #     prot_layout.set_text(effective_protagonist_text, -1)
+        #     if protagonist_font_underline:
+        #         # ... (add underline attribute) ...
+        #         attr_list_prot = Pango.AttrList(); underline_attr_prot = Pango.attr_underline_new(Pango.Underline.SINGLE); attr_list_prot.insert(underline_attr_prot); prot_layout.set_attributes(attr_list_prot)
+
+        #     prot_text_width, prot_text_height = prot_layout.get_pixel_size()
+
+        #     # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        #     # --- THE SINGLE PLACE TO CHANGE PROTAGONIST ALIGNMENT ---
+
+        #     # Option 1: Align Protagonist Bottom with TITLE Bottom
+        #     target_bottom_line = title_y + title_text_height
+
+        #     # Option 2: Align Protagonist Bottom with AUTHOR Bottom
+        #     # To use this: COMMENT OUT the line above and UNCOMMENT the 4 lines below.
+        #     # Make sure 'has_author="YES"' and author text exists when uncommenting!
+        #     # if effective_author_text != "":
+        #     #     target_bottom_line = author_y + author_text_height
+        #     # else: # Fallback if author isn't shown but you tried to align
+        #     #     target_bottom_line = title_y + title_text_height
+
+        #     # --- END OF ALIGNMENT CHANGE SECTION ---
+        #     # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        #     # Calculate protagonist Y based on the chosen target line
+        #     prot_y = target_bottom_line - prot_text_height
+        #     prot_x = margin_x + drawable_width - prot_text_width # Right aligned
+
+        # --- Draw Protagonist ---
+        # --- Draw Protagonist ---
+       # --- Draw Protagonist ---
         effective_protagonist_text = protagonist_text if protagonist_text else story_data.get('protagonist', '')
         if effective_protagonist_text:
             prot_layout = PangoCairo.create_layout(cr)
             prot_layout.set_font_description(protagonist_font_desc)
             prot_layout.set_text(effective_protagonist_text, -1)
             if protagonist_font_underline:
-                # ... (add underline attribute) ...
-                attr_list_prot = Pango.AttrList(); underline_attr_prot = Pango.attr_underline_new(Pango.Underline.SINGLE); attr_list_prot.insert(underline_attr_prot); prot_layout.set_attributes(attr_list_prot)
+                attr_list_prot = Pango.AttrList()
+                underline_attr_prot = Pango.attr_underline_new(Pango.Underline.SINGLE)
+                attr_list_prot.insert(underline_attr_prot)
+                prot_layout.set_attributes(attr_list_prot)
 
-            prot_text_width, prot_text_height = prot_layout.get_pixel_size()
+            prot_text_width, _ = prot_layout.get_pixel_size() # Still need width for x-pos
 
-            # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-            # --- THE SINGLE PLACE TO CHANGE PROTAGONIST ALIGNMENT ---
+            # --- Configurable BASELINE Alignment Logic (More Robust) ---
+            # This method aligns the text baselines for a perfect visual line.
 
-            # Option 1: Align Protagonist Bottom with TITLE Bottom
-            target_bottom_line = title_y + title_text_height
+            # Determine the target baseline's Y-coordinate based on the chosen alignment target.
+            protagonist_alignment_target = "title"
+            if protagonist_alignment_target == 'author' and effective_author_text:
+                # Target the author's baseline if it exists and is the chosen target.
+                # (final_layout_author is defined in the author drawing block from earlier)
+                author_baseline_offset = final_layout_author.get_baseline() / Pango.SCALE
+                target_baseline_y = author_y + author_baseline_offset
+            else:
+                # Default to aligning with the title's baseline.
+                title_baseline_offset = final_layout_title.get_baseline() / Pango.SCALE
+                target_baseline_y = title_y + title_baseline_offset
 
-            # Option 2: Align Protagonist Bottom with AUTHOR Bottom
-            # To use this: COMMENT OUT the line above and UNCOMMENT the 4 lines below.
-            # Make sure 'has_author="YES"' and author text exists when uncommenting!
-            # if effective_author_text != "":
-            #     target_bottom_line = author_y + author_text_height
-            # else: # Fallback if author isn't shown but you tried to align
-            #     target_bottom_line = title_y + title_text_height
+            # Calculate the protagonist's top Y-coordinate to align its baseline with the target baseline.
+            prot_baseline_offset = prot_layout.get_baseline() / Pango.SCALE
+            prot_y = target_baseline_y - prot_baseline_offset
 
-            # --- END OF ALIGNMENT CHANGE SECTION ---
-            # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-            # Calculate protagonist Y based on the chosen target line
-            prot_y = target_bottom_line - prot_text_height
-            prot_x = margin_x + drawable_width - prot_text_width # Right aligned
+            # Calculate the X position for right-alignment.
+            prot_x = margin_x + drawable_width - prot_text_width
 
             begin_svg_group(cr, "protagonist-group", output_format)
             cr.move_to(prot_x, prot_y)
-            cr.set_source_rgb(*protagonist_font_color) # Use RGB
+            cr.set_source_rgb(*protagonist_font_color)
             PangoCairo.show_layout(cr, prot_layout)
             end_svg_group(cr, output_format)
         # --- End Draw Protagonist ---
 
 
+        #     begin_svg_group(cr, "protagonist-group", output_format)
+        #     cr.move_to(prot_x, prot_y)
+        #     cr.set_source_rgb(*protagonist_font_color) # Use RGB
+        #     PangoCairo.show_layout(cr, prot_layout)
+        #     end_svg_group(cr, output_format)
+        # # --- End Draw Protagonist ---
+
+
         # --- MODIFICATION: End Title Group ---
        # --- End Title/Author/Protagonist Block ---
-
 
 
     # MAKE NOTES ON TOP AND BOTTOM OF CANVAS -- only applies when wrap_in_inches > 0
