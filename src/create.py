@@ -416,14 +416,14 @@ for row in rows:
         fixed_margin_in_inches = 0.6
     elif product == "print" and size == "8x10":
         line_thickness = 26
-        font_size = 12
-        title_font_size = 32 #value is 32, other values: 26, 22, 20 (very small)
+        font_size = 8
+        title_font_size = 20 #value is 32, other values: 26, 22, 20 (very small)
         gap_above_title = 70 #value was 26
-        protagonist_font_size = 16
-        author_font_size = 16
+        protagonist_font_size = 12
+        author_font_size = 12
         top_text = author + ", " + str(year)
-        top_text_font_size = 12
-        bottom_text_font_size = 12
+        top_text_font_size = 8
+        bottom_text_font_size = 8
         top_and_bottom_text_band = 1
         border_thickness = 75 #use thinner border 
         width_in_inches = 8
