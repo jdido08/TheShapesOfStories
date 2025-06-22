@@ -10,6 +10,7 @@ import re
 import time 
 import platform
 from PIL import ImageFont
+from googleapiclient.discovery import build
 
 
 from matplotlib import font_manager
@@ -58,6 +59,51 @@ def pango_font_exists(font_name):
 
     return False
 
+
+from googleapiclient.discovery import build
+import time
+
+# This is the helper function that will find our files in Google Drive
+def get_google_drive_link(drive_service, file_name, retries=5, delay=10):
+    """
+    Waits for a file to appear in Google Drive and returns its web link.
+
+    Args:
+        drive_service: The authenticated Google Drive service client.
+        file_name (str): The name of the file to search for.
+        retries (int): The number of times to check for the file.
+        delay (int): The number of seconds to wait between checks.
+
+    Returns:
+        str: The web link to the file, or an error message if not found.
+    """
+    print(f"Searching for '{file_name}' in Google Drive...")
+    
+    for i in range(retries):
+        try:
+            # Search for the file by its exact name
+            response = drive_service.files().list(
+                q=f"name='{file_name}' and trashed=false",
+                spaces='drive',
+                fields='files(id, webViewLink)',
+                orderBy='createdTime desc' # Get the most recently created file
+            ).execute()
+            
+            files = response.get('files', [])
+            if files:
+                file_link = files[0].get('webViewLink')
+                print(f"Success! Found file link: {file_link}")
+                return file_link
+            else:
+                print(f"File not found yet. Retrying in {delay} seconds... (Attempt {i+1}/{retries})")
+                time.sleep(delay)
+
+        except Exception as e:
+            print(f"An error occurred while searching for the file: {e}")
+            return "Error finding file"
+            
+    print(f"File '{file_name}' could not be found in Google Drive after several retries.")
+    return "File not found"
 
 # ==============================================================================
 #           UNIFIED PATH CONFIGURATION (for Local & Colab)
@@ -251,13 +297,25 @@ def load_credentials_from_yaml(file_path):
 creds_data = load_credentials_from_yaml(PATHS['config'])
 
 # Define the correct scope
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+# SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+]
 
 # Create credentials with the correct scope
 credentials = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
 
 # Authorize and create a client
 client = gspread.authorize(credentials)
+
+# NOW, USE THE SAME CREDENTIALS TO BUILD THE GOOGLE DRIVE CLIENT
+try:
+    drive_service = build('drive', 'v3', credentials=credentials)
+    print("Google Drive service client created successfully.")
+except Exception as e:
+    print(f"An error occurred while building the Drive service: {e}")
+    exit()
+
 
 # Open the Google Sheet by its ID
 #link https://docs.google.com/spreadsheets/d/1T0ThSHKK_sMIKTdwC14WZoWFNFD3dU7xIheQ5AF9NLU/edit?usp=sharing
@@ -293,6 +351,8 @@ for row in rows:
     subtitle = row.get("subtitle (optional)")
 
     #if style not fully specified then get style for story
+    story_style = {} # Initialize the dictionary
+    design_rationale = "" # Initialize the design rationale
     if background_color == "" or font_color == "" or border_color == "" or font == "":
 
         story_style = get_story_style(
@@ -312,24 +372,28 @@ for row in rows:
             background_color = story_style.get('background_color')
             print("background color set to: ", background_color)
         else:
+            design_rationale = "manuel override"
             print("background color manual override set to: ", background_color)
 
         if font_color == "":
             font_color = story_style.get('font_color')
             print("font color set to: ", font_color)
         else:
+            design_rationale = "manuel override"
             print("font color manual override set to: ", font_color)
 
         if border_color == "":
             border_color = story_style.get('border_color')
             print("border color set to: ", border_color)
         else:
+            design_rationale = "manuel override"
             print("border color manual override set to: ", border_color)
 
         if font == "":
             font = story_style.get('font')
             print("font set to: ", font)
         else:
+            design_rationale = "manuel override"
             print("font manual override set to: ", font)
         
     else:
@@ -576,4 +640,61 @@ for row in rows:
     elapsed_time = end_time - start_time
     print(f"The script took {elapsed_time:.4f} seconds to execute.")
 
+   # --- NEW CODE TO UPDATE THE CATALOGUE ---
+try:
+    print("Opening Catalogue spreadsheet...")
+    catalogue_sheet_id = "1V63O3KwADfTKivRVnz_YfONmWu8kmfwk_mgvu7cdGLY"
+    catalogue_spreadsheet = client.open_by_key(catalogue_sheet_id)
+    catalogue_worksheet = catalogue_spreadsheet.sheet1
 
+    print("Fetching Google Drive links for created files...")
+
+    # Get just the filenames from the full local paths
+    story_data_filename = os.path.basename(new_story_data_path)
+    shape_filename = os.path.basename(story_shape_path)
+    summary_filename = os.path.basename(summary_file)
+
+    # Call our new function to get the web URL for each file
+    # This might take a minute as it waits for files to sync to the cloud.
+    story_data_url = get_google_drive_link(drive_service, story_data_filename)
+    shape_image_url = get_google_drive_link(drive_service, shape_filename)
+    summary_filename_url = get_google_drive_link(drive_service, summary_filename)
+
+    print("Updating Catalogue...")
+
+    design_style_info = story_style.get('design_rationale', 'N/A')
+
+    # Assemble the row data with the new clickable URLs
+    # IMPORTANT: Make sure this order perfectly matches your Google Sheet columns
+    new_row_data = [
+        product,
+        size,
+        line_type,
+        file_format,
+        title,
+        subtitle,
+        author,
+        protagonist,
+        year,
+        design_style_info,
+        background_color,
+        font_color,
+        border_color,
+        font,
+        summary_filename_url,
+        story_data_url,     # <-- Using the new clickable URL
+        shape_image_url     # <-- Using the new clickable URL
+    ]
+
+    # Append the new row to the Catalogue worksheet
+    catalogue_worksheet.append_row(new_row_data)
+    
+    print("Successfully updated Catalogue.")
+
+except gspread.exceptions.SpreadsheetNotFound:
+    print("--- CATALOGUE ERROR ---")
+    print("The spreadsheet named 'Catalogue' was not found.")
+    print("Please ensure the ID is correct and that it has been shared with your service account.")
+except Exception as e:
+    print(f"An error occurred while updating the Catalogue: {e}")
+# --- END OF NEW CODE ---
