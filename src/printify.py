@@ -22,6 +22,8 @@ from google.oauth2.service_account import Credentials
 import gspread
 from googleapiclient.discovery import build
 from datetime import datetime
+import time
+
 
 # --- Your Existing Code (Slightly Modified for Clarity) ---
 
@@ -250,7 +252,7 @@ def update_mockup_selection(api_token, shop_id, product_id, images_data):
         print(f"Response: {response.text}")
         return False
 
-def publish_product(api_token, shop_id, product_id, mockups_to_publish):
+def publish_product(api_token, shop_id, product_id):
     """Publishes a product and controls which mockups are visible."""
     print("STEP 6: Publishing product with selected mockups...")
     url = f"https://api.printify.com/v1/shops/{shop_id}/products/{product_id}/publish.json"
@@ -279,6 +281,39 @@ def publish_product(api_token, shop_id, product_id, mockups_to_publish):
         print(f"Response: {response.text}")
         return None # <-- This handles the failure case
 
+
+import requests
+import json
+
+def get_product_details(api_token, shop_id, product_id):
+    """
+    Fetches the complete data for a single product from a shop.
+
+    This function is used to retrieve the final product information, including the
+    Shopify ID and variant SKUs, after the publishing process is complete.
+    """
+    print(f"Fetching final details for product ID: {product_id}...")
+    
+    # The API endpoint for getting a specific product's details
+    url = f"https://api.printify.com/v1/shops/{shop_id}/products/{product_id}.json"
+    
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json"
+    }
+    
+    # Make the GET request
+    response = requests.get(url, headers=headers)
+    
+    # Check for a successful response
+    if response.status_code == 200:
+        product_data = response.json()
+        print("✅ Success! Retrieved final product data.")
+        return product_data
+    else:
+        print(f"❌ Error fetching product details: {response.status_code}")
+        print(f"Response: {response.text}")
+        return None
 
 
 # This dictionary will hold all our configured paths
@@ -423,52 +458,61 @@ for row in rows:
             created_product = create_product(printify_api_token, 23014386, product_details)
             # You can now access the ID like this
             if created_product:
+                time.sleep(20)
                 print(created_product)
                 # product_id = created_product["id"]
                 # available_mockups = created_product["images"]
 
-                product_id = created_product["id"]
+
+                # 1. Get the ID and SKU from the created_product data
+                product_id = created_product["id"] # This is your Printify ID
+                sku = ""
+                for variant in created_product.get("variants", []):
+                    if variant.get("is_enabled"):
+                        sku = variant.get("sku")
+                        break
+
                 available_mockups = created_product["images"]
 
-                # --- Step 2: Select which mockups to use ---
-                # Set all mockups to not be published
+                # --- Step 1: Select which mockups to use ---
                 for mockup in available_mockups:
                     mockup["is_selected_for_publishing"] = False
-                
-                # Enable only the first one as your placeholder
-                if available_mockups:
-                    available_mockups[1]["is_selected_for_publishing"] = True
+                    mockup["is_default"] = False
 
-                # --- Step 3: Call the new update function ---
+                if len(available_mockups) > 1:
+                    available_mockups[1]["is_selected_for_publishing"] = True
+                    available_mockups[1]["is_default"] = True
+                    print(f"Selecting primary mockup: {available_mockups[1]['src']}")
+
+                # --- Step 2: Update the product with your mockup selection ---
                 update_successful = update_mockup_selection(
                     printify_api_token,
                     23014386,
                     product_id,
                     available_mockups
-                 )
+                )
 
                 if update_successful:
+                    print("Waiting 5 seconds for Printify to process the update...")
+                    time.sleep(5)  # <-- Add a 5-second pause
+
+
                     # Call your existing publish_product function
                     published_product_data = publish_product(
                         printify_api_token,
                         23014386,
-                        product_id,
-                        available_mockups
+                        product_id
                     )  
 
-                    printify_id = published_product_data.get("id")
+                    print("Waiting 5 seconds for Printify to publish the product...")
+                    time.sleep(10)
 
-                    # Find the SKU of the enabled variant
-                    sku = ""
-                    for variant in published_product_data.get("variants", []):
-                        if variant.get("is_enabled"):
-                            sku = variant.get("sku")
-                            break
-                    
-                    # Get the Shopify ID from the "external" property
+
+                    product_data = get_product_details(printify_api_token, 23014386, product_id)
+
                     shopify_id = None
-                    if published_product_data.get("external"):
-                        shopify_id = published_product_data["external"].get("id")
+                    if product_data.get("external"):
+                        shopify_id = product_data["external"].get("id")
 
                     published_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -494,17 +538,15 @@ for row in rows:
                         local_story_data_path,
                         local_story_shape_path,
                         product_id,
-                        printify_id,
                         sku,
                         shopify_id,
                         published_at
-                        
                     ]
 
                     published_worksheet = spreadsheet.worksheet("Published")
                     published_worksheet.append_row(new_row_data)
-                    print(f"✅ Successfully saved product {printify_id} to Google Sheet.")
+                    print(f"✅ Successfully saved product {product_id} to Google Sheet.")
 
 
 
-                    
+                
