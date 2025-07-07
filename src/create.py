@@ -319,7 +319,7 @@ except Exception as e:
 
 # Open the Google Sheet by its ID
 #link https://docs.google.com/spreadsheets/d/1T0ThSHKK_sMIKTdwC14WZoWFNFD3dU7xIheQ5AF9NLU/edit?usp=sharing
-sheet_id = "1T0ThSHKK_sMIKTdwC14WZoWFNFD3dU7xIheQ5AF9NLU"
+sheet_id = "1C0CytarUcbUrRpqi5RK7MJUOb2DBR_bjQ_IeqcCi-Yw"
 spreadsheet = client.open_by_key(sheet_id)
 worksheet = spreadsheet.sheet1 # Access the first worksheet
 
@@ -360,8 +360,8 @@ for row in rows:
             story_title = title, 
             author = author,
             protagonist = protagonist, 
-            llm_provider = "anthropic", #google", 
-            llm_model = "claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+            llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+            llm_model = "claude-3-5-sonnet-latest"#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
         )
         story_style = json.loads(story_style)
         design_rationale = story_style.get('design_rationale')
@@ -453,8 +453,8 @@ for row in rows:
             protagonist=protagonist,
             #output_path = story_data_output_path_base,
             output_path = PATHS['story_data'], # <-- CORRECTED
-            llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-            llm_model = "o3-2025-04-16"#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+            llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+            llm_model = "gemini-2.5-pro"#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
             )
 
     ### YOU JUST NEED 12x12 and then you shrinnk it down 
@@ -629,7 +629,7 @@ for row in rows:
                     wrap_background_color = border_color, #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
                     fixed_margin_in_inches = fixed_margin_in_inches, #fixed margins for output
                     recursive_mode = True, #if you want to recurisvely generate story
-                    recursive_loops = 500, #the number of iterations 
+                    recursive_loops = 1000, #the number of iterations 
                     llm_provider = "anthropic",#"groq",#"openai", #anthropic",#"google" #for generating descriptors
                     llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     #llm_provider = "google", #"anthropic", #google", 
@@ -645,7 +645,7 @@ try:
     print("Opening Catalogue spreadsheet...")
     catalogue_sheet_id = "1V63O3KwADfTKivRVnz_YfONmWu8kmfwk_mgvu7cdGLY"
     catalogue_spreadsheet = client.open_by_key(catalogue_sheet_id)
-    catalogue_worksheet = catalogue_spreadsheet.sheet1
+    catalogue_worksheet = catalogue_spreadsheet.worksheet("To-Be Published")
 
     print("Fetching Google Drive links for created files...")
 
@@ -681,9 +681,12 @@ try:
         font_color,
         border_color,
         font,
-        summary_filename_url,
+        summary_filename_url, # <-- Using the new clickable URL
         story_data_url,     # <-- Using the new clickable URL
-        shape_image_url     # <-- Using the new clickable URL
+        shape_image_url,     # <-- Using the new clickable URL
+        summary_file, #local path
+        new_story_data_path, #local path
+        story_shape_path    #<--- local path of story shape (for uploading into printify)
     ]
 
     # Append the new row to the Catalogue worksheet

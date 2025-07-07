@@ -1379,7 +1379,8 @@ def create_shape_single_pass(
             # This method aligns the text baselines for a perfect visual line.
 
             # Determine the target baseline's Y-coordinate based on the chosen alignment target.
-            protagonist_alignment_target = "title"
+            #protagonist_alignment_target = "title"
+            protagonist_alignment_target = "author"
             if protagonist_alignment_target == 'author' and effective_author_text:
                 # Target the author's baseline if it exists and is the chosen target.
                 # (final_layout_author is defined in the author drawing block from earlier)
