@@ -344,7 +344,8 @@ for row in rows:
     summary_file = row.get("summary_file")
     background_color = row.get("background_color (optional)")
     font_color = row.get("font_color (optional)")
-    border_color = row.get("border_color (optional)")
+    #border_color = row.get("border_color (optional)")
+    border_color = "FFFFFF"
     font = row.get("font (optional)")
     width = row.get("width (in) (optional)")
     height = row.get("height (in) (optional)")
@@ -531,13 +532,15 @@ for row in rows:
         top_text_font_size = 8
         bottom_text_font_size = 8
         top_and_bottom_text_band = 1
-        border_thickness = 75 #use thinner border 
+        #border_thickness = 75 #use thinner border 
+        border_thickness = 150 #use thinner border 
         width_in_inches = 8
         height_in_inches = 10
         wrap_in_inches = 0
         max_num_steps = 2
         step_k = 6
-        has_border = False
+        #has_border = False
+        has_border = True
         fixed_margin_in_inches = 0.6
     
     elif product == "print" and size == "custom":
