@@ -50,11 +50,15 @@ def main():
     # 1. Filename of your main mockup image
     #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/1_8x10_wood_frame_on_ground.psd' # <-- EDIT THIS
     
+
     #scholar path 
     #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/literary-art-print-mockup-template-with-black-frame-straight-on.png'
     
     #unframed mockup 
-    mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/poster-mockup-without-clips.png'
+    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/poster-mockup-without-clips.png'
+
+    #framed w/ mat on wall 
+    mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/framed-wall-mockup-template-for-8x10-poster.png'
 
 
     #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/Frame_Mockup_PSD 2.psd'
@@ -63,19 +67,23 @@ def main():
     #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png'
     artwork_path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
     # 3. Filename for the final output file
-    output_path = 'final_mockup_test.jpg'
+    output_path = 'final_mockup_test_3.jpg'
 
     # 4. Paste the coordinates you found here
     #dest_corners = [(908, 445), (2100, 445), (2100, 1930), (908, 1930)] # <-- EDIT THIS
    
     #dest_corners = [(625, 425), (2345, 425), (2345, 2633), (625, 2633)] # <-- EDIT THIS
 
+    #######
+
     #scholar mockup 
     #dest_corners = [(612, 170), (1157, 170), (1157, 793), (612, 793)]
 
-
     #unframed mockup 
-    dest_corners = [(403, 114), (1116, 114), (1116, 918), (403, 918)]
+    #dest_corners = [(403, 114), (1116, 114), (1116, 918), (403, 918)]
+
+    #framed mockup with mat on wall 
+    dest_corners = [(603, 234), (930, 234), (930, 654), (603, 654)]
 
     # --- END CONFIGURATION ---
 
