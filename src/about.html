@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vonnegut Story Graph Animation</title>
+    <style>
+        body {
+            background-color: #f0f0f0; /* Off-white for demo */
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .story-graph-svg {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            overflow: visible;
+        }
+
+        .axis {
+            stroke: black;
+            stroke-width: 1.5;
+        }
+
+        .axis-label {
+            fill: black;
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        .story-path {
+            fill: none;
+            stroke: black;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+        }
+
+        .story-path.animate {
+            animation: drawPath 2s ease-in-out forwards;
+        }
+
+        .dynamic-label {
+            fill: black;
+            font-size: 16px;
+            font-weight: bold;
+            text-anchor: middle;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .dynamic-label.visible {
+            opacity: 1;
+        }
+
+        @keyframes drawPath {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!--
+      ↓↓↓ THIS IS THE PART YOU NEED FOR SHOPIFY ↓↓↓
+      Copy the <svg> and <script> tags below.
+    -->
+
+    <svg id="storyGraph" class="story-graph-svg" viewBox="0 0 400 300">
+        <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5"
+                markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="black" />
+            </marker>
+        </defs>
+
+        <!-- Vertical axis -->
+        <line class="axis" x1="50" y1="150" x2="50" y2="20" marker-end="url(#arrow)" />
+        <line class="axis" x1="50" y1="150" x2="50" y2="280" marker-end="url(#arrow)" />
+        
+        <text class="axis-label" x="40" y="15">G</text>
+        <text class="axis-label" x="40" y="295">I</text>
+
+        <!-- Horizontal axis -->
+        <line class="axis" x1="20" y1="150" x2="380" y2="150" marker-end="url(#arrow)" />
+        <text class="axis-label" x="20" y="165">B</text>
+        <text class="axis-label" x="380" y="165">E</text>
+        
+        <!-- Story Path Segments (now with curves) -->
+        <!-- M = moveto, Q = quadratic bezier curve (cpx, cpy, x, y), L = lineto -->
+        <path id="rise-path" class="story-path" d="M 60 180 Q 90 70 150 50"></path>
+        <path id="fall-path" class="story-path" d="M 150 50 Q 180 180 250 200"></path>
+        <path id="stasis-path" class="story-path" d="M 250 200 L 350 200"></path>
+
+        <!-- Dynamic Labels (positions adjusted slightly for curves) -->
+        <text id="rise-label" class="dynamic-label" x="125" y="30">Rise ↑</text>
+        <text id="fall-label" class="dynamic-label" x="215" y="225">Fall ↓</text>
+        <text id="stasis-label" class="dynamic-label" x="300" y="185">Stasis →</text>
+    </svg>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const storyGraph = document.getElementById('storyGraph');
+            if (!storyGraph) return;
+
+            const risePath = storyGraph.querySelector('#rise-path');
+            const fallPath = storyGraph.querySelector('#fall-path');
+            const stasisPath = storyGraph.querySelector('#stasis-path');
+
+            const riseLabel = storyGraph.querySelector('#rise-label');
+            const fallLabel = storyGraph.querySelector('#fall-label');
+            const stasisLabel = storyGraph.querySelector('#stasis-label');
+
+            const allPaths = [risePath, fallPath, stasisPath];
+            const allLabels = [riseLabel, fallLabel, stasisLabel];
+
+            function setupPath(path) {
+                if (!path) return;
+                const length = path.getTotalLength();
+                path.style.strokeDasharray = length;
+                path.style.strokeDashoffset = length;
+            }
+
+            allPaths.forEach(setupPath);
+
+            function runAnimationCycle() {
+                allPaths.forEach(path => {
+                    if (!path) return;
+                    setupPath(path);
+                    path.classList.remove('animate');
+                });
+                allLabels.forEach(label => {
+                    if (label) label.classList.remove('visible');
+                });
+
+                setTimeout(() => {
+                    if (risePath) risePath.classList.add('animate');
+                    if (riseLabel) riseLabel.classList.add('visible');
+                }, 500);
+
+                setTimeout(() => {
+                    if (fallPath) fallPath.classList.add('animate');
+                    if (fallLabel) fallLabel.classList.add('visible');
+                }, 2500);
+
+                setTimeout(() => {
+                    if (stasisPath) stasisPath.classList.add('animate');
+                    if (stasisLabel) stasisLabel.classList.add('visible');
+                }, 4500);
+
+                setTimeout(runAnimationCycle, 7500);
+            }
+
+            runAnimationCycle();
+        });
+    </script>
+    
+    <!-- ↑↑↑ THIS IS THE PART YOU NEED FOR SHOPIFY ↑↑↑ -->
+
+</body>
+</html>
