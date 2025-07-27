@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About The Shapes of Stories</title>
+    <style>
+        /* --- General Page Styling --- */
+        body {
+            background-color: white;
+            color: black;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- Layout Containers --- */
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .intro-section {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 4rem auto;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 5rem; /* Space before the next section */
+        }
+
+        .text-column { flex: 1; }
+        .graph-column {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* --- Text Element Styling --- */
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            margin-top: 0;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .intro-section p { font-size: 1.2rem; }
+        .text-column p { margin-bottom: 1.5rem; }
+
+        .text-column ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-column li {
+            padding-left: 1.5rem;
+            text-indent: -1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .text-column li::before { content: '- '; }
+
+        /* --- Animated Graph Styling --- */
+        #storyGraph .axis { stroke: black; stroke-width: 1.5; }
+        #storyGraph .axis-label { fill: black; font-size: 12px; font-weight: bold; text-anchor: middle; }
+        #storyGraph .story-path {
+            fill: none; stroke: black; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+        }
+        #storyGraph .story-path.animate { animation: drawPath 2s ease-in-out forwards; }
+        #storyGraph .dynamic-label {
+            fill: black; font-size: 16px; font-weight: bold; text-anchor: middle;
+            opacity: 0; transition: opacity 0.5s ease-in-out;
+        }
+        #storyGraph .dynamic-label.visible { opacity: 1; }
+        @keyframes drawPath { to { stroke-dashoffset: 0; } }
+
+        /* --- Common Shapes Section Styling --- */
+        .shapes-section {
+            text-align: center;
+        }
+
+        .shapes-section p {
+            max-width: 700px;
+            margin: 0 auto 2.5rem auto;
+        }
+
+        .shapes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columns on desktop */
+            gap: 2rem;
+        }
+
+        .shape-card {
+            border: 1.5px solid black;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .shape-card h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.2rem;
+        }
+        
+        .shape-card .shape-formula {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+
+        /* --- Static Shape SVG Styling --- */
+        .shape-card svg {
+            width: 100%;
+            height: auto;
+        }
+        .shape-card .axis-line {
+            stroke: #ccc; /* Lighter axes for visual hierarchy */
+            stroke-width: 1;
+        }
+        .shape-card .path-line {
+            stroke: black;
+            stroke-width: 2.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 900px) {
+            .shapes-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+            }
+        }
+        
+        @media (max-width: 800px) {
+            h1 { font-size: 2rem; }
+            .main-content { 
+                flex-direction: column; 
+            }
+            .page-container { padding: 2rem 1rem; }
+            .intro-section { margin-bottom: 2rem; }
+            
+            .graph-column {
+                order: -1; 
+                width: 80%;
+                margin-bottom: 2rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .shapes-grid {
+                grid-template-columns: 1fr; /* 1 column on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-container">
+        
+        <h1>About The Shapes of Stories</h1>
+
+        <section class="intro-section">
+            <p>We love stories. We read, listen, watch them for fun. It's by accident they become our obsession. We have Kurt Vonnegut to thank most. He has a simple idea that captivated us. <em>Every story has a shape.</em> It’s an idea so simple you can draw it on a napkin, yet so powerful it changes how you see every story you’ve ever loved. Here are the basics.</p>
+        </section>
+
+        <section class="main-content">
+            <div class="text-column">
+                <h2>The Building Blocks</h2>
+                <p>Imagine a simple graph.</p>
+                <ul>
+                    <li>The Vertical Axis (G-I): This maps a character's fortune, from Good Fortune (health, wealth, happiness) at the top to Ill Fortune (sickness, poverty, misery) at the bottom.</li>
+                    <li>The Horizontal Axis (B-E): This is simply the timeline of the story, from Beginning to End.</li>
+                </ul>
+                <p>A story’s plot is the line that moves across this graph, and that line is created using just three basic movements:</p>
+                <ul>
+                    <li>Rise (↑): A character's fortune improves. Life gets better.</li>
+                    <li>Fall (↓): A character's fortune worsens. Life gets harder.</li>
+                    <li>Stasis (→): A character's fortune remains the same.</li>
+                </ul>
+            </div>
+            <div class="graph-column">
+                <!-- ALL ANIMATED SVG ELEMENTS ARE NOW RESTORED HERE -->
+                <svg id="storyGraph" viewBox="0 0 400 300">
+                    <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="black" /></marker></defs>
+                    <line class="axis" x1="50" y1="150" x2="50" y2="20" marker-end="url(#arrow)" /><line class="axis" x1="50" y1="150" x2="50" y2="280" marker-end="url(#arrow)" />
+                    <text class="axis-label" x="40" y="15">G</text><text class="axis-label" x="40" y="295">I</text>
+                    <line class="axis" x1="20" y1="150" x2="380" y2="150" marker-end="url(#arrow)" /><text class="axis-label" x="20" y="165">B</text><text class="axis-label" x="380" y="165">E</text>
+                    <path id="rise-path" class="story-path" d="M 60 180 Q 90 70 150 50"></path>
+                    <path id="fall-path" class="story-path" d="M 150 50 Q 180 180 250 200"></path>
+                    <path id="stasis-path" class="story-path" d="M 250 200 L 350 200"></path>
+                    <text id="rise-label" class="dynamic-label" x="125" y="30">Rise ↑</text>
+                    <text id="fall-label" class="dynamic-label" x="215" y="225">Fall ↓</text>
+                    <text id="stasis-label" class="dynamic-label" x="300" y="185">Stasis →</text>
+                </svg>
+            </div>
+        </section>
+
+        <!-- "COMMON SHAPES" SECTION -->
+        <section class="shapes-section">
+            <h2>The Common Shapes</h2>
+            <p>History never repeats but it does rhyme. The same is true for stories. While every narrative journey is unique, many follow a few powerful, time-tested shapes. Here are some of the most common:</p>
+            <div class="shapes-grid">
+                <div class="shape-card"><h3>Rags to Riches</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 50 L 90 10"/></svg><div class="shape-formula">↑</div></div>
+                <div class="shape-card"><h3>From Bad to Worse</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 20 L 90 55"/></svg><div class="shape-formula">↓</div></div>
+                <div class="shape-card"><h3>Man in Hole</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 20 Q 50 70 90 20"/></svg><div class="shape-formula">↓ ↑</div></div>
+                <div class="shape-card"><h3>Boy Meets Girl</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 30 C 25 0, 40 60, 60 40 S 80 20, 90 10"/></svg><div class="shape-formula">↑ ↓ ↑</div></div>
+                <div class="shape-card"><h3>Icarus</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 40 Q 45 0 55 10 L 90 55"/></svg><div class="shape-formula">↑ ↓</div></div>
+                <div class="shape-card"><h3>Cinderella</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 50 L 20 50 L 50 20 L 55 35 Q 70 50 90 5"/></svg><div class="shape-formula">→ ↑ ↓ ↑</div></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SCRIPT FOR ANIMATION IS NOW CORRECTLY INCLUDED -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const storyGraph = document.getElementById('storyGraph');
+            if (!storyGraph) return;
+
+            const risePath = storyGraph.querySelector('#rise-path');
+            const fallPath = storyGraph.querySelector('#fall-path');
+            const stasisPath = storyGraph.querySelector('#stasis-path');
+            const riseLabel = storyGraph.querySelector('#rise-label');
+            const fallLabel = storyGraph.querySelector('#fall-label');
+            const stasisLabel = storyGraph.querySelector('#stasis-label');
+            const allPaths = [risePath, fallPath, stasisPath];
+            const allLabels = [riseLabel, fallLabel, stasisLabel];
+
+            function setupPath(path) {
+                if (!path) return;
+                const length = path.getTotalLength();
+                path.style.strokeDasharray = length;
+                path.style.strokeDashoffset = length;
+            }
+
+            allPaths.forEach(setupPath);
+
+            function runAnimationCycle() {
+                allPaths.forEach(path => {
+                    if (!path) return;
+                    setupPath(path);
+                    path.classList.remove('animate');
+                });
+                allLabels.forEach(label => {
+                    if (label) label.classList.remove('visible');
+                });
+
+                setTimeout(() => {
+                    if (risePath) risePath.classList.add('animate');
+                    if (riseLabel) riseLabel.classList.add('visible');
+                }, 500);
+
+                setTimeout(() => {
+                    if (fallPath) fallPath.classList.add('animate');
+                    if (fallLabel) fallLabel.classList.add('visible');
+                }, 2500);
+
+                setTimeout(() => {
+                    if (stasisPath) stasisPath.classList.add('animate');
+                    if (stasisLabel) stasisLabel.classList.add('visible');
+                }, 4500);
+
+                setTimeout(runAnimationCycle, 7500);
+            }
+
+            runAnimationCycle();
+        });
+    </script>
+</body>
+</html>
