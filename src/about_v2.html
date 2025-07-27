@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About The Shapes of Stories</title>
+    <style>
+        /* --- General Page Styling --- */
+        body {
+            background-color: white;
+            color: black;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- Layout Containers --- */
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .intro-section {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 4rem auto;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .text-column {
+            flex: 1;
+        }
+
+        .graph-column {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* --- Text Element Styling --- */
+        h1 {
+            text-align: center;
+            font-size: 2.5rem; /* Large main title */
+            margin-bottom: 2rem;
+            margin-top: 0;
+        }
+        
+        .text-column h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .intro-section p {
+            font-size: 1.2rem; /* Increased font size for intro text */
+        }
+
+        .text-column p {
+            margin-bottom: 1.5rem;
+        }
+
+        .text-column ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-column li {
+            padding-left: 1.5rem;
+            text-indent: -1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .text-column li::before {
+            content: '- ';
+        }
+
+        /* --- Responsive Design for Mobile --- */
+        @media (max-width: 800px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .main-content {
+                flex-direction: column;
+            }
+            .page-container {
+                padding: 2rem 1rem;
+            }
+            .intro-section {
+                margin-bottom: 2rem;
+            }
+        }
+
+        /* --- SVG Graph Styling --- */
+        .story-graph-svg {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            overflow: visible;
+        }
+
+        .axis {
+            stroke: black;
+            stroke-width: 1.5;
+        }
+
+        .axis-label {
+            fill: black;
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        .story-path {
+            fill: none;
+            stroke: black;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+        }
+
+        .story-path.animate {
+            animation: drawPath 2s ease-in-out forwards;
+        }
+
+        .dynamic-label {
+            fill: black;
+            font-size: 16px;
+            font-weight: bold;
+            text-anchor: middle;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .dynamic-label.visible {
+            opacity: 1;
+        }
+
+        @keyframes drawPath {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-container">
+        
+        <!-- Main Page Title -->
+        <h1>About</h1>
+
+        <!-- Top Introductory Section -->
+        <section class="intro-section">
+            <p>We love stories. We read, listen, watch them for fun. It's by accident they become our obsession. We have Kurt Vonnegut to thank most. He has a simple idea that captivated us. <em>Every story has a shape.</em> It’s an idea so simple you can draw it on a napkin, yet so powerful it changes how you see every story you’ve ever loved. Here are the basics.</p>
+        </section>
+
+        <!-- Two-Column Main Content Section -->
+        <section class="main-content">
+            
+            <!-- Left Column: Text -->
+            <div class="text-column">
+                <h2>The Building Blocks</h2>
+                <p>Imagine a simple graph.</p>
+                <ul>
+                    <li>The Vertical Axis (G-I): This maps a character's fortune, from Good Fortune (health, wealth, happiness) at the top to Ill Fortune (sickness, poverty, misery) at the bottom.</li>
+                    <li>The Horizontal Axis (B-E): This is simply the timeline of the story, from Beginning to End.</li>
+                </ul>
+                <p>A story’s plot is the line that moves across this graph, and that line is created using just three basic movements:</p>
+                <ul>
+                    <li>Rise (↑): A character's fortune improves. Life gets better.</li>
+                    <li>Fall (↓): A character's fortune worsens. Life gets harder.</li>
+                    <li>Stasis (→): A character's fortune remains the same.</li>
+                </ul>
+            </div>
+
+            <!-- Right Column: Animated Graph -->
+            <div class="graph-column">
+                <svg id="storyGraph" class="story-graph-svg" viewBox="0 0 400 300">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                          <path d="M 0 0 L 10 5 L 0 10 z" fill="black" />
+                        </marker>
+                    </defs>
+            
+                    <!-- Vertical axis -->
+                    <line class="axis" x1="50" y1="150" x2="50" y2="20" marker-end="url(#arrow)" />
+                    <line class="axis" x1="50" y1="150" x2="50" y2="280" marker-end="url(#arrow)" />
+                    
+                    <text class="axis-label" x="40" y="15">G</text>
+                    <text class="axis-label" x="40" y="295">I</text>
+            
+                    <!-- Horizontal axis -->
+                    <line class="axis" x1="20" y1="150" x2="380" y2="150" marker-end="url(#arrow)" />
+                    <text class="axis-label" x="20" y="165">B</text>
+                    <text class="axis-label" x="380" y="165">E</text>
+                    
+                    <!-- Story Path Segments (with curves) -->
+                    <path id="rise-path" class="story-path" d="M 60 180 Q 90 70 150 50"></path>
+                    <path id="fall-path" class="story-path" d="M 150 50 Q 180 180 250 200"></path>
+                    <path id="stasis-path" class="story-path" d="M 250 200 L 350 200"></path>
+            
+                    <!-- Dynamic Labels -->
+                    <text id="rise-label" class="dynamic-label" x="125" y="30">Rise ↑</text>
+                    <text id="fall-label" class="dynamic-label" x="215" y="225">Fall ↓</text>
+                    <text id="stasis-label" class="dynamic-label" x="300" y="185">Stasis →</text>
+                </svg>
+            </div>
+        </section>
+        
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const storyGraph = document.getElementById('storyGraph');
+            if (!storyGraph) return;
+
+            const risePath = storyGraph.querySelector('#rise-path');
+            const fallPath = storyGraph.querySelector('#fall-path');
+            const stasisPath = storyGraph.querySelector('#stasis-path');
+
+            const riseLabel = storyGraph.querySelector('#rise-label');
+            const fallLabel = storyGraph.querySelector('#fall-label');
+            const stasisLabel = storyGraph.querySelector('#stasis-label');
+
+            const allPaths = [risePath, fallPath, stasisPath];
+            const allLabels = [riseLabel, fallLabel, stasisLabel];
+
+            function setupPath(path) {
+                if (!path) return;
+                const length = path.getTotalLength();
+                path.style.strokeDasharray = length;
+                path.style.strokeDashoffset = length;
+            }
+
+            allPaths.forEach(setupPath);
+
+            function runAnimationCycle() {
+                allPaths.forEach(path => {
+                    if (!path) return;
+                    setupPath(path);
+                    path.classList.remove('animate');
+                });
+                allLabels.forEach(label => {
+                    if (label) label.classList.remove('visible');
+                });
+
+                setTimeout(() => {
+                    if (risePath) risePath.classList.add('animate');
+                    if (riseLabel) riseLabel.classList.add('visible');
+                }, 500);
+
+                setTimeout(() => {
+                    if (fallPath) fallPath.classList.add('animate');
+                    if (fallLabel) fallLabel.classList.add('visible');
+                }, 2500);
+
+                setTimeout(() => {
+                    if (stasisPath) stasisPath.classList.add('animate');
+                    if (stasisLabel) stasisLabel.classList.add('visible');
+                }, 4500);
+
+                setTimeout(runAnimationCycle, 7500);
+            }
+
+            runAnimationCycle();
+        });
+    </script>
+</body>
+</html>

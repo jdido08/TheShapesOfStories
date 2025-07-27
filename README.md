@@ -25,3 +25,24 @@ The system follows a proprietary, multi-step process to generate a story shape:
     * Generates a continuous, curved path representing the emotional scores over the story's timeline.
     * Uses an LLM to generate concise, descriptive text phrases for each story component. These phrases are carefully crafted to fit the exact length of their corresponding curve segment.
 3.  **Rendering**: The final artwork is rendered using the Cairo graphics library. The system meticulously places the generated text along the curve, adjusting spacing and orientation to ensure readability. It then adds the title, protagonist's name, and applies the specified colors and fonts to produce the final image file.
+
+
+
+
+
+# 7/26/2025:
+- about page 
+- story double check --> is it accurate, is the shape correct, what is the shape 
+- story mocks 
+- story descriptions 
+
+ORDER:
+1. CREATE
+2. ASSESS
+    - accuracy score
+    - classification 
+3. PUBLISH
+    - printinfy
+4. POLISH 
+    - mockups 
+    - product description
