@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About The Shapes of Stories</title>
+    <style>
+        /* --- General Page Styling --- */
+        body {
+            background-color: white;
+            color: black;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- Layout Containers --- */
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .intro-section {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 4rem auto;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 5rem;
+        }
+
+        .text-column { flex: 1; }
+        .graph-column {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* --- Text Element Styling --- */
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            margin-top: 0;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .intro-section p { font-size: 1.2rem; }
+        .text-column p { margin-bottom: 1.5rem; }
+
+        .text-column ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-column li {
+            padding-left: 1.5rem;
+            text-indent: -1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .text-column li::before { content: '- '; }
+
+        /* --- Animated Graph Styling --- */
+        #storyGraph .axis { stroke: black; stroke-width: 1.5; }
+        #storyGraph .axis-label { fill: black; font-size: 12px; font-weight: bold; text-anchor: middle; }
+        #storyGraph .story-path {
+            fill: none; stroke: black; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+        }
+        #storyGraph .story-path.animate { animation: drawPath 1.5s ease-in-out forwards; } /* Adjusted timing */
+        #storyGraph .dynamic-label {
+            fill: black; font-size: 16px; font-weight: bold; text-anchor: middle;
+        }
+        @keyframes drawPath { to { stroke-dashoffset: 0; } }
+
+        /* --- NEW: Scroll Animation Styling --- */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Common Shapes Section Styling --- */
+        .shapes-section {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .shapes-section > p {
+            max-width: 700px;
+            margin: 0 auto 2.5rem auto;
+        }
+
+        .shapes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .shape-card {
+            border: 1.5px solid black;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .shape-card h3 { margin: 0 0 1rem 0; font-size: 1.2rem; }
+        .shape-card .shape-formula { font-size: 1.5rem; font-weight: bold; margin-top: 1rem; }
+        .shape-card svg { width: 100%; height: auto; }
+        .shape-card .axis-line { stroke: #ccc; stroke-width: 1; }
+        .shape-card .path-line { stroke: black; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* --- Gatsby Example Section Styling --- */
+        .example-section { padding-top: 3rem; border-top: 1px solid #e0e0e0; }
+        .example-section h2, .example-section > p { text-align: center; }
+        .example-section > p { max-width: 700px; margin: 0 auto 4rem auto; }
+        .example-section .graph-column img { max-width: 100%; height: auto; border-radius: 4px; }
+        .story-details { align-self: center; }
+        .story-details p { font-size: 1.1rem; margin-bottom: 1rem; }
+        .story-details strong { display: inline-block; min-width: 120px; color: #444; }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 900px) {
+            .shapes-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 800px) {
+            h1 { font-size: 2rem; }
+            .page-container { padding: 2rem 1.5rem; }
+            .main-content { flex-direction: column; gap: 0; margin-bottom: 4rem; }
+            .graph-column { order: -1; width: 100%; margin-bottom: 2rem; }
+            .text-column { width: 100%; }
+            .example-section .text-column { text-align: center; }
+            .story-details p { display: inline-block; text-align: left; }
+        }
+
+        @media (max-width: 600px) {
+            .shapes-grid { grid-template-columns: 1fr; }
+            .page-container { padding: 2rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-container">
+        
+        <h1>About The Shapes of Stories</h1>
+
+        <section class="intro-section">
+            <p>We love stories. We read, listen, watch them for fun. It's by accident they become our obsession. We have Kurt Vonnegut to thank most. He has a simple idea that captivated us. <em>Every story has a shape.</em> It’s an idea so simple you can draw it on a napkin, yet so powerful it changes how you see every story you’ve ever loved. Here are the basics.</p>
+        </section>
+
+        <!-- The "Building Blocks" section that will be animated on scroll -->
+        <section class="main-content" id="building-blocks-section">
+            <div class="text-column">
+                <h2 class="reveal-on-scroll">The Building Blocks</h2>
+                <p class="reveal-on-scroll">Every story can be drawn on a simple graph.</p>
+                <!-- UPDATED: Added IDs to these elements -->
+                <ul class="reveal-on-scroll" id="axes-descriptions">
+                    <li id="desc-gi-axis">The vertical (GI) axis is <strong>Fortune</strong>. Good is up, Ill is down.</li>
+                    <li id="desc-be-axis">The horizontal (BE) axis is <strong>Time</strong>, from Beginning to End.</li>
+                </ul>
+                <p class="reveal-on-scroll" id="symbols-intro">A character's journey is built from a few symbols that show which way life is going, and how fast.</p>
+                <ul class="reveal-on-scroll" id="symbols-descriptions">
+                    <li id="desc-stasis"><code>→</code> <strong>Stasis:</strong> No change.</li>
+                    <li id="desc-rise"><code>↑</code> <strong>Rise:</strong> A change for the better. The more arrows (<code>↑↑</code>, <code>↑↑↑</code>), the more sudden and dramatic the rise.</li>
+                    <li id="desc-fall"><code>↓</code> <strong>Fall:</strong> A change for the worse. The more arrows (<code>↓↓</code>, <code>↓↓↓</code>), the more sudden and catastrophic the fall.</li>
+                </ul>
+            </div>
+            <div class="graph-column">
+                <!-- SVG elements are now animated by the new script -->
+                <svg id="storyGraph" viewBox="0 0 400 300">
+                    <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="black" /></marker></defs>
+                    <line class="axis" x1="50" y1="150" x2="50" y2="20" marker-end="url(#arrow)" /><line class="axis" x1="50" y1="150" x2="50" y2="280" marker-end="url(#arrow)" />
+                    <text class="axis-label" x="40" y="15">G</text><text class="axis-label" x="40" y="295">I</text>
+                    <line class="axis" x1="20" y1="150" x2="380" y2="150" marker-end="url(#arrow)" /><text class="axis-label" x="20" y="165">B</text><text class="axis-label" x="380" y="165">E</text>
+                    <path id="rise-path" class="story-path" d="M 60 180 Q 90 70 150 50"></path>
+                    <path id="fall-path" class="story-path" d="M 150 50 Q 180 180 250 200"></path>
+                    <path id="stasis-path" class="story-path" d="M 250 200 L 350 200"></path>
+                    <text id="rise-label" class="dynamic-label reveal-on-scroll" x="125" y="30">Rise ↑</text>
+                    <text id="fall-label" class="dynamic-label reveal-on-scroll" x="215" y="225">Fall ↓</text>
+                    <text id="stasis-label" class="dynamic-label reveal-on-scroll" x="300" y="185">Stasis →</text>
+                </svg>
+            </div>
+        </section>
+
+        <!-- "COMMON SHAPES" SECTION (No changes here) -->
+        <section class="shapes-section">
+            <h2>The Common Shapes</h2>
+            <p>History never repeats but it does rhyme. The same is true for stories. While every narrative journey is unique, many follow a few powerful, time-tested shapes. Here are some of the most common:</p>
+            <div class="shapes-grid">
+                <div class="shape-card"><h3>Rags to Riches</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 50 L 90 10"/></svg><div class="shape-formula">↑</div></div>
+                <div class="shape-card"><h3>From Bad to Worse</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 20 L 90 55"/></svg><div class="shape-formula">↓</div></div>
+                <div class="shape-card"><h3>Man in Hole</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 20 Q 50 70 90 20"/></svg><div class="shape-formula">↓ ↑</div></div>
+                <div class="shape-card"><h3>Boy Meets Girl</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 30 C 25 0, 40 60, 60 40 S 80 20, 90 10"/></svg><div class="shape-formula">↑ ↓ ↑</div></div>
+                <div class="shape-card"><h3>Icarus</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 40 Q 45 0 55 10 L 90 55"/></svg><div class="shape-formula">↑ ↓</div></div>
+                <div class="shape-card"><h3>Cinderella</h3><svg viewBox="0 0 100 60"><line class="axis-line" x1="5" y1="30" x2="95" y2="30"/><line class="axis-line" x1="10" y1="5" x2="10" y2="55"/><path class="path-line" d="M 10 50 L 20 50 L 50 20 L 55 35 Q 70 50 90 5"/></svg><div class="shape-formula">→ ↑ ↓ ↑</div></div>
+            </div>
+        </section>
+
+        <!-- GATSBY EXAMPLE SECTION (No changes here) -->
+        <section class="example-section">
+            <h2>An Example In Action</h2>
+            <p>This is how we translate a classic story into a minimalist design. Each piece tells the story's emotional journey through its shape, using key phrases from the narrative itself.</p>
+            <div class="main-content">
+                <div class="graph-column">
+                    <img src="https://i.imgur.com/gK6Kk2x.png" alt="The story shape of The Great Gatsby, formed by text from the novel, showing a sharp rise and a catastrophic fall.">
+                </div>
+                <div class="text-column">
+                    <div class="story-details">
+                        <p><strong>Story:</strong> The Great Gatsby</p>
+                        <p><strong>Author:</strong> F. Scott Fitzgerald</p>
+                        <p><strong>Protagonist:</strong> Jay Gatsby</p>
+                        <p><strong>Shape:</strong> ↑↑ ↓↓↓ (Icarus)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ENTIRELY NEW SCRIPT FOR SCROLL-BASED ANIMATION -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. SETUP ---
+        // Select all the elements we're going to animate
+        const sectionToAnimate = document.getElementById('building-blocks-section');
+        const elementsToReveal = document.querySelectorAll('.reveal-on-scroll');
+
+        // Select the specific SVG paths and labels
+        const risePath = document.getElementById('rise-path');
+        const fallPath = document.getElementById('fall-path');
+        const stasisPath = document.getElementById('stasis-path');
+        const riseLabel = document.getElementById('rise-label');
+        const fallLabel = document.getElementById('fall-label');
+        const stasisLabel = document.getElementById('stasis-label');
+
+        // Select the text description list items
+        const descRise = document.getElementById('desc-rise');
+        const descFall = document.getElementById('desc-fall');
+        const descStasis = document.getElementById('desc-stasis');
+
+        // Helper function to prepare SVG paths for animation
+        function setupPath(path) {
+            if (!path) return;
+            const length = path.getTotalLength();
+            path.style.strokeDasharray = length;
+            path.style.strokeDashoffset = length;
+        }
+
+        // Prepare all paths initially
+        [risePath, fallPath, stasisPath].forEach(setupPath);
+
+        // --- 2. THE ANIMATION SEQUENCE ---
+        // This function runs the animation in a specific order.
+        // `async/await` makes the sequence easy to read.
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function startBuildAnimation() {
+            // First, reveal the static text elements all at once
+            document.querySelectorAll('h2, p, #axes-descriptions').forEach(el => {
+                el.classList.add('is-visible');
+            });
+            await sleep(800); // Pause for the user to read the intro
+
+            // Now, build the concepts one by one
+            
+            // RISE
+            descRise.classList.add('is-visible');
+            risePath.classList.add('animate');
+            await sleep(300); // Slight delay before label appears
+            riseLabel.classList.add('is-visible');
+            await sleep(1500); // Wait for the animation to finish and user to read
+
+            // FALL
+            descFall.classList.add('is-visible');
+            fallPath.classList.add('animate');
+            await sleep(300);
+            fallLabel.classList.add('is-visible');
+            await sleep(1500);
+
+            // STASIS
+            descStasis.classList.add('is-visible');
+            stasisPath.classList.add('animate');
+            await sleep(300);
+            stasisLabel.classList.add('is-visible');
+        }
+
+        // --- 3. THE SCROLL TRIGGER (INTERSECTION OBSERVER) ---
+        // This watches the section and triggers the animation when it's on screen.
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                // When the section is 40% visible in the viewport...
+                if (entry.isIntersecting) {
+                    // ...start the animation sequence.
+                    startBuildAnimation();
+                    // ...and then stop watching, so it only runs once.
+                    observer.unobserve(sectionToAnimate);
+                }
+            });
+        }, { 
+            threshold: 0.4 // Trigger when 40% of the element is visible
+        });
+
+        // Tell the observer to start watching the "Building Blocks" section
+        observer.observe(sectionToAnimate);
+    });
+    </script>
+</body>
+</html>

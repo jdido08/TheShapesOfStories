@@ -38,11 +38,22 @@ The system follows a proprietary, multi-step process to generate a story shape:
 
 ORDER:
 1. CREATE
+    - 
 2. ASSESS
-    - accuracy score
-    - classification 
+    - shape accuracy score -- need to do
+    - word/summary accuracy score -- need to do 
+    - shape classification -- need to do 
 3. PUBLISH
-    - printinfy
+    - printinfy -- basics set up 
 4. POLISH 
     - mockups 
     - product description
+    - product tags 
+
+MISC:
+- printify branding inserts 
+
+8/4/2025 To Dos:
+- about page
+- make mockups more realistic 
+- assess functions 

@@ -4,15 +4,16 @@ We love stories. We read, listen, watch them for fun. It's by accident they beco
 
 It’s an idea so simple you can draw it on a napkin, yet so powerful it changes how you see every story you’ve ever loved. Here are the basics.
 
-## The Building Blocks
-Imagine a simple graph.
-- The Vertical Axis (G-I): This maps a character's fortune, from Good Fortune (health, wealth, happiness) at the top to Ill Fortune (sickness, poverty, misery) at the bottom.
-- The Horizontal Axis (B-E): This is simply the timeline of the story, from Beginning to End.
+## The Building Blocks-
+Every story can be drawn on a simple graph.
 
-A story’s plot is the line that moves across this graph, and that line is created using just three basic movements:
-- Rise (↑): A character's fortune improves. Life gets better.
-- Fall (↓): A character's fortune worsens. Life gets harder.
-- Stasis (→): A character's fortune remains the same.
+- The vertical (GI) axis is Fortune. Good is up, Ill is down.
+- The horizontal (BE) axis is Time, from Beginning to End.
+
+A character's jounrey is built from a few symbols that show which way life is going, and how fast.
+- → Stasis: No change.
+- ↑ Rise: A change for the better. The more arrows (↑↑, ↑↑↑), the more sudden and dramatic the rise.
+- ↓ Fall: A change for the worse. The more arrows (↓↓, ↓↓↓), the more sudden and catastrophic the fall.
 
 
 ## The Common Shapes 
@@ -24,3 +25,10 @@ History never repeats but it does rhyme. The same is true for stories. While eve
 4. Boy Meets Girl 
 5. Icarus
 6. Cinderella
+
+
+## A Shape in Practice: The Great Gatsby
+
+1. image on left
+2. Shape: ↑↑ ↓↓↓ (Icarus)
+3. Analysis: 
