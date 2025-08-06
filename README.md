@@ -57,3 +57,7 @@ MISC:
 - about page
 - make mockups more realistic 
 - assess functions 
+
+8/5/2025:
+- about page
+- branding insert 

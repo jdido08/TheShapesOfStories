@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>About - The Shapes of Stories</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Custom CSS */
+        :root {
+            --background: hsl(0, 0%, 100%);
+            --foreground: hsl(0, 0%, 0%);
+            --gatsby-gold: hsl(45, 92%, 62%);
+            --gatsby-navy: hsl(207, 71%, 14%);
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Century Gothic', 'Futura', sans-serif;
+        }
+
+        /* Custom animations for story graph */
+        @keyframes drawPath {
+            from { 
+                stroke-dashoffset: 1000; 
+            }
+            to { 
+                stroke-dashoffset: 0; 
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .story-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            transition: stroke-dashoffset 1.5s ease-in-out;
+        }
+
+        .story-path.animate {
+            stroke-dashoffset: 0;
+        }
+
+        .fade-in-element {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .fade-in-element.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Fixed graph styling */
+        #fixed-graph {
+            position: fixed;
+            bottom: 1rem;
+            bottom: calc(1rem + env(safe-area-inset-bottom));
+            left: 1rem;
+            right: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border: 2px solid black;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            z-index: 40;
+            height: 250px;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.5s ease;
+        }
+        
+        /* Mobile-specific adjustments */
+        @media (max-width: 639px) {
+            #fixed-graph {
+                height: 220px;
+                padding: 1rem;
+                bottom: calc(1.5rem + env(safe-area-inset-bottom));
+            }
+        }
+
+        @media (min-width: 640px) {
+            #fixed-graph {
+                height: 350px;
+                left: 2rem;
+                right: 2rem;
+                bottom: 1rem;
+            }
+        }
+
+        #fixed-graph.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #fixed-graph.hidden {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+
+        /* Shape card styling */
+        .shape-card {
+            scroll-margin-top: 8rem;
+            padding: 3rem 1rem;
+            text-align: center;
+            transition: all 300ms ease-in-out;
+        }
+
+        .shape-card.active {
+            background-color: #f9fafb;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 0.5rem;
+            transform: scale(1.05);
+        }
+
+        @media (min-width: 640px) {
+            .shape-card {
+                scroll-margin-top: 8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-white">
+        <main class="container mx-auto px-6 py-8 max-w-4xl">
+            <h1 class="text-4xl font-bold text-center mb-12">About The Shapes of Stories</h1>
+            
+            <!-- Intro Section -->
+            <section id="intro" class="mb-16 fade-in-element">
+                <p class="text-lg mb-6">
+                    We love stories. We read, listen, and watch them for fun. It's by accident they become our obsession. 
+                    We have Kurt Vonnegut to thank most. His simple idea captivated us.
+                </p>
+                
+                <p class="text-xl font-bold text-center mb-8">
+                    Every story has a shape.
+                </p>
+                
+                <!-- Basic Story Shape Graph -->
+                <div class="flex justify-center mb-8">
+                    <div class="bg-white border-2 border-black rounded-lg shadow-xl p-6 w-full max-w-md">
+                        <svg viewBox="0 0 400 300" class="w-full h-auto">
+                            <defs>
+                                <marker 
+                                    id="arrow-intro" 
+                                    viewBox="0 0 10 10" 
+                                    refX="8" 
+                                    refY="5" 
+                                    markerWidth="6" 
+                                    markerHeight="6" 
+                                    orient="auto"
+                                >
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="black" />
+                                </marker>
+                            </defs>
+                            
+                            <!-- Horizontal axis -->
+                            <line 
+                                x1="20" y1="150" x2="380" y2="150" 
+                                stroke="black" 
+                                stroke-width="2" 
+                                marker-end="url(#arrow-intro)"
+                            />
+                            
+                            <!-- Vertical axis up -->
+                            <line 
+                                x1="50" y1="150" x2="50" y2="20" 
+                                stroke="black" 
+                                stroke-width="2" 
+                                marker-end="url(#arrow-intro)"
+                            />
+                            
+                            <!-- Vertical axis down -->
+                            <line 
+                                x1="50" y1="150" x2="50" y2="280" 
+                                stroke="black" 
+                                stroke-width="2" 
+                                marker-end="url(#arrow-intro)"
+                            />
+                            
+                            <!-- BE labels -->
+                            <text x="20" y="165" text-anchor="middle" fill="black" font-size="14" font-weight="bold">B</text>
+                            <text x="380" y="165" text-anchor="middle" fill="black" font-size="14" font-weight="bold">E</text>
+                            
+                            <!-- GI labels -->
+                            <text x="40" y="15" text-anchor="middle" fill="black" font-size="14" font-weight="bold">G</text>
+                            <text x="40" y="295" text-anchor="middle" fill="black" font-size="14" font-weight="bold">I</text>
+                            
+                            <!-- Simple story curve -->
+                            <path 
+                                d="M 60 200 Q 200 60 350 200" 
+                                fill="none" 
+                                stroke="black" 
+                                stroke-width="3"
+                            />
+                        </svg>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- How It Works Section -->
+            <section class="mb-16 space-y-8">
+                <h2 class="text-3xl font-bold mb-6 text-center">How It Works</h2>
+                
+                <div class="space-y-4 text-lg">
+                    <p class="text-center">
+                        Every story can be drawn on a simple graph.
+                    </p>
+                    
+                    <div id="be-axis" class="py-2 text-center">
+                        <p>
+                            The horizontal (BE) axis is <strong>Time</strong>, from Beginning to End.
+                        </p>
+                    </div>
+                    
+                    <div id="gi-axis" class="py-2 text-center">
+                        <p>
+                            The vertical (GI) axis is <strong>Fortune</strong>. Good is up, Ill is down.
+                        </p>
+                    </div>
+                    
+                    <p class="text-center">
+                        A character's journey is made of a few simple movements.
+                    </p>
+                </div>
+                
+                <div id="rise" class="py-2">
+                    <div class="flex items-start">
+                        <code class="bg-gray-100 px-2 py-1 rounded mr-3 text-lg">↑</code>
+                        <span><strong>Rise:</strong> A change for the better. The more arrows (<code>↑↑</code>, <code>↑↑↑</code>), the more sudden and dramatic the rise.</span>
+                    </div>
+                </div>
+                
+                <div id="fall" class="py-2">
+                    <div class="flex items-start">
+                        <code class="bg-gray-100 px-2 py-1 rounded mr-3 text-lg">↓</code>
+                        <span><strong>Fall:</strong> A change for the worse. The more arrows (<code>↓↓</code>, <code>↓↓↓</code>), the more sudden and catastrophic the fall.</span>
+                    </div>
+                </div>
+                
+                <div id="stasis" class="py-2">
+                    <div class="flex items-start">
+                        <code class="bg-gray-100 px-2 py-1 rounded mr-3 text-lg">→</code>
+                        <span><strong>Stasis:</strong> No change.</span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Common Shapes Section -->
+            <section id="shapes" class="mb-16 fade-in-element">
+                <h2 class="text-3xl font-bold mb-8 text-center">The Common Shapes</h2>
+                <p class="text-lg mb-12 text-center text-gray-600">
+                    History never repeats but it does rhyme. The same is true for stories.
+                </p>
+                
+                <!-- Shape Cards -->
+                <div class="space-y-16">
+                    <!-- Rags to Riches -->
+                    <div id="shape-0" class="shape-card fade-in-element">
+                        <h3 class="text-2xl font-bold mb-3">Rags to Riches</h3>
+                        <code class="bg-gray-100 px-4 py-2 rounded text-xl inline-block">↑</code>
+                        <p class="mt-4 text-gray-600 max-w-2xl mx-auto">
+                            A steady rise from humble beginnings to success.
+                        </p>
+                    </div>
+                    
+                    <!-- From Bad to Worse -->
+                    <div id="shape-1" class="shape-card fade-in-element">
+                        <h3 class="text-2xl font-bold mb-3">From Bad to Worse</h3>
+                        <code class="bg-gray-100 px-4 py-2 rounded text-xl inline-block">↓</code>
+                        <p class="mt-4 text-gray-600 max-w-2xl mx-auto">
+                            A steady decline ending in catastrophe.
+                        </p>
+                    </div>
+                    
+                    <!-- Man in Hole -->
+                    <div id="shape-2" class="shape-card fade-in-element">
+                        <h3 class="text-2xl font-bold mb-3">Man in Hole</h3>
+                        <code class="bg-gray-100 px-4 py-2 rounded text-xl inline-block">↓↑</code>
+                        <p class="mt-4 text-gray-600 max-w-2xl mx-auto">
+                            Fall into trouble, then climb back out.
+                        </p>
+                    </div>
+                    
+                    <!-- Icarus -->
+                    <div id="shape-3" class="shape-card fade-in-element">
+                        <h3 class="text-2xl font-bold mb-3">Icarus</h3>
+                        <code class="bg-gray-100 px-4 py-2 rounded text-xl inline-block">↑↓</code>
+                        <p class="mt-4 text-gray-600 max-w-2xl mx-auto">
+                            Rise to great heights, followed by a dramatic fall.
+                        </p>
+                    </div>
+                    
+                    <!-- Boy Meets Girl -->
+                    <div id="shape-4" class="shape-card fade-in-element">
+                        <h3 class="text-2xl font-bold mb-3">Boy Meets Girl</h3>
+                        <code class="bg-gray-100 px-4 py-2 rounded text-xl inline-block">↑↓↑</code>
+                        <p class="mt-4 text-gray-600 max-w-2xl mx-auto">
+                            Boy meets girl. Boy loses girl. Boy gets girl back.
+                        </p>
+                    </div>
+                    
+                    <!-- Cinderella -->
+                    <div id="shape-5" class="shape-card fade-in-element">
+                        <h3 class="text-2xl font-bold mb-3">Cinderella</h3>
+                        <code class="bg-gray-100 px-4 py-2 rounded text-xl inline-block">→↑↓↑</code>
+                        <p class="mt-4 text-gray-600 max-w-2xl mx-auto">
+                            Initial hardship, rise to happiness, brief setback, then ultimate triumph.
+                        </p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Our Designs Section -->
+            <section id="example" class="mb-16 fade-in-element">
+                <h2 class="text-3xl font-bold mb-8 text-center">Our Designs</h2>
+                <p class="text-lg text-center mb-8">
+                    We transform stories into minimalist designs. 
+                    Each piece captures the character's emotional journey built from key pieces of the narrative.
+                </p>
+                
+                <!-- Gatsby Design Example -->
+                <div class="flex flex-col items-center">
+                    <div class="mb-6">
+                        <img 
+                            src="https://cdn.shopify.com/s/files/1/0651/9029/7674/files/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-_0A1F3B_font-color-_F9D342_border-color-FFFFFF_font-Josefin_Sans_title-display-ye.png?v=1753752954"
+                            alt="The Great Gatsby Design"
+                            class="rounded-lg shadow-xl max-w-md w-full"
+                        />
+                    </div>
+                    
+                    <div class="text-center space-y-2">
+                        <p class="text-lg">
+                            <strong class="text-gray-600">Story:</strong> The Great Gatsby
+                        </p>
+                        <p class="text-lg">
+                            <strong class="text-gray-600">Author:</strong> F. Scott Fitzgerald
+                        </p>
+                        <p class="text-lg">
+                            <strong class="text-gray-600">Protagonist:</strong> Jay Gatsby
+                        </p>
+                        <p class="text-lg">
+                            <strong class="text-gray-600">Shape:</strong> ↑ ↓ (Icarus)
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-8">
+                    <a 
+                        href="https://theshapesofstories.com/collections/all" 
+                        class="inline-block bg-black text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-gray-800 transition-colors duration-300"
+                    >
+                        Explore the Collection
+                    </a>
+                </div>
+            </section>
+        </main>
+        
+        <!-- Fixed Story Graph -->
+        <div id="fixed-graph">
+            <svg viewBox="0 0 400 300" class="w-full h-full" shape-rendering="crispEdges">
+                <defs>
+                    <marker 
+                        id="arrow" 
+                        viewBox="0 0 10 10" 
+                        refX="8" 
+                        refY="5" 
+                        markerWidth="6" 
+                        markerHeight="6" 
+                        orient="auto"
+                    >
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="black" />
+                    </marker>
+                </defs>
+                
+                <!-- Horizontal axis (BE) -->
+                <line 
+                    id="be-axis-line"
+                    x1="20" y1="150" x2="380" y2="150" 
+                    stroke="black" 
+                    stroke-width="2" 
+                    marker-end="url(#arrow)" 
+                    style="opacity: 0; transition: opacity 1s ease"
+                />
+                
+                <!-- Vertical axis (GI) -->
+                <line 
+                    id="gi-axis-line-up"
+                    x1="50" y1="150" x2="50" y2="20" 
+                    stroke="black" 
+                    stroke-width="2" 
+                    marker-end="url(#arrow)"
+                    style="opacity: 0; transition: opacity 1s ease"
+                />
+                <line 
+                    id="gi-axis-line-down"
+                    x1="50" y1="150" x2="50" y2="280" 
+                    stroke="black" 
+                    stroke-width="2" 
+                    marker-end="url(#arrow)"
+                    style="opacity: 0; transition: opacity 1s ease"
+                />
+                
+                <!-- BE axis labels -->
+                <text 
+                    id="b-label"
+                    x="20" y="165" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="14"
+                    font-weight="bold"
+                    style="opacity: 0; transition: opacity 0.5s ease"
+                >
+                    B
+                </text>
+                <text 
+                    id="e-label"
+                    x="380" y="165" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="14"
+                    font-weight="bold"
+                    style="opacity: 0; transition: opacity 0.5s ease"
+                >
+                    E
+                </text>
+                
+                <!-- GI axis labels -->
+                <text 
+                    id="g-label"
+                    x="40" y="15" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="14"
+                    font-weight="bold"
+                    style="opacity: 0; transition: opacity 0.5s ease"
+                >
+                    G
+                </text>
+                <text 
+                    id="i-label"
+                    x="40" y="295" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="14"
+                    font-weight="bold"
+                    style="opacity: 0; transition: opacity 0.5s ease"
+                >
+                    I
+                </text>
+                
+                <!-- Story paths -->
+                <path 
+                    id="rise-path"
+                    d="M 60 180 Q 90 70 150 50" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <text 
+                    id="rise-label"
+                    x="105" y="35" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="14"
+                    font-weight="bold"
+                    style="opacity: 0; transition: opacity 0.5s ease"
+                >
+                    Rise ↑
+                </text>
+                
+                <path 
+                    id="fall-path"
+                    d="M 150 50 Q 180 180 250 200" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <text 
+                    id="fall-label"
+                    x="200" y="100" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="14"
+                    font-weight="bold"
+                    style="opacity: 0; transition: opacity 0.5s ease"
+                >
+                    Fall ↓
+                </text>
+                
+                <path 
+                    id="stasis-path"
+                    d="M 250 200 L 350 200" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <text 
+                    id="stasis-label"
+                    x="300" y="180" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="14"
+                    font-weight="bold"
+                    style="opacity: 0; transition: opacity 0.5s ease"
+                >
+                    Stasis →
+                </text>
+                
+                <!-- Common shape paths -->
+                <path 
+                    id="shape-path-0"
+                    d="M 60 240 L 350 60" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <path 
+                    id="shape-path-1"
+                    d="M 60 60 L 350 240" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <path 
+                    id="shape-path-2"
+                    d="M 60 100 Q 200 240 350 100" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <path 
+                    id="shape-path-3"
+                    d="M 60 180 Q 180 40 220 60 L 350 240" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <path 
+                    id="shape-path-4"
+                    d="M 60 150 C 120 40, 160 260, 240 160 S 320 80, 350 60" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                <path 
+                    id="shape-path-5"
+                    d="M 60 220 L 100 220 L 200 80 L 220 140 Q 280 220 350 40" 
+                    fill="none" 
+                    stroke="black" 
+                    stroke-width="3" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"
+                    pathLength="100"
+                    style="opacity: 0; stroke-dasharray: 100; stroke-dashoffset: 100; transition: all 1.5s ease"
+                />
+                
+                <!-- Shape labels -->
+                <text 
+                    id="shape-title"
+                    x="200" y="35" 
+                    text-anchor="middle"
+                    fill="black"
+                    font-size="20"
+                    font-weight="600"
+                    font-family="'Century Schoolbook', Georgia, serif"
+                    style="opacity: 0; transition: opacity 0.5s ease; text-rendering: optimizeLegibility"
+                >
+                </text>
+                
+                <!-- Shape arrows container -->
+                <g id="shape-arrows-container" style="opacity: 0; transition: opacity 0.5s ease">
+                    <rect
+                        id="shape-arrows-bg"
+                        x="160"
+                        y="245"
+                        width="80"
+                        height="26"
+                        rx="4"
+                        fill="#f3f4f6"
+                        stroke="#e5e7eb"
+                        stroke-width="1"
+                    />
+                    <text 
+                        id="shape-arrows"
+                        x="200" y="262" 
+                        text-anchor="middle"
+                        fill="black"
+                        font-size="14"
+                        font-family="monospace"
+                    >
+                    </text>
+                </g>
+            </svg>
+        </div>
+    </div>
+    
+    <script>
+        // Shape data
+        const shapeData = [
+            { title: "Rags to Riches", shape: "↑" },
+            { title: "From Bad to Worse", shape: "↓" },
+            { title: "Man in Hole", shape: "↓↑" },
+            { title: "Icarus", shape: "↑↓" },
+            { title: "Boy Meets Girl", shape: "↑↓↑" },
+            { title: "Cinderella", shape: "→↑↓↑" }
+        ];
+        
+        // Scroll detection logic
+        let currentSection = 'intro';
+        let shapeIndex = undefined;
+        
+        function updateGraph() {
+            const fixedGraph = document.getElementById('fixed-graph');
+            const graphHeight = window.innerHeight * 0.4;
+            const triggerPoint = window.innerHeight - graphHeight;
+            
+            // Get all sections
+            const sections = [
+                { id: 'intro', element: document.getElementById('intro') },
+                { id: 'be-axis', element: document.getElementById('be-axis') },
+                { id: 'gi-axis', element: document.getElementById('gi-axis') },
+                { id: 'rise', element: document.getElementById('rise') },
+                { id: 'fall', element: document.getElementById('fall') },
+                { id: 'stasis', element: document.getElementById('stasis') },
+                { id: 'shapes', element: document.getElementById('shapes') },
+                { id: 'example', element: document.getElementById('example') }
+            ];
+            
+            // Find active section
+            let activeSection = 'intro';
+            
+            sections.forEach(section => {
+                if (section.element) {
+                    const rect = section.element.getBoundingClientRect();
+                    if (rect.top < triggerPoint && rect.bottom > 0) {
+                        activeSection = section.id;
+                    }
+                }
+            });
+            
+            // Check if any shape is visible
+            if (activeSection === 'shapes') {
+                let closestShapeIndex = -1;
+                let closestDistance = Infinity;
+                const viewportCenter = triggerPoint / 2;
+                
+                // Remove active class from all shapes first
+                for (let i = 0; i < 6; i++) {
+                    const shapeEl = document.getElementById(`shape-${i}`);
+                    if (shapeEl) {
+                        shapeEl.classList.remove('active');
+                    }
+                }
+                
+                for (let i = 0; i < 6; i++) {
+                    const shapeElement = document.getElementById(`shape-${i}`);
+                    if (shapeElement) {
+                        const rect = shapeElement.getBoundingClientRect();
+                        const elementCenter = rect.top + rect.height / 2;
+                        
+                        if (rect.top < triggerPoint && rect.bottom > 0) {
+                            const distance = Math.abs(elementCenter - viewportCenter);
+                            if (distance < closestDistance) {
+                                closestDistance = distance;
+                                closestShapeIndex = i;
+                            }
+                        }
+                    }
+                }
+                
+                if (closestShapeIndex !== -1) {
+                    activeSection = 'shape-example';
+                    shapeIndex = closestShapeIndex;
+                    // Add active class to the closest shape
+                    const activeShape = document.getElementById(`shape-${closestShapeIndex}`);
+                    if (activeShape) {
+                        activeShape.classList.add('active');
+                    }
+                }
+            } else {
+                // Remove active class from all shapes when not in shapes section
+                for (let i = 0; i < 6; i++) {
+                    const shapeEl = document.getElementById(`shape-${i}`);
+                    if (shapeEl) {
+                        shapeEl.classList.remove('active');
+                    }
+                }
+            }
+            
+            currentSection = activeSection;
+            
+            // Update graph visibility
+            const isVisible = currentSection !== 'intro';
+            if (isVisible && currentSection !== 'example') {
+                fixedGraph.classList.add('visible');
+                fixedGraph.classList.remove('hidden');
+            } else {
+                fixedGraph.classList.remove('visible');
+                fixedGraph.classList.add('hidden');
+            }
+            
+            // Hide all elements first
+            const allElements = [
+                'be-axis-line', 'gi-axis-line-up', 'gi-axis-line-down',
+                'b-label', 'e-label', 'g-label', 'i-label',
+                'rise-path', 'rise-label', 'fall-path', 'fall-label', 'stasis-path', 'stasis-label',
+                'shape-path-0', 'shape-path-1', 'shape-path-2',
+                'shape-path-3', 'shape-path-4', 'shape-path-5',
+                'shape-title', 'shape-arrows-container'
+            ];
+            
+            allElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.opacity = '0';
+                    if (id.includes('path')) {
+                        element.style.strokeDashoffset = '100';
+                    }
+                }
+            });
+            
+            // Show elements based on current section
+            switch (currentSection) {
+                case 'be-axis':
+                    showElements(['be-axis-line', 'b-label', 'e-label']);
+                    break;
+                case 'gi-axis':
+                    showElements(['be-axis-line', 'gi-axis-line-up', 'gi-axis-line-down', 
+                                 'b-label', 'e-label', 'g-label', 'i-label']);
+                    break;
+                case 'rise':
+                    showElements(['be-axis-line', 'gi-axis-line-up', 'gi-axis-line-down', 
+                                 'b-label', 'e-label', 'g-label', 'i-label', 'rise-path', 'rise-label']);
+                    break;
+                case 'fall':
+                    showElements(['be-axis-line', 'gi-axis-line-up', 'gi-axis-line-down', 
+                                 'b-label', 'e-label', 'g-label', 'i-label', 
+                                 'rise-path', 'rise-label', 'fall-path', 'fall-label']);
+                    break;
+                case 'stasis':
+                    showElements(['be-axis-line', 'gi-axis-line-up', 'gi-axis-line-down', 
+                                 'b-label', 'e-label', 'g-label', 'i-label', 
+                                 'rise-path', 'rise-label', 'fall-path', 'fall-label', 
+                                 'stasis-path', 'stasis-label']);
+                    break;
+                case 'shapes':
+                    showElements(['be-axis-line', 'gi-axis-line-up', 'gi-axis-line-down', 
+                                 'b-label', 'e-label', 'g-label', 'i-label']);
+                    break;
+                case 'shape-example':
+                    showElements(['be-axis-line', 'gi-axis-line-up', 'gi-axis-line-down', 
+                                 'b-label', 'e-label', 'g-label', 'i-label']);
+                    if (shapeIndex !== undefined && shapeIndex >= 0 && shapeIndex < shapeData.length) {
+                        showElements([`shape-path-${shapeIndex}`, 'shape-title', 'shape-arrows-container']);
+                        
+                        // Update shape title and arrows
+                        document.getElementById('shape-title').textContent = shapeData[shapeIndex].title;
+                        document.getElementById('shape-arrows').textContent = shapeData[shapeIndex].shape;
+                        
+                        // Update background width based on shape text
+                        const shapeTextWidth = shapeData[shapeIndex].shape.length * 12 + 20;
+                        const bg = document.getElementById('shape-arrows-bg');
+                        bg.setAttribute('x', 200 - shapeTextWidth / 2);
+                        bg.setAttribute('width', shapeTextWidth);
+                    }
+                    break;
+            }
+        }
+        
+        function showElements(elementIds) {
+            elementIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.opacity = '1';
+                    if (id.includes('path')) {
+                        element.style.strokeDashoffset = '0';
+                    }
+                }
+            });
+        }
+        
+        // Intersection Observer for fade-in animations
+        const fadeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+        
+        // Observe all fade-in elements
+        document.querySelectorAll('.fade-in-element').forEach(el => {
+            fadeObserver.observe(el);
+        });
+        
+        // Throttled scroll handler
+        let scrollTimeout;
+        function handleScroll() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(updateGraph, 16);
+        }
+        
+        // Initialize
+        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('resize', handleScroll);
+        updateGraph();
+    </script>
+</body>
+</html>
