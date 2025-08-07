@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Shapes of Stories - Brand Insert</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @media print {
+            @page {
+                size: 6in 4in;
+                margin: 0;
+            }
+        }
+        
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: white;
+            color: black;
+            line-height: 1.4;
+        }
+        
+        .card {
+            width: 6in;
+            height: 4in;
+            padding: 0.25in;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            background: white;
+            page-break-after: always;
+        }
+        
+        /* Front of card */
+        .card-front {
+            justify-content: space-between;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.15in;
+        }
+        
+        .logo {
+            width: 1.5in;
+            height: auto;
+        }
+        
+        .tagline {
+            text-align: center;
+            font-size: 11pt;
+            margin-bottom: 0.15in;
+            font-style: italic;
+        }
+        
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            gap: 0.2in;
+        }
+        
+        .left-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .about-section {
+            margin-bottom: 0.15in;
+        }
+        
+        .about-section h3 {
+            font-size: 10pt;
+            font-weight: bold;
+            margin-bottom: 0.05in;
+            font-family: 'Century Gothic', 'Futura', sans-serif;
+        }
+        
+        .about-section p {
+            font-size: 8pt;
+            line-height: 1.3;
+        }
+        
+        .shapes-guide {
+            flex-grow: 1;
+        }
+        
+        .shapes-guide h3 {
+            font-size: 10pt;
+            font-weight: bold;
+            margin-bottom: 0.05in;
+            font-family: 'Century Gothic', 'Futura', sans-serif;
+        }
+        
+        .shape-list {
+            font-size: 8pt;
+            line-height: 1.4;
+        }
+        
+        .shape-item {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 0.02in;
+        }
+        
+        .shape-symbol {
+            font-weight: bold;
+            margin-right: 0.1in;
+            min-width: 0.4in;
+            font-family: monospace;
+        }
+        
+        .shape-name {
+            font-size: 8pt;
+        }
+        
+        .right-section {
+            width: 1.5in;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .graph-visual {
+            width: 1.3in;
+            height: 1in;
+            margin-bottom: 0.1in;
+        }
+        
+        .qr-container {
+            text-align: center;
+        }
+        
+        .qr-placeholder {
+            width: 1in;
+            height: 1in;
+            border: 2px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.05in;
+            background: white;
+        }
+        
+        .qr-text {
+            font-size: 7pt;
+            text-align: center;
+        }
+        
+        .website-url {
+            font-size: 7pt;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        /* Back of card */
+        .card-back {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .back-content {
+            max-width: 4.5in;
+        }
+        
+        .quote {
+            font-size: 12pt;
+            font-style: italic;
+            margin-bottom: 0.2in;
+            line-height: 1.5;
+        }
+        
+        .author {
+            font-size: 10pt;
+            margin-bottom: 0.3in;
+        }
+        
+        .instruction {
+            font-size: 9pt;
+            margin-bottom: 0.15in;
+            font-weight: bold;
+        }
+        
+        .example-shape {
+            font-size: 24pt;
+            font-weight: bold;
+            margin-bottom: 0.1in;
+            letter-spacing: 0.1in;
+        }
+        
+        .example-title {
+            font-size: 10pt;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- Front of Card -->
+    <div class="card card-front">
+        <div class="header">
+            <img src="attached_assets/final-logo-for-the-shapes-of-stories-ready-for-download_1754483050736.webp" alt="The Shapes of Stories" class="logo">
+        </div>
+        
+        <div class="tagline">Every story has a shape.</div>
+        
+        <div class="main-content">
+            <div class="left-section">
+                <div class="about-section">
+                    <h3>Our Story</h3>
+                    <p>
+                        Inspired by Kurt Vonnegut's theory that stories follow universal patterns, we transform classic narratives into minimalist art. Each design captures a character's emotional journey through simple, powerful shapes.
+                    </p>
+                </div>
+                
+                <div class="shapes-guide">
+                    <h3>Reading Your Story</h3>
+                    <div class="shape-list">
+                        <div class="shape-item">
+                            <span class="shape-symbol">↑</span>
+                            <span class="shape-name">Rise (fortune improves)</span>
+                        </div>
+                        <div class="shape-item">
+                            <span class="shape-symbol">↓</span>
+                            <span class="shape-name">Fall (fortune declines)</span>
+                        </div>
+                        <div class="shape-item">
+                            <span class="shape-symbol">→</span>
+                            <span class="shape-name">Stasis (no change)</span>
+                        </div>
+                        <div class="shape-item">
+                            <span class="shape-symbol">↑↓</span>
+                            <span class="shape-name">Icarus (rise then fall)</span>
+                        </div>
+                        <div class="shape-item">
+                            <span class="shape-symbol">↓↑</span>
+                            <span class="shape-name">Man in Hole</span>
+                        </div>
+                        <div class="shape-item">
+                            <span class="shape-symbol">↑↓↑</span>
+                            <span class="shape-name">Boy Meets Girl</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-section">
+                <svg class="graph-visual" viewBox="0 0 200 150">
+                    <!-- Axes -->
+                    <line x1="20" y1="130" x2="180" y2="130" stroke="black" stroke-width="1.5"/>
+                    <line x1="20" y1="130" x2="20" y2="20" stroke="black" stroke-width="1.5"/>
+                    
+                    <!-- Arrow heads -->
+                    <polygon points="180,130 175,127 175,133" fill="black"/>
+                    <polygon points="20,20 17,25 23,25" fill="black"/>
+                    
+                    <!-- Labels -->
+                    <text x="10" y="135" font-size="10" font-weight="bold">B</text>
+                    <text x="185" y="135" font-size="10" font-weight="bold">E</text>
+                    <text x="15" y="15" font-size="10" font-weight="bold">G</text>
+                    <text x="15" y="145" font-size="10" font-weight="bold">I</text>
+                    
+                    <!-- Example curve (Icarus) -->
+                    <path d="M 30 120 Q 70 30 100 75 Q 130 120 170 120" 
+                          fill="none" 
+                          stroke="black" 
+                          stroke-width="2"/>
+                </svg>
+                
+                <div class="qr-container">
+                    <div class="qr-placeholder">
+                        <span style="font-size: 8pt;">QR Code</span>
+                    </div>
+                    <div class="website-url">theshapesofstories.com</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Back of Card (optional - can be printed on reverse) -->
+    <div class="card card-back">
+        <div class="back-content">
+            <div class="quote">
+                "There is no reason why the simple shapes of stories 
+                can't be fed into computers."
+            </div>
+            <div class="author">— Kurt Vonnegut</div>
+            
+            <div class="instruction">Your story's shape:</div>
+            <div class="example-shape">↑ ↓</div>
+            <div class="example-title">The Icarus Pattern</div>
+        </div>
+    </div>
+    
+    <script>
+        // Generate QR code using qr.js library
+        // Note: In production, you'd want to include a QR code library
+        // For now, this is a placeholder
+        
+        // To generate actual QR code, include this library:
+        // <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+        
+        // Then use:
+        // var qr = qrcode(0, 'M');
+        // qr.addData('https://theshapesofstories.com');
+        // qr.make();
+        // document.getElementById('qrcode').innerHTML = qr.createImgTag(3);
+    </script>
+</body>
+</html>

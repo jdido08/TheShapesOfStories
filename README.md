@@ -59,5 +59,10 @@ MISC:
 - assess functions 
 
 8/5/2025:
-- about page
-- branding insert 
+- about page -- finished for now; still some clean up to do 
+- branding insert -- will do later 
+
+8/7/2025: Assesments
+- Shape Accuracy 
+- Word Accuracy 
+- Story Category 
