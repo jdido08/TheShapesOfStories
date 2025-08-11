@@ -3,6 +3,9 @@
 from llm import load_config, get_llm, extract_json
 from langchain.prompts import PromptTemplate
 import json
+import os
+from datetime import datetime
+
 
 def grade_shape_accuracy(config_path: str, generated_analysis: dict, canonical_summary: str, llm_provider: str, llm_model: str) -> dict:
   """
@@ -105,11 +108,13 @@ Provide your complete two-phase assessment in the following JSON format ONLY.
 "shape_accuracy": {{
   "component_assessments": [
     {{
+      "end_time": 40, 
       "emotional_transition": "1 -> 8",
       "is_justified": true,
       "reasoning": "The reunion with Daisy after years of obsession justifies a significant rise to euphoria."
     }},
     {{
+      "end_time": 55,
       "emotional_transition": "8 -> 4",
       "is_justified": true,
       "reasoning": "Daisy's negative reaction to the party correctly tempers Gatsby's euphoria, justifying a moderate fall."
@@ -126,7 +131,7 @@ Provide your complete two-phase assessment in the following JSON format ONLY.
 """
 
   prompt = PromptTemplate(
-      input_variables=["generated_analysis", "canonical_summary"],
+      input_variables=["generated_analysis", "canonical_summary", "title", "author", "protagonist"],
       template=prompt_template
   )
   config = load_config(config_path=config_path)
@@ -144,9 +149,118 @@ Provide your complete two-phase assessment in the following JSON format ONLY.
       output_text = output.content
   else:
       output_text = output
+
+  ## --- FIXES ARE IN THIS FINAL SECTION --- ##
+
+  extracted_text = extract_json(output_text)
+    
+  try:
+      # The `extracted_text` is a string; we load it into our dictionary.
+      grades_dict = json.loads(extracted_text)
+  except (json.JSONDecodeError, TypeError) as e:
+      print(f"Error parsing JSON from LLM output: {e}")
+      print(f"Raw extracted text was: {extracted_text}")
+      # Return a dictionary with an error state to prevent crashes downstream
+      return {"error": "Failed to parse LLM response as JSON."}
       
-  grade = extract_json(output_text)
-  print("--- Shape Accuracy Grade Output (Two-Phase) ---")
-  print(json.dumps(grade, indent=2))
-  print("---------------------------------------------")
-  return grade
+  # 1. REMOVED the redundant line: `grade = extract_json(output_text)`
+  
+  # 2. UPDATED to print the dictionary, not the string.
+  print("--- Shape Accuracy Grade Output (Parsed) ---")
+  print(json.dumps(grades_dict, indent=2))
+  print("------------------------------------------")
+  
+  # 3. UPDATED to return the dictionary `grades_dict`.
+  return grades_dict
+
+# shape_assess.py
+
+
+
+def assess_story_shape(generated_analysis_path: str, canonical_summary: str, config_path: str = 'config.yaml'):
+    """
+    Orchestrates a focused quality assessment for a story's shape and updates the
+    source JSON file with the results.
+
+    This function performs a single, focused task:
+    1.  Calls the `grade_shape_accuracy` function to get a detailed quality grade.
+    2.  Adds a `quality_assessment` object to the loaded JSON data.
+    3.  Saves the updated data with the grading results back to the original file.
+
+    Args:
+        generated_analysis_path (str): The file path to the story data JSON.
+        canonical_summary (str): An objective, external summary of the story.
+        config_path (str, optional): Path to the LLM configuration file. Defaults to 'config.yaml'.
+    """
+    print(f"--- Starting Shape Accuracy Assessment for {generated_analysis_path} ---")
+
+    # --- Step 1: Load the story data ---
+    if not os.path.exists(generated_analysis_path):
+        print(f"Error: Analysis file not found at {generated_analysis_path}")
+        return
+    
+    with open(generated_analysis_path, 'r') as f:
+        generated_analysis = json.load(f)
+
+    # --- Step 2: Grade the Shape Accuracy ---
+    # We use a powerful model for this analytical step.
+    grader_llm_provider = 'google'
+    grader_llm_model = 'gemini-2.5-pro'
+    
+    try:
+        # The function returns the entire 'shape_accuracy' object
+        shape_grade_result = grade_shape_accuracy(
+            config_path=config_path,
+            generated_analysis=generated_analysis,
+            canonical_summary=canonical_summary,
+            llm_provider=grader_llm_provider,
+            llm_model=grader_llm_model
+        )
+    except Exception as e:
+        print(f"An error occurred during the grading step: {e}")
+        # Even if it fails, let's log the failure to the file
+        generated_analysis['quality_assessment'] = {
+            "status": "grading_error",
+            "error_message": str(e),
+            "assessment_timestamp": datetime.now().isoformat()
+        }
+        with open(generated_analysis_path, 'w') as f:
+            json.dump(generated_analysis, f, indent=4)
+        return
+
+    # --- Step 3: Prepare and save the results ---
+    
+    # Create or update the quality_assessment key
+    generated_analysis['quality_assessment'] = {
+        "shape_accuracy_assessment": shape_grade_result.get('shape_accuracy'),
+        "assessment_timestamp": datetime.now().isoformat(),
+        "grading_model": grader_llm_model
+    }
+
+    # Determine the final status based on the grade
+    final_grade = shape_grade_result.get('shape_accuracy', {}).get('final_grade')
+    if final_grade in ['A', 'B', 'C']:
+        generated_analysis['quality_assessment']['status'] = "passed_shape_check"
+        print(f"\nAssessment PASSED. Shape Grade: {final_grade}")
+    else:
+        generated_analysis['quality_assessment']['status'] = f"failed_shape_check (Grade: {final_grade})"
+        print(f"\nAssessment FAILED. Shape Grade: {final_grade}")
+
+    # Write the enriched data back to the original file
+    with open(generated_analysis_path, 'w') as f:
+        json.dump(generated_analysis, f, indent=4)
+        
+    print(f"Successfully updated {generated_analysis_path} with shape accuracy assessment.")
+
+if __name__ == '__main__':
+    # Define the inputs for the assessment
+    ANALYSIS_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby_jay-gatsby.json'
+    CANONICAL_SUMMARY = "The Great Gatsby by F. Scott Fitzgerald follows the mysterious millionaire Jay Gatsby and his obsessive pursuit of Daisy Buchanan, a wealthy young woman he loved in his youth. Gatsby throws lavish parties hoping to attract Daisy's attention. He eventually reunites with her, and they begin an affair. However, their relationship crumbles during a tense confrontation with Daisy's husband, Tom, at the Plaza Hotel. Following the confrontation, Daisy, driving Gatsby's car, accidentally hits and kills Tom's mistress, Myrtle. Gatsby takes the blame. Myrtle's grieving husband, believing Gatsby was the driver and Myrtle's lover, tracks Gatsby to his mansion and murders him in his swimming pool before killing himself. The novel concludes with Gatsby's sparsely attended funeral, highlighting the emptiness of his life and the corruption of the American Dream."
+    CONFIG_FILE = 'config.yaml'
+
+    # Run the focused assessment
+    assess_story_shape(
+        generated_analysis_path=ANALYSIS_FILE,
+        canonical_summary=CANONICAL_SUMMARY,
+        config_path=CONFIG_FILE
+    )
