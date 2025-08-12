@@ -81,7 +81,9 @@ Operations:
 --> Grade Text (Shape might have changed during story graph creation so should I regrade shape??)
 --> Final Visual Grader --> Last Check 
 
-8/1/2025:
-- Grade Shape 
+8/11/2025:
+- Grade Shape --> finished
 - Grade Text
 - Categorize Shape
+
+NEED TO INCORPORATE INTO CREATE FILE 

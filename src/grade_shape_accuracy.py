@@ -252,15 +252,15 @@ def assess_story_shape(generated_analysis_path: str, canonical_summary: str, con
         
     print(f"Successfully updated {generated_analysis_path} with shape accuracy assessment.")
 
-if __name__ == '__main__':
-    # Define the inputs for the assessment
-    ANALYSIS_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby_jay-gatsby.json'
-    CANONICAL_SUMMARY = "The Great Gatsby by F. Scott Fitzgerald follows the mysterious millionaire Jay Gatsby and his obsessive pursuit of Daisy Buchanan, a wealthy young woman he loved in his youth. Gatsby throws lavish parties hoping to attract Daisy's attention. He eventually reunites with her, and they begin an affair. However, their relationship crumbles during a tense confrontation with Daisy's husband, Tom, at the Plaza Hotel. Following the confrontation, Daisy, driving Gatsby's car, accidentally hits and kills Tom's mistress, Myrtle. Gatsby takes the blame. Myrtle's grieving husband, believing Gatsby was the driver and Myrtle's lover, tracks Gatsby to his mansion and murders him in his swimming pool before killing himself. The novel concludes with Gatsby's sparsely attended funeral, highlighting the emptiness of his life and the corruption of the American Dream."
-    CONFIG_FILE = 'config.yaml'
+# if __name__ == '__main__':
+#     # Define the inputs for the assessment
+#     ANALYSIS_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby_jay-gatsby.json'
+#     CANONICAL_SUMMARY = "The Great Gatsby by F. Scott Fitzgerald follows the mysterious millionaire Jay Gatsby and his obsessive pursuit of Daisy Buchanan, a wealthy young woman he loved in his youth. Gatsby throws lavish parties hoping to attract Daisy's attention. He eventually reunites with her, and they begin an affair. However, their relationship crumbles during a tense confrontation with Daisy's husband, Tom, at the Plaza Hotel. Following the confrontation, Daisy, driving Gatsby's car, accidentally hits and kills Tom's mistress, Myrtle. Gatsby takes the blame. Myrtle's grieving husband, believing Gatsby was the driver and Myrtle's lover, tracks Gatsby to his mansion and murders him in his swimming pool before killing himself. The novel concludes with Gatsby's sparsely attended funeral, highlighting the emptiness of his life and the corruption of the American Dream."
+#     CONFIG_FILE = 'config.yaml'
 
-    # Run the focused assessment
-    assess_story_shape(
-        generated_analysis_path=ANALYSIS_FILE,
-        canonical_summary=CANONICAL_SUMMARY,
-        config_path=CONFIG_FILE
-    )
+#     # Run the focused assessment
+#     assess_story_shape(
+#         generated_analysis_path=ANALYSIS_FILE,
+#         canonical_summary=CANONICAL_SUMMARY,
+#         config_path=CONFIG_FILE
+#     )
