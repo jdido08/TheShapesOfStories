@@ -41,69 +41,80 @@ def get_shape_category_from_llm(config_path: str, generated_analysis: dict, llm_
 
     # --- 2. Define the Categorization Prompt ---
     prompt_template = """
-You are a literary analyst specializing in narrative archetypes, based on Kurt Vonnegut's theories on the shapes of stories. Your task is to analyze the emotional trajectory of a protagonist and classify it into one of the common story shapes.
+You are a master literary cartographer, an expert in mapping the emotional journeys of stories according to Kurt Vonnegut's theory of story shapes. Your task is to analyze a protagonist's emotional trajectory and classify it into a specific narrative archetype, complete with a symbolic representation that captures its emotional magnitude and pacing.
 
 ---
-## STORY DATA TO ANALYZE
+## 1. STORY DATA TO ANALYZE
 
-This JSON contains the emotional trajectory for {protagonist} from the story "{title}". The `emotional_trajectory` shows the protagonist's emotional score (from -10 for despair to +10 for euphoria) at different points in the story (`end_time` from 0 to 100).
+This JSON contains the emotional trajectory for {protagonist} from the story "{title}". The `emotional_trajectory` shows the protagonist's emotional score (from -10 for ultimate despair to +10 for ultimate euphoria) at key moments (`end_time` from 0 to 100).
 
 {generated_analysis}
 
 ---
-## STORY SHAPE ARCHETYPES (Your Rubric)
+## 2. THE VONNEGUT ARCHETYPES (Classification Rubric)
 
-You must classify the story into the **best-fitting** archetype from the list below.
+You must classify the story's overall shape into the **best-fitting** archetype from this specific list.
 
-1.  **Man in Hole**
-    -   **Symbol:** ↓↑
-    -   **Description:** The protagonist starts off well, falls into trouble, and then gets out of it, often ending up better than before.
-
-2.  **Boy Meets Girl**
-    -   **Symbol:** ↑↓↑
-    -   **Description:** The protagonist finds something wonderful (a person, a goal), loses it, and then gets it back in the end. A story of finding, losing, and regaining.
-
-3.  **From Bad to Worse (Tragedy)**
-    -   **Symbol:** ↓
-    -   **Description:** A steady decline from a relatively high position into ruin and disaster. The protagonist's fortune consistently worsens.
-
-4.  **Rags to Riches**
-    -   **Symbol:** ↑
-    -   **Description:** A steady, continuous rise from a state of low fortune to one of high fortune and success.
-
-5.  **Icarus**
-    -   **Symbol:** ↑↓
-    -   **Description:** The protagonist experiences a rapid rise to success or happiness, only to be followed by a sudden and dramatic fall.
-
-6.  **Cinderella**
-    -   **Symbol:** →↑↓↑
-    -   **Description:** The story features several distinct emotional shifts, often starting from a low point, rising to joy, suffering a setback, and then achieving a final, ultimate triumph. This shape has more complexity than "Man in Hole."
-
-7.  **Complex/Other**
-    -   **Symbol:** N/A
-    -   **Description:** Use this category if the story's shape does not clearly fit any of the archetypes above. This could be due to a flat emotional arc, multiple complex oscillations, or other unique structures.
+- **Man in Hole (↓↑):** The protagonist starts well, falls into significant trouble, and then climbs out, often ending better off.
+- **Boy Meets Girl (↑↓↑):** The protagonist finds something wonderful, loses it, and then struggles to regain it, culminating in success.
+- **Icarus (↑↓):** The protagonist has a swift rise in fortune, followed by a sudden, ruinous fall.
+- **Rags to Riches (↑):** A continuous, sustained rise from a low point to a high point.
+- **From Bad to Worse / Tragedy (↓):** A steady decline from a relatively high position into disaster.
+- **Cinderella (→↑↓↑):** A more complex shape involving multiple turns: a low-starting point (stasis), a magical rise to joy, a sudden setback, and a final, triumphant resolution.
+- **Complex / Other (N/A):** Use only if the shape has no clear overall direction or defies all other classifications.
 
 ---
-## INSTRUCTIONS & OUTPUT FORMAT
+## 3. SYMBOLIC REPRESENTATION (Magnitude & Pacing Analysis)
 
-Analyze the `emotional_trajectory` and determine which archetype it most closely represents. Provide your answer ONLY in the following JSON format.
+After choosing an archetype, you must create a symbolic string (e.g., "↓↑↑"). This representation must capture not only the **magnitude** of each emotional shift but also its **pacing** (how quickly it happens).
+
+**Follow these hierarchical rules to build the symbol string:**
+1.  **Identify Movements:** Break the trajectory into its core directional movements (e.g., a fall, then a rise).
+2.  **Assign Symbols based on Steepness:** For each movement, calculate the change in emotion and the change in time, then apply the following rules in order:
+
+    -   **Stasis (→):** A minimal emotional change (from -1 to +1 points, including 0), regardless of time. This represents stability or a holding pattern.
+
+    -   **Epic/Catastrophic Shift (3 Arrows: `↑↑↑` or `↓↓↓`):**
+        A *large* emotional change (8+ points) that occurs *suddenly* (over 25 or fewer timeline points). This represents the most dramatic, life-altering moments.
+
+    -   **Major Shift (2 Arrows: `↑↑` or `↓↓`):**
+        This applies to either of two conditions:
+        - A *significant* change (4-7 points) that occurs *suddenly* (over 25 or fewer timeline points).
+        - A *large* change (8+ points) that occurs *gradually* (over more than 25 timeline points).
+
+    -   **Standard Shift (1 Arrow: `↑` or `↓`):**
+        Any other rise or fall. This typically applies to minor changes (1-3 points) or very slow, drawn-out shifts in fortune.
+
+3.  **Combine:** Join the symbols in chronological order to create the final string. **Ensure there is a single space between each distinct movement.**
+
+**Example Analysis:** A trajectory of `(time:0, score:2) -> (time:15, score:-7) -> (time:80, score:9)` would be:
+-   **Movement 1:** Fall of 9 points (`-9`) over 15 timeline points. Symbol: `↓↓↓`
+-   **Movement 2:** Rise of 16 points (`+16`) over 65 timeline points. Symbol: `↑↑`
+-   **Final Symbolic Representation:** `↓↓↓ ↑↑`
+
+---
+## 4. INSTRUCTIONS & OUTPUT FORMAT
+
+Analyze the `emotional_trajectory`. First, determine the best-fitting `archetype`. Second, perform the magnitude and pacing analysis to create the `symbolic_representation`. Finally, provide a concise justification.
+
+Provide your answer ONLY in the following JSON format.
 
 ```json
 {{
   "shape_category": {{
     "archetype": "Name of the Archetype",
-    "symbolic_representation": "Symbol for the Archetype (e.g., ↓↑)",
-    "justification": "A concise, one-sentence explanation for why you chose this category, referencing the emotional trajectory provided."
+    "symbolic_representation": "The final symbol string (e.g., '↓↓ ↓↑↑')",
+    "justification": "A concise, one-sentence explanation linking the archetype and the symbolic representation to the key turning points of the protagonist's journey."
   }}
 }}
 """
     prompt = PromptTemplate(
-    input_variables=["generated_analysis", "title", "protagonist"],
-    template=prompt_template
+        input_variables=["generated_analysis", "title", "protagonist"],
+        template=prompt_template
     )
     config = load_config(config_path=config_path)
     # Using a capable model is important for this reasoning task
-    llm = get_llm(llm_provider, llm_model, config, max_tokens=1024)
+    llm = get_llm(llm_provider, llm_model, config)
     runnable = prompt | llm
 
     output = runnable.invoke({
@@ -112,10 +123,16 @@ Analyze the `emotional_trajectory` and determine which archetype it most closely
         "protagonist": protagonist
     })
 
+    print("OUTPUT")
+    print(output)
+
     if hasattr(output, "content"):
         output_text = output.content
     else:
         output_text = output
+
+    # --- ADD THIS LINE FOR DEBUGGING ---
+    print("--- RAW LLM OUTPUT ---\n" + output_text + "\n----------------------")
         
     extracted_text = extract_json(output_text)
 
@@ -150,7 +167,7 @@ def categorize_story_shape(generated_analysis_path: str, config_path: str = 'con
 
     # Use a powerful model for this analytical step.
     # claude-3-5-sonnet-latest or gemini-2.5-pro are good choices.
-    categorizer_llm_provider = 'anthropic'
+    categorizer_llm_provider =  'anthropic'
     categorizer_llm_model = 'claude-3-5-sonnet-latest'
 
     try:
@@ -191,3 +208,9 @@ def categorize_story_shape(generated_analysis_path: str, config_path: str = 'con
         json.dump(generated_analysis, f, indent=4)
         
     print(f"Successfully updated {os.path.basename(generated_analysis_path)} with shape category.")
+
+
+
+categorize_story_shape(
+    generated_analysis_path='/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/pride-and-prejudice_elizabeth-bennet.json'
+)

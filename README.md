@@ -87,3 +87,15 @@ Operations:
 - Categorize Shape
 
 NEED TO INCORPORATE INTO CREATE FILE 
+
+8/13/2025:
+- Grade Shale --> Done
+- Categorize Shape --> WIP
+- Grade Text - TO DO
+- Tie it all together - TO DO
+
+
+other stuff:
+- mockups 
+- tags 
+- descriptions 
