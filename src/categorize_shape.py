@@ -64,36 +64,32 @@ You must classify the story's overall shape into the **best-fitting** archetype 
 - **Complex / Other (N/A):** Use only if the shape has no clear overall direction or defies all other classifications.
 
 ---
-## 3. SYMBOLIC REPRESENTATION (Magnitude & Pacing Analysis)
+## 3. SYMBOLIC REPRESENTATION (Truly Relative Magnitude)
 
-After choosing an archetype, you must create a symbolic string. Your goal is to capture the story's **main emotional sweep**, not every minor dip and rise.
+Your goal is to create a symbolic string where the number of arrows for each emotional phase is determined by its magnitude **relative to the other phases within the same story.**
 
-**Follow these hierarchical rules to build the symbol string:**
-1.  **Group Consecutive Movements:** First, identify the major phases of the story by grouping consecutive movements of the same direction. For example, a series of three downward-trending segments should be treated as a single, larger "Fall Phase."
+**Follow this two-step process:**
 
-2.  **Analyze Each Phase:** For each major phase you identified, calculate the *total* change in emotion and the *total* change in time from the start of that phase to its end. Then, apply the following rules:
+**Step 1: Find the Story's Emotional Benchmark**
+First, identify all the major emotional phases by grouping consecutive movements in the same direction. Then, find the phase with the single largest emotional change (the biggest `delta_score`, positive or negative). This value becomes the story's "benchmark magnitude" (`max_delta`).
 
-    -   **Stasis (→):** A phase with a minimal emotional change (from -1 to +1 points, including 0), regardless of time.
+**Step 2: Assign Arrows to All Phases by Comparison**
+Now, go through **every** major phase (including the benchmark one) and assign it a symbol based on its percentage of the `max_delta`.
 
-    -   **Epic/Catastrophic Shift (3 Arrows: `↑↑↑` or `↓↓↓`):**
-        A *large* total change (8+ points) that occurs *suddenly* (over a total duration of 25 or fewer timeline points).
+-   **Epic Shift (3 Arrows: `↑↑↑` or `↓↓↓`):**
+    The phase's magnitude is **75% or more** of the `max_delta`. This is reserved for the most dominant emotional movement(s) in the story.
 
-    -   **Major Shift (2 Arrows: `↑↑` or `↓↓`):**
-        This applies to either of two conditions:
-        - A *significant* total change (4-7 points) that occurs *suddenly* (over a total duration of 25 or fewer timeline points).
-        - A *large* total change (8+ points) that occurs *gradually* (over more than 25 timeline points).
+-   **Major Shift (2 Arrows: `↑↑` or `↓↓`):**
+    The phase's magnitude is between **40% and 74%** of the `max_delta`. This represents a significant, but secondary, emotional movement.
 
-    -   **Standard Shift (1 Arrow: `↑` or `↓`):**
-        Any other phase of rising or falling fortune.
+-   **Standard Shift (1 Arrow: `↑` or `↓`):**
+    The phase's magnitude is less than **40%** of the `max_delta`. This represents a smaller, less defining movement.
 
-3.  **Combine:** Join the symbols for each major phase in chronological order. **Ensure there is a single space between each symbol.**
+-   **Stasis (→):** A phase with a minimal emotional change (from -1 to +1 points).
 
-**Example Analysis:** A trajectory of `(0, 2) -> (15, -7) -> (80, 9)` would be analyzed as:
--   **Phase 1 (Fall):** From time 0 to 15. Total change is -9 points over 15 timeline points. This is a large, sudden change. **Symbol: `↓↓↓`**
--   **Phase 2 (Rise):** From time 15 to 80. Total change is +16 points over 65 timeline points. This is a large, gradual change. **Symbol: `↑↑`**
--   **Final Symbolic Representation:** `↓↓↓ ↑↑`
+**Combine:** Join the symbols for each major phase in chronological order, separated by a single space.
+
 ---
-
 ## 4. INSTRUCTIONS & OUTPUT FORMAT
 
 Analyze the `emotional_trajectory`. First, determine the best-fitting `archetype`. Second, perform the magnitude and pacing analysis to create the `symbolic_representation`. Finally, provide a concise justification.
