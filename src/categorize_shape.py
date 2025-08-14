@@ -66,33 +66,34 @@ You must classify the story's overall shape into the **best-fitting** archetype 
 ---
 ## 3. SYMBOLIC REPRESENTATION (Magnitude & Pacing Analysis)
 
-After choosing an archetype, you must create a symbolic string (e.g., "↓↑↑"). This representation must capture not only the **magnitude** of each emotional shift but also its **pacing** (how quickly it happens).
+After choosing an archetype, you must create a symbolic string. Your goal is to capture the story's **main emotional sweep**, not every minor dip and rise.
 
 **Follow these hierarchical rules to build the symbol string:**
-1.  **Identify Movements:** Break the trajectory into its core directional movements (e.g., a fall, then a rise).
-2.  **Assign Symbols based on Steepness:** For each movement, calculate the change in emotion and the change in time, then apply the following rules in order:
+1.  **Group Consecutive Movements:** First, identify the major phases of the story by grouping consecutive movements of the same direction. For example, a series of three downward-trending segments should be treated as a single, larger "Fall Phase."
 
-    -   **Stasis (→):** A minimal emotional change (from -1 to +1 points, including 0), regardless of time. This represents stability or a holding pattern.
+2.  **Analyze Each Phase:** For each major phase you identified, calculate the *total* change in emotion and the *total* change in time from the start of that phase to its end. Then, apply the following rules:
+
+    -   **Stasis (→):** A phase with a minimal emotional change (from -1 to +1 points, including 0), regardless of time.
 
     -   **Epic/Catastrophic Shift (3 Arrows: `↑↑↑` or `↓↓↓`):**
-        A *large* emotional change (8+ points) that occurs *suddenly* (over 25 or fewer timeline points). This represents the most dramatic, life-altering moments.
+        A *large* total change (8+ points) that occurs *suddenly* (over a total duration of 25 or fewer timeline points).
 
     -   **Major Shift (2 Arrows: `↑↑` or `↓↓`):**
         This applies to either of two conditions:
-        - A *significant* change (4-7 points) that occurs *suddenly* (over 25 or fewer timeline points).
-        - A *large* change (8+ points) that occurs *gradually* (over more than 25 timeline points).
+        - A *significant* total change (4-7 points) that occurs *suddenly* (over a total duration of 25 or fewer timeline points).
+        - A *large* total change (8+ points) that occurs *gradually* (over more than 25 timeline points).
 
     -   **Standard Shift (1 Arrow: `↑` or `↓`):**
-        Any other rise or fall. This typically applies to minor changes (1-3 points) or very slow, drawn-out shifts in fortune.
+        Any other phase of rising or falling fortune.
 
-3.  **Combine:** Join the symbols in chronological order to create the final string. **Ensure there is a single space between each distinct movement.**
+3.  **Combine:** Join the symbols for each major phase in chronological order. **Ensure there is a single space between each symbol.**
 
-**Example Analysis:** A trajectory of `(time:0, score:2) -> (time:15, score:-7) -> (time:80, score:9)` would be:
--   **Movement 1:** Fall of 9 points (`-9`) over 15 timeline points. Symbol: `↓↓↓`
--   **Movement 2:** Rise of 16 points (`+16`) over 65 timeline points. Symbol: `↑↑`
+**Example Analysis:** A trajectory of `(0, 2) -> (15, -7) -> (80, 9)` would be analyzed as:
+-   **Phase 1 (Fall):** From time 0 to 15. Total change is -9 points over 15 timeline points. This is a large, sudden change. **Symbol: `↓↓↓`**
+-   **Phase 2 (Rise):** From time 15 to 80. Total change is +16 points over 65 timeline points. This is a large, gradual change. **Symbol: `↑↑`**
 -   **Final Symbolic Representation:** `↓↓↓ ↑↑`
-
 ---
+
 ## 4. INSTRUCTIONS & OUTPUT FORMAT
 
 Analyze the `emotional_trajectory`. First, determine the best-fitting `archetype`. Second, perform the magnitude and pacing analysis to create the `symbolic_representation`. Finally, provide a concise justification.
@@ -168,7 +169,7 @@ def categorize_story_shape(generated_analysis_path: str, config_path: str = 'con
     # Use a powerful model for this analytical step.
     # claude-3-5-sonnet-latest or gemini-2.5-pro are good choices.
     categorizer_llm_provider =  'anthropic'
-    categorizer_llm_model = 'claude-3-5-sonnet-latest'
+    categorizer_llm_model = 'claude-sonnet-4-20250514'
 
     try:
         category_result = get_shape_category_from_llm(
