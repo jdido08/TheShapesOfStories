@@ -53,79 +53,81 @@ def categorize_shape_visually(story_data_path: str, image_path: str):
     protagonist = story_data.get("protagonist", "the protagonist")
 
     # The refined, truly relative multimodal prompt
+    
     prompt_template = f"""
-    You are a master literary cartographer, an expert in mapping the emotional journeys of stories. Your task is to analyze the provided image of a story's emotional graph.
-
-    Based on the visual shape of the graph, you will:
-    1.  Create a symbolic representation that captures the **truly relative magnitude** of each emotional shift.
-    2.  Classify the symbolic representation into the best-fitting archetype.
-    3.  Provide a concise justification for your analysis.
+    You are a master literary cartographer analyzing the emotional journey curve in the uploaded image. 
 
     ---
     ## 1. STORY SHAPE TO ANALYZE
-    The uploaded image shows the emotional journey (i.e. ups and downs) of {protagonist} from the {author}'s {title}.
-
-    (The user will upload the story shape image here.)
-
-
-    ## 2. SYMBOLIC REPRESENTATIONS -- RELATIVE MAGNITUDE ANALYSIS (Visual Instructions)
-
-    Create a symbolic string by visually grouping all emotional shifts (rises and falls) into tiers of magnitude **relative to each other**.
-
-    -   **Standard Shift (1 Arrow: `↑` or `↓`):**
-        This is the baseline symbol for a noticeable emotional movement. If all shifts in a story are of a roughly similar, modest magnitude, they will **all** receive this symbol.
-
-    -   **Major Shift (2 Arrows: `↑↑` or `↓↓`):**
-        Use this for shifts that are **visually and significantly larger** than the "Standard" shifts *within the same story*. A story needs a clear distinction in size between its movements to warrant using this symbol.
-
-    -   **Epic Shift (3 Arrows: `↑↑↑` or `↓↓↓`):**
-        Use this **only** for a shift that is in a class of its own—one that **visually dwarfs** even the "Major" shifts. It should be exceptionally rare, used only when one movement defines the entire emotional landscape of the story.
-
-    -   **Stasis (→):**
-        A phase with **minimal or no vertical change**.
-
-        
-    Please note:
-    1. **Core Principle: Your analysis must be fully relative.** Compare all shifts within the story **to each other**. Not all stories will use multiple arrow types. A story with modest, similar-sized movements might only use single arrows (`↑`, `↓`). The goal is to reflect the story's unique emotional volatility.
-    2. **Combine:** Join the symbols for each major phase in chronological order, separated by a single space. For example: `↑ ↓↓ ↑↑↑`.
+    The uploaded image shows the emotional journey of {protagonist} from {author}'s {title}.
 
     ---
-    ## 2. ARCHETYPES (Classification Rubric)
+    ## 2. VISUAL ANALYSIS INSTRUCTIONS
 
-   **CRITICAL: A story's symbolic representation can be classified to one of the following the archetypes
+    **STEP 1: TRACE THE ENTIRE CURVE**
+    - Start at the leftmost point and follow the curve to the rightmost point
+    - Identify EVERY significant directional change (up→down, down→up, flat→up, etc.)
 
-    -   **Man in Hole (↓ ↑):** Two-part pattern: decline followed by recovery. Symbolic pattern like `↓ ↑` or `↓ ↑↑`.
-    -   **Boy Meets Girl (↑ ↓ ↑):** Three-part pattern: rise, fall, recovery. Symbolic pattern like `↑ ↓ ↑` or `↑↑ ↓↓ ↑`.
-    -   **Icarus (↑ ↓):** Two-part pattern: rise followed by fall. Symbolic pattern like `↑ ↓` or `↑↑ ↓`.
-    -   **Rags to Riches (↑):** Pure upward trajectory. Only rising patterns like `↑`, `↑↑`, or `↑↑↑`.
-    -   **From Bad to Worse (↓):** Pure downward trajectory. Only falling patterns like `↓`, `↓↓`, or `↓↓↓`.
-    -   **Cinderella (→ ↑ ↓ ↑):** Four-part with final triumph: no change, modest rise, setback, then major recovery exceeding the initial rise.
-    -   **Other: Use only if the shape has no clear overall direction or defies all other classifications.
+    **STEP 2: COMPARE RELATIVE MAGNITUDES**
+    Look at the magnitude (i.e. HEIGHT and STEEPNESS) of each movement on the story shape:
+    
+    -   **Standard Shift (1 arrow: `↑` or `↓`):** Baseline noticeable movement
+    -   **Major Shift (2 arrows: `↑↑` or `↓↓`):** Clearly larger than standard movements but not overwhelming  
+    -   **Epic Shift (3 arrows: `↑↑↑` or `↓↓↓`):** Dominates the entire visual - much larger than everything else
+    -   **Stasis (`→`):** Minimal vertical change, mostly horizontal
+
+    **CRITICAL**: 
+    If there are multiple shifts in the story shape and all the shifts in a story are of a roughly similar in magnitude, then they are **all** standard shifts.
+    A story needs a clear distinction in the magnotide between its movements to warrant the use of major or epic shifts.
+
+
+    **STEP 3: CREATE SYMBOLIC STRING**
+    - List each major phase in chronological order (left to right)
+    - Separate with single spaces: `↑ ↓↓ ↑`
+    - If unsure between magnitudes, choose the smaller symbol.
 
     ---
-    ## 4. YOUR TASK & OUTPUT FORMAT
+    ## 3. ARCHETYPE MATCHING
 
-    Carefully analyze the uploaded image and follow these steps:
-    **STEP 1:** Create the symbolic representation of the the uploaded story's shape by analyzing the visual emotional shifts.
-    **STEP 2:** Match the symbolic representation to the best-fitting archetype using the exact pattern matching rules above. 
-    **STEP 3:** Verify that your archetype selection matches your symbolic representation and provide a justification for your analysis
+    **RULES: 
+    1. Count the number of directional changes in your symbolic representation
+    2. Match to the corresponding category below  
+    3. **DOUBLE-CHECK:** Does your symbolic representation actually match your chosen archetype's template?
 
-    Examples:
-    - `↓ ↑↑` = **Man in Hole** (decline then major rise)
-    - `↑ ↓↓ ↑` = **Boy Meets Girl** (rise, major fall, recovery)
-    - `↑ ↓` = **Icarus** (rise then fall)
-    - `↑` = **Rags to Riches** (pure upward movement)
-    - `→ ↑ ↓ ↑↑` = **Cinderella** (stasis, rise, fall, bigger recovery)
 
-    Provide your answer ONLY in the following JSON format. Do not add any other text or explanation.
+    ### 1-PART PATTERNS (No directional changes):
+    -   **Rags to Riches:** `↑` (any single upward: `↑`, `↑↑`, `↑↑↑`)
+    -   **From Bad to Worse:** `↓` (any single downward: `↓`, `↓↓`, `↓↓↓`)
+
+    ### 2-PART PATTERNS (One directional change):
+    -   **Man in Hole:** `↓ ↑` (any magnitude combination like `↓↓ ↑` or `↓ ↑↑`)
+        - Must start with decline, end with recovery
+    -   **Icarus:** `↑ ↓` (any magnitude combination like `↑↑ ↓` or `↑ ↓↓`)  
+        - Must start with rise, end with fall, NO recovery
+
+    ### 3-PART PATTERNS (Two directional changes):
+    -   **Boy Meets Girl:** `↑ ↓ ↑` (any magnitude like `↑↑ ↓↓ ↑` or `↑ ↓ ↑↑`)
+        - Must be: rise → fall → recovery (final movement can be any size)
+
+    ### 4-PART PATTERNS (Three directional changes):
+    -   **Cinderella:** `→ ↑ ↓ ↑` where final `↑` is larger than first `↑`
+        - Must have: stasis → rise → fall → BIGGER recovery
+
+    ### COMPLEX PATTERNS:
+    -   **Other:** 5+ parts OR patterns that don't fit any template above
+
+    ---
+
+    ## 4. OUTPUT FORMAT
+    Respond ONLY in the following JSON format. Do not add any other text or explanation.
 
     ```json
     {{
-      "shape_category": {{
-        "symbolic_representation": "The final symbol string (e.g., '→ ↓↓')",
-        "archetype": "Name of the Archetype",
-        "justification": "A concise, one-sentence explanation linking the archetype and the symbolic representation to the key visual turning points of the protagonist's journey."
-      }}
+    "shape_category": {{
+        "symbolic_representation": "Your pattern (e.g., '↑ ↓↓ ↑')",
+        "archetype": "Exact archetype name",
+        "justification": "One sentence explaining how the visual pattern matches the archetype, referencing specific curve segments."
+    }}
     }}
     ```
     """
@@ -179,11 +181,13 @@ def categorize_shape_visually(story_data_path: str, image_path: str):
 if __name__ == "__main__":
     # Path to the image you want to analyze
     #IMAGE_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
-    #IMAGE_FILE ='/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png'
-    IMAGE_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-#0A1F3B_font-color-#F9D342_border-color-FFFFFF_font-Josefin Sans_title-display-yes.png'
+    IMAGE_FILE ='/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png'
+    #IMAGE_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-#0A1F3B_font-color-#F9D342_border-color-FFFFFF_font-Josefin Sans_title-display-yes.png'
     
-    STORY_DATA_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby_jay-gatsby.json'
-
+    #STORY_DATA_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby_jay-gatsby.json'
+    #STORY_DATA_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/for-whom-the-bell-tolls_robert-jordan_8x10.json'
+    STORY_DATA_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/pride-and-prejudice_elizabeth-bennet.json'
+    
     categorize_shape_visually(
         story_data_path=STORY_DATA_FILE, 
         image_path=IMAGE_FILE
