@@ -8,9 +8,9 @@ from langchain_core.messages import HumanMessage
 # --- Configuration ---
 # Ensure this path is correct for your system
 config_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml'
-llm_provider = 'google'
+llm_provider = 'anthropic'
 # Using a powerful model capable of complex visual reasoning and instruction following
-llm_model = 'gemini-2.5-pro' 
+llm_model = 'claude-sonnet-4-20250514' #'gpt-5-2025-08-07'#'gemini-2.5-pro'
 
 # --- Helper Functions (copied from your example) ---
 
@@ -28,7 +28,7 @@ def get_image_mime_type(image_path: str) -> str:
 
 # --- Main Categorization Function ---
 
-def categorize_shape_visually(image_path: str):
+def categorize_shape_visually(story_data_path: str, image_path: str):
     """
     Analyzes a story shape image using a multimodal LLM and classifies it
     according to Vonnegut's archetypes and relative emotional magnitude.
@@ -36,38 +36,39 @@ def categorize_shape_visually(image_path: str):
     if not os.path.exists(image_path):
         print(f"Error: Image path not found at {image_path}")
         return
+    
+    if not os.path.exists(story_data_path):
+        print(f"Error: Story data file not found at {story_data_path}")
+        return
+    if not os.path.exists(image_path):
+        print(f"Error: Image path not found at {image_path}")
+        return
+
+    with open(story_data_path, 'r') as f:
+        story_data = json.load(f)
+
+    # --- 2. Extract Variables for the Prompt ---
+    title = story_data.get("title", "this story")
+    author = story_data.get("author_name", "the author") 
+    protagonist = story_data.get("protagonist", "the protagonist")
 
     # The refined, truly relative multimodal prompt
-    prompt_template = """
+    prompt_template = f"""
     You are a master literary cartographer, an expert in mapping the emotional journeys of stories. Your task is to analyze the provided image of a story's emotional graph.
 
     Based on the visual shape of the graph, you will:
-    1.  Classify it into the best-fitting Vonnegut archetype.
-    2.  Create a symbolic representation that captures the **truly relative magnitude** of each emotional shift.
+    1.  Create a symbolic representation that captures the **truly relative magnitude** of each emotional shift.
+    2.  Classify the symbolic representation into the best-fitting archetype.
     3.  Provide a concise justification for your analysis.
-
-    **Core Principle: Your analysis must be fully relative.** Compare all shifts within the story **to each other**. Not all stories will use multiple arrow types. A story with modest, similar-sized movements might only use single arrows (`↑`, `↓`). The goal is to reflect the story's unique emotional volatility.
 
     ---
     ## 1. STORY SHAPE TO ANALYZE
+    The uploaded image shows the emotional journey (i.e. ups and downs) of {protagonist} from the {author}'s {title}.
 
     (The user will upload the story shape image here.)
 
-    ---
-    ## 2. THE VONNEGUT ARCHETYPES (Classification Rubric)
 
-    Classify the story's overall visual shape into the **best-fitting** archetype from this list.
-
-    -   **Man in Hole (↓ ↑):** Starts well, falls into trouble, and then climbs out.
-    -   **Boy Meets Girl (↑ ↓ ↑):** Finds something wonderful, loses it, and then regains it.
-    -   **Icarus (↑ ↓):** A rise in fortune, followed by a ruinous fall.
-    -   **Rags to Riches (↑):** A continuous, sustained rise from a low point to a high point.
-    -   **Tragedy / From Bad to Worse (↓):** A steady decline from a relatively high position into disaster.
-    -   **Cinderella (→ ↑ ↓ ↑):** A low start, a big rise, a setback, and a final, even bigger rise.
-    -   **Complex / Other:** The shape has no clear overall direction or defies other classifications.
-
-    ---
-    ## 3. RELATIVE MAGNITUDE ANALYSIS (Visual Instructions)
+    ## 2. SYMBOLIC REPRESENTATIONS -- RELATIVE MAGNITUDE ANALYSIS (Visual Instructions)
 
     Create a symbolic string by visually grouping all emotional shifts (rises and falls) into tiers of magnitude **relative to each other**.
 
@@ -83,25 +84,52 @@ def categorize_shape_visually(image_path: str):
     -   **Stasis (→):**
         A phase with **minimal or no vertical change**.
 
-    **Combine:** Join the symbols for each major phase in chronological order, separated by a single space. For example: `↑ ↓↓ ↑↑↑`.
+        
+    Please note:
+    1. **Core Principle: Your analysis must be fully relative.** Compare all shifts within the story **to each other**. Not all stories will use multiple arrow types. A story with modest, similar-sized movements might only use single arrows (`↑`, `↓`). The goal is to reflect the story's unique emotional volatility.
+    2. **Combine:** Join the symbols for each major phase in chronological order, separated by a single space. For example: `↑ ↓↓ ↑↑↑`.
+
+    ---
+    ## 2. ARCHETYPES (Classification Rubric)
+
+   **CRITICAL: A story's symbolic representation can be classified to one of the following the archetypes
+
+    -   **Man in Hole (↓ ↑):** Two-part pattern: decline followed by recovery. Symbolic pattern like `↓ ↑` or `↓ ↑↑`.
+    -   **Boy Meets Girl (↑ ↓ ↑):** Three-part pattern: rise, fall, recovery. Symbolic pattern like `↑ ↓ ↑` or `↑↑ ↓↓ ↑`.
+    -   **Icarus (↑ ↓):** Two-part pattern: rise followed by fall. Symbolic pattern like `↑ ↓` or `↑↑ ↓`.
+    -   **Rags to Riches (↑):** Pure upward trajectory. Only rising patterns like `↑`, `↑↑`, or `↑↑↑`.
+    -   **From Bad to Worse (↓):** Pure downward trajectory. Only falling patterns like `↓`, `↓↓`, or `↓↓↓`.
+    -   **Cinderella (→ ↑ ↓ ↑):** Four-part with final triumph: no change, modest rise, setback, then major recovery exceeding the initial rise.
+    -   **Other: Use only if the shape has no clear overall direction or defies all other classifications.
 
     ---
     ## 4. YOUR TASK & OUTPUT FORMAT
 
-    Analyze the user-provided image. Determine the best-fitting `archetype` and the `symbolic_representation` based on a truly relative visual analysis.
+    Carefully analyze the uploaded image and follow these steps:
+    **STEP 1:** Create the symbolic representation of the the uploaded story's shape by analyzing the visual emotional shifts.
+    **STEP 2:** Match the symbolic representation to the best-fitting archetype using the exact pattern matching rules above. 
+    **STEP 3:** Verify that your archetype selection matches your symbolic representation and provide a justification for your analysis
+
+    Examples:
+    - `↓ ↑↑` = **Man in Hole** (decline then major rise)
+    - `↑ ↓↓ ↑` = **Boy Meets Girl** (rise, major fall, recovery)
+    - `↑ ↓` = **Icarus** (rise then fall)
+    - `↑` = **Rags to Riches** (pure upward movement)
+    - `→ ↑ ↓ ↑↑` = **Cinderella** (stasis, rise, fall, bigger recovery)
 
     Provide your answer ONLY in the following JSON format. Do not add any other text or explanation.
 
     ```json
-    {
-      "shape_category": {
+    {{
+      "shape_category": {{
+        "symbolic_representation": "The final symbol string (e.g., '→ ↓↓')",
         "archetype": "Name of the Archetype",
-        "symbolic_representation": "The final symbol string (e.g., '↑ ↓↓')",
         "justification": "A concise, one-sentence explanation linking the archetype and the symbolic representation to the key visual turning points of the protagonist's journey."
-      }
-    }
+      }}
+    }}
     ```
     """
+
 
     # --- Encode the Image ---
     base64_image = encode_image(image_path)
@@ -126,6 +154,7 @@ def categorize_shape_visually(image_path: str):
     # --- Initialize and Invoke LLM ---
     print("Initializing LLM and sending request...")
     config = load_config(config_path=config_path)
+    
     # Note: Setting max_tokens for a JSON output is a good safeguard
     llm = get_llm(llm_provider, llm_model, config, max_tokens=1024)
     
@@ -149,6 +178,13 @@ def categorize_shape_visually(image_path: str):
 # --- Script Execution ---
 if __name__ == "__main__":
     # Path to the image you want to analyze
-    image_to_analyze = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
+    #IMAGE_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
+    #IMAGE_FILE ='/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png'
+    IMAGE_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-#0A1F3B_font-color-#F9D342_border-color-FFFFFF_font-Josefin Sans_title-display-yes.png'
     
-    categorize_shape_visually(image_to_analyze)
+    STORY_DATA_FILE = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby_jay-gatsby.json'
+
+    categorize_shape_visually(
+        story_data_path=STORY_DATA_FILE, 
+        image_path=IMAGE_FILE
+    )
