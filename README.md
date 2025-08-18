@@ -76,9 +76,10 @@ MISC:
 Operations:
 --> Create Story Data
 --> Grade Shape
---> Categorize Shape
---> Create Story Graph for X Size
+--> Create Story Graph for standard 8x10 size:
 --> Grade Text (Shape might have changed during story graph creation so should I regrade shape??)
+--> Create Solid Line Version 
+--> Categorize Shape 
 --> Final Visual Grader --> Last Check 
 
 8/11/2025:
