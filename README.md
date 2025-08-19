@@ -91,6 +91,11 @@ Operations:
 --> Publish to Printify 
 --> Edit on Shopify 
 
+
+
+
+
+
 8/11/2025:
 - Grade Shape --> finished
 - Grade Text
