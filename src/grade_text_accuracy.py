@@ -371,7 +371,7 @@ def assess_arc_text(generated_analysis_path: str, canonical_summary: str = "", c
         )
     except Exception as e:
         print("Error during text grading:", e)
-        qa = data.setdefault("quality_assessment", {})
+        qa = data.setdefault("text_quality_assessment", {})
         qa["text_accuracy_assessment"] = {
             "status": "grading_error",
             "error_message": str(e),
@@ -381,7 +381,7 @@ def assess_arc_text(generated_analysis_path: str, canonical_summary: str = "", c
             json.dump(data, f, indent=4)
         return
 
-    qa = data.setdefault("quality_assessment", {})
+    qa = data.setdefault("text_quality_assessment", {})
     qa["text_accuracy_assessment"] = text_grade_result.get("text_accuracy", {})
     qa["assessment_timestamp"] = datetime.now().isoformat()
     qa["grading_model"] = llm_model

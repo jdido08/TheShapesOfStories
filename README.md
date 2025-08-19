@@ -74,14 +74,22 @@ MISC:
 - Categorize Shape
 
 Operations:
---> Create Story Data
---> Grade Shape
---> Categorize Shape
---> Create Story Graph for standard 8x10 size:
---> Grade Text (Shape might have changed during story graph creation so should I regrade shape??)
---> Create Solid Line Version 
---> Categorize Shape 
---> Final Visual Grader --> Last Check 
+--> Create Story Data -- done
+--> Grade Shape -- done 
+--> CHECK IF SHAPE PASSES
+--> Categorize Shape -- done; general 
+--> Create Story Graph for standard x by y size -- done 
+--> Grade Text -- DONE 
+--> CHECK IF TEXT PASSES
+--> Regrade Categorize Shape --> make sure it hasn't changed; size_specific
+--> CHECK IF SHAPE HASN'T CHANGED
+--> Create Solid Line Version and SVG version 
+--> Final Visual Grader --> NEED TO DO 
+--> Create Product Description --> mostly using symbolic and arhectype 
+--> Create Product Tags 
+--> Create Product Mockups 
+--> Publish to Printify 
+--> Edit on Shopify 
 
 8/11/2025:
 - Grade Shape --> finished

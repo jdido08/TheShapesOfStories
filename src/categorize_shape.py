@@ -460,26 +460,57 @@ def categorize_symbolic(symbolic: str) -> Archetype:
     return "Other"
 
 
-# # -----------------------
-# # Examples (informal tests)
-# # -----------------------
-# if __name__ == "__main__":
-#     examples = [
-#         "↑", "↑↑", "↓↓", "↓ → ↑↑", "↑ ↓", "↑↑ ↓↓", "↑ ↓ ↑", "→ ↑ ↓ ↑", "→ ↑ → ↓ → ↑",
-#         "↓ → ↑", "↓ → → ↑↑↑", "→ ↑ ↑ ↓ ↑↑", "↑ → ↓"
-#     ]
-#     for s in examples:
-#         print(f"{s:>18}  ->  {categorize_symbolic(s)}")
+# ---------- Write results back to JSON + CLI ----------
+
+def write_symbolic_and_archetype_to_json(generated_analysis_path: str, simplify: bool = True, json_file_type: str = "general") -> dict:
+    """
+    Loads the JSON story data, computes the symbolic representation and archetype,
+    writes them back to the same JSON file, and returns a small summary dict.
+    """
+    # Compute from the points in the JSON
+    xs, ys = load_points_from_json(generated_analysis_path)
+    out = analyze_series(xs, ys, simplify=simplify)
+    symbolic_rep = out["symbolic"]
+    archetype = categorize_symbolic(symbolic_rep)
+
+    # Write back to the source JSON (top-level keys for easy downstream access)
+    import json
+    from datetime import datetime
+
+    with open(generated_analysis_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+
+    ### json_file_type can be either: 
+    ### 1. general
+    ### 2. size_specific
+    ### the reason we want to keep track of both is so we can compare that after we've created size specific version of design
+    ### that we haven't changed the the shape 
+
+    if json_file_type == "general":
+        data["symbolic_representation"] = symbolic_rep  # e.g., "→ ↑ ↓ ↑"
+        data["archetype"] = archetype                    # e.g., "Cinderella"
+        data["categorization_timestamp"] = datetime.now().isoformat()
+    elif json_file_type == "size_specific":
+        data["size_specific_symbolic_representation"] = symbolic_rep  # e.g., "→ ↑ ↓ ↑"
+        data["size_specific_archetype"] = archetype                    # e.g., "Cinderella"
+        data["size_specific_categorization_timestamp"] = datetime.now().isoformat()
+
+
+    with open(generated_analysis_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+    return {
+        "symbolic_representation": symbolic_rep,
+        "archetype": archetype
+    }
+
+
+ 
 
 
 path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/for-whom-the-bell-tolls_robert-jordan_8x10.json"
-#path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/pride-and-prejudice_elizabeth-bennet.json'
-#path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby_jay-gatsby.json'
-xs, ys = load_points_from_json(path)
-out = analyze_series(xs, ys, simplify=True)
-symbolic_rep = out['symbolic']
-print(symbolic_rep)
-archetype = categorize_symbolic(symbolic_rep)
-print(archetype)
-#print(json.dumps(out, ensure_ascii=False, indent=2))
-
+write_symbolic_and_archetype_to_json(
+    generated_analysis_path=path,
+    json_file_type = "size_specific"
+    )
