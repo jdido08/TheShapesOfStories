@@ -47,7 +47,7 @@ def create_product_description():
     [2-3 sentences about why this particular shape represents this story's emotional journey - connect to plot/themes]
 
     **Literary Art That Speaks**
-    - Every word is carefully chosen to reflect the story's essence and create the visual form
+    - Every word is carefully chosen to reflect the story's essence
     - Thoughtful typography that honors the literary work
     - A captivating conversation piece for book lovers and literary enthusiasts
     - Timeless design that complements any space

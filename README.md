@@ -84,13 +84,24 @@ Operations:
 --> Regrade Categorize Shape --> make sure it hasn't changed; size_specific
 --> CHECK IF SHAPE HASN'T CHANGED
 --> Create Solid Line Version and SVG version 
---> Final Visual Grader --> NEED TO DO 
+
+
+
+
+Product Creation / Listing 
+
 --> Create Product Description --> mostly using symbolic and arhectype 
 --> Create Product Tags 
 --> Create Product Mockups 
 --> Publish to Printify 
 --> Edit on Shopify 
+--> Final Grader 
+--> Branding Insert 
+--> stiching it all together
 
+____
+
+Marketing 
 
 
 

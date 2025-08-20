@@ -509,8 +509,7 @@ def write_symbolic_and_archetype_to_json(generated_analysis_path: str, simplify:
  
 
 
-path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/for-whom-the-bell-tolls_robert-jordan_8x10.json"
+path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/pride-and-prejudice_elizabeth-bennet_8x10.json"
 write_symbolic_and_archetype_to_json(
-    generated_analysis_path=path,
-    json_file_type = "size_specific"
+    generated_analysis_path=path
     )
