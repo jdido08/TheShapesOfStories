@@ -54,17 +54,12 @@ def _collect_arc_texts(story: Optional[Dict[str, Any]]) -> str:
                 arc_texts.append(val.strip())
     return " | ".join(arc_texts)
 
-def _rgb_to_hex(rgb: List[float]) -> str:
-    """Convert [r,g,b] floats (0..1) to '#RRGGBB'."""
-    r = max(0, min(255, int(round(rgb[0] * 255))))
-    g = max(0, min(255, int(round(rgb[1] * 255))))
-    b = max(0, min(255, int(round(rgb[2] * 255))))
-    return f"#{r:02X}{g:02X}{b:02X}"
-
 def _approx_color_name(rgb: List[float]) -> str:
-    """Very small heuristic for friendly color names."""
+    """Small heuristic for friendly color names when JSON has RGB floats 0..1."""
+    if not isinstance(rgb, list) or len(rgb) != 3:
+        return ""
     r, g, b = rgb
-    # brightness & chroma
+    # brightness
     brightness = (max(r, g, b) + min(r, g, b)) / 2
     if brightness > 0.93:
         return "white"
@@ -76,38 +71,29 @@ def _approx_color_name(rgb: List[float]) -> str:
             return "deep navy"
         return "blue"
     if r >= g and r >= b:
+        if r > 0.45 and g < 0.25 and b < 0.25:
+            return "crimson"
         return "red"
     if g >= r and g >= b:
         return "green"
     return "neutral"
 
-def _parse_print_size_from_paths(story_json_or_path: Union[str, Dict[str, Any], None],
-                                 image_path: Optional[str]) -> str:
-    """Try to extract e.g. '8x10' from either filename. Fallback to '8x10'."""
-    candidates = []
-    if isinstance(story_json_or_path, str):
-        candidates.append(Path(story_json_or_path).name)
+def _extract_font_name(story: Dict[str, Any], image_path: Optional[str]) -> str:
+    """Get a human-friendly font name from JSON or the image filename (e.g., font-Baskerville)."""
+    # JSON candidates
+    for key in ("font_name", "font_family", "font", "title_font"):
+        v = story.get(key)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+
+    # Fallback: parse from filename "font-Baskerville"
     if image_path:
-        candidates.append(Path(image_path).name)
-    for name in candidates:
-        m = re.search(r'(\d{1,2})x(\d{1,2})', name)
+        name = Path(image_path).name
+        m = re.search(r'font-([A-Za-z0-9\- ]+)', name)
         if m:
-            return f"{m.group(1)}x{m.group(2)}"
-    return "8x10"
+            return m.group(1).replace("-", " ").strip()
 
-def _frame_note_for_size(size_str: str) -> str:
-    """Return a friendly parenthetical for common mat/frame pairings."""
-    # Specific callout requested for 8x10 -> 11x14
-    if size_str == "8x10":
-        return '(stunning when matted in an 11x14" frame)'
-    # Generic fallback
-    return "(designed for standard off-the-shelf frames)"
-
-def _safe_num(v: Any, default: float) -> float:
-    try:
-        return float(v)
-    except Exception:
-        return default
+    return ""
 
 
 # ========= main function (kept structure, only revised) =========
@@ -125,15 +111,19 @@ def create_description(
       - message = HumanMessage([...])
       - response = llm.invoke([message])
 
-    New behavior:
-      - Accepts story JSON (dict or path).
-      - Outputs FOUR sections with headings:
-          1) The Shape of "[TITLE]" — [PROTAGONIST]'s Journey
-          2) The Story Behind the Shape  (with bullets for Shape and Archetype* + a paragraph)
-          3) Print Details               (bulleted; includes “story-beats path” note)
-          4) Ending Hook
-      - Uses 'symbolic_representation' and (if not "Other") 'archetype'
-        inside **The Story Behind the Shape** bullets, but NOT in the paragraph.
+    Structure enforced:
+      1) The Shape of "[TITLE]" — [PROTAGONIST]'s Journey
+      2) The Story Behind the Shape  (with bullets for Shape and Archetype* + a paragraph)
+      3) Print Details               (bulleted)
+      4) Ending Hook
+
+    Changes in this revision:
+      - “Beats” line refined per your wording.
+      - Colors: no hex codes; ask LLM to use friendly descriptors based on the image,
+        with soft JSON/filename hints. Optionally mention font if it adds value.
+      - Hard-coded lines:
+          • Premium 8x10" print on archival-quality paper with 0.6" white border
+          • Designed for standard framing (stunning when matted in an 11x14" frame)
     """
     # 1) Load config + model (unchanged)
     config = load_config(config_path)
@@ -149,30 +139,24 @@ def create_description(
     author = story.get("author") or ""
     protagonist = story.get("protagonist") or ""
 
-    # Prefer explicit JSON fields; if symbolics missing, let the LLM still write the paragraph using beat cues
     symbolic = story.get("symbolic_representation", "") or story.get("symbolic", "")
     archetype = (story.get("archetype") or "").strip()
 
-    # Visual + size details for Print Details section
-    print_size = _parse_print_size_from_paths(story_json_or_path, image_path)  # e.g., '8x10'
-    margin_in = _safe_num(story.get("fixed_margin_in_inches", 0.5), 0.5)
-    margin_str = f'{margin_in:.1f}"'
-
+    # Hints for color/type line (LLM decides final wording; keep it to one line)
     bg_rgb = story.get("background_color")
     text_rgb = story.get("font_color") or story.get("title_font_color")
-    bg_hex = _rgb_to_hex(bg_rgb) if isinstance(bg_rgb, list) and len(bg_rgb) == 3 else ""
-    text_hex = _rgb_to_hex(text_rgb) if isinstance(text_rgb, list) and len(text_rgb) == 3 else ""
-    bg_name = _approx_color_name(bg_rgb) if isinstance(bg_rgb, list) and len(bg_rgb) == 3 else "neutral"
-    text_name = _approx_color_name(text_rgb) if isinstance(text_rgb, list) and len(text_rgb) == 3 else "light"
-
-    frame_note = _frame_note_for_size(print_size)
+    bg_hint = _approx_color_name(bg_rgb) if bg_rgb else ""
+    text_hint = _approx_color_name(text_rgb) if text_rgb else ""
+    font_name = _extract_font_name(story, image_path)
 
     # Optional beat labels to ground the prose
     arc_texts_inline = _collect_arc_texts(story)
 
-    # 4) Prompt (updated to produce the four required sections EXACTLY)
-    #    We pin the bullets’ values so the model uses them verbatim.
-    #    Also: do NOT mention archetype in the explanatory paragraph.
+    # 4) Prompt (updated per your notes)
+    #    - No hex codes.
+    #    - Friendly color descriptors (LLM sees the image + hints).
+    #    - Archetype appears only in the bullet (if not "Other"), not in the paragraph.
+    #    - Hard-coded first & framing lines in Print Details.
     prompt_text = f"""
 You are a literary + marketing expert. Create a polished Shopify product description
 for a "Shape of Story" artwork using the STORY DATA below as the single source of truth.
@@ -186,20 +170,23 @@ The Shape of "{title}" — {protagonist}'s Journey
 The Story Behind the Shape
 - Shape: {symbolic if symbolic else "(not provided)"}
 {('- Archetype: ' + archetype) if (archetype and archetype.lower() != 'other') else ''}
-[Now write 2–4 sentences (~45–90 words) explaining the journey using arrow notation inline, e.g., "(↓)", "(↑)", "(→)".]
-[Describe what each movement means for {protagonist}'s fortunes (up = better, down = worse).]
+[Write 2–4 sentences (~45–90 words) explaining the journey.]
+[Embed arrow notation inline and follow the Shape exactly as grouped tokens from left to right: {symbolic}.]
+[Keep consecutive identical arrows together as a single token — e.g., if the Shape is "↓ ↑↑ →", mention them as "(↓)", "(↑↑)", "(→)". Never split a grouped token into separate "(↑)" mentions, do not add extra arrows, and do not reorder them.]
+[Describe what each movement means for {protagonist}’s fortunes (up = better, down = worse).]
 [Do NOT mention the archetype in this paragraph.]
 [Lightly ground the explanation using these beat cues when helpful (keep it narrative, not a list): {arc_texts_inline}]
 
 Print Details
-- Premium {print_size}" print on archival-quality paper with {margin_str} white border
-- The story's shape is composed of concise beats from that part of the
-- {bg_name.capitalize()} ({bg_hex}) background with {text_name} ({text_hex}) typography
-- Designed for standard framing {frame_note}
+- Premium 8x10" print on archival-quality paper with 0.6" white border
+- The story’s shape is formed from concise beats positioned at the exact points along {protagonist}’s journey.
+[Write ONE short line that describes the background and text colors in friendly, natural terms (no hex codes).]
+[Infer color names from the image; you may use these hints only if they fit what you see: background≈{bg_hint or 'n/a'}, text≈{text_hint or 'n/a'}]
+[If a typeface is present and adds value, you may optionally mention it in the same line (e.g., “typography in {font_name}”). Keep it brief.]
+- Designed for standard framing (stunning when matted in an 11x14" frame)
 - Museum-quality inks ensure lasting vibrancy and clarity
 
-Ending Hook
-[Close with 1–2 sentences that invite the buyer to imagine where it will hang or who it’s perfect for.]
+[Ending Hook - Close with 1–2 sentences that invite the buyer to imagine where it will hang or who it’s perfect for.]
 
 STORY DATA (JSON):
 {json.dumps(story, ensure_ascii=False)}
@@ -230,8 +217,10 @@ def create_product_description(
     return create_description(image_path=image_path, story_json_or_path=story_json_or_path)
 
 
+
 image_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png"
 story_json_or_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/pride-and-prejudice_elizabeth-bennet_8x10.json"
+print("starting")
 text = create_product_description(
     image_path=image_path,
     story_json_or_path=story_json_or_path
