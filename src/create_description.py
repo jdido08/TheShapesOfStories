@@ -11,6 +11,10 @@ import mimetypes
 from pathlib import Path
 from typing import Optional, Union, Dict, Any, List, Tuple
 import re
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Union, Dict, Any
+
 
 # --- your existing config knobs (unchanged) ---
 config_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml'
@@ -221,14 +225,52 @@ STORY DATA (JSON):
 
     return product_description
 
+def write_product_description_to_json(
+    json_path: Union[str, Path],
+    html: str
+) -> None:
+    """
+    Write the generated product description HTML back to the story JSON file.
+    Saves to:
+      - product_description_html
+      - product_description_timestamp (ISO8601)
+    No-op if the path is invalid or the file can't be read.
+    """
+    try:
+        p = Path(json_path)  # may raise if json_path isn't str/Path
+        if not p.exists():
+            return  # silently skip if file doesn't exist
 
-# ======== Back-compat alias (if your caller still uses the old name) ========
+        data: Dict[str, Any] = json.loads(p.read_text(encoding="utf-8"))
+        ts = datetime.now().isoformat()
+
+        data["product_description_html"] = html
+        data["product_description_timestamp"] = ts
+
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding="utf-8")
+    except Exception:
+        # Keep this silent to avoid breaking generation; log if you have a logger
+        return
+
 def create_product_description(
     image_path: Optional[str] = None,
     story_json_or_path: Union[str, Dict[str, Any], None] = None
 ) -> str:
-    return create_description(image_path=image_path, story_json_or_path=story_json_or_path)
+    product_description = create_description(
+        image_path=image_path,
+        story_json_or_path=story_json_or_path
+    )
 
+    # Strip for cleanliness
+    product_description = (product_description or "").strip()
+
+    # Only write back when we truly have a FILE PATH (not dict/None)
+    if product_description and isinstance(story_json_or_path, (str, Path)):
+        write_product_description_to_json(
+            json_path=story_json_or_path,
+            html=product_description,
+        )
+    return product_description
 
 
 #image_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png"
