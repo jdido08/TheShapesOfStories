@@ -125,3 +125,71 @@ other stuff:
 - mockups 
 - tags 
 - descriptions 
+
+
+8/24/2025 Operations:
+1. Create Story Data --> specify:
+    - type: literature, film, biographies, sports, etc...
+    - title 
+    - subtitle 
+    - protganist 
+    etc..
+2. Assess Story 
+3. Categorize Story  
+4. Create Story Description 
+5. Craate Tags for story 
+
+Product Data Model
+1. Product Name e.g. "The Great Gatsby"
+2. Product Description e.g "...
+3. Product Tags:
+    - story-type: Literature, Film, Biographies, Sports, etc..
+    - genre
+    - subgenre
+    - title
+    - author (if applicable)
+    - protagonist
+    - director (if applicable)
+    - team (if applicable)
+    - subject (if applicable)
+    - shape
+    - shape-archetype:
+    - series
+    - universe
+    - publication-year
+    - setting-country
+    - publication-country
+    - publication-time
+    - setting-time 
+    - setting-city
+    - setting-region
+    - setting-era
+    - background-color-hex 
+    - background-color-general
+    - typography-font
+    - typography-color-hex
+    - typography-color-general
+    - language
+    - awards
+4. Product Variants:
+    - product: print, canvas, t-shirt, mug, etc...
+    - size: 8x10, 11x14, small, medium, large, 8oz, 160z, etc... 
+    - line-type: text, solid 
+    - Printify SKU
+    - metaattributes:
+        - 
+
+
+# Tags:
+# Story Type: Literature, Film, Biographies, Sports, Business/Companies et..
+# Genre: Classics, Sci-Fi, 
+# Author: F. Scott Fitzgerald
+# Protagnist: Jay Gatsby
+# Title: The Great Gatsby
+# Product: Print
+# Size: 8x10
+# shape-archetype: 
+# Shape Archetype: Man in Hole 
+# Publication Year
+# Universe
+# Series 
