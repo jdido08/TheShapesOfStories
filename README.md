@@ -127,6 +127,14 @@ other stuff:
 - descriptions 
 
 
+8/25/2025:
+- create product and product variant metafields via Shopify API
+- create metafields for a story using LLM + story data
+- create metafields for a story variant LLM + story data 
+- in the future create metaobjects for stories, authors, groups, etc.. 
+
+
+
 8/24/2025 Operations:
 1. Create Story Data --> specify:
     - type: literature, film, biographies, sports, etc...

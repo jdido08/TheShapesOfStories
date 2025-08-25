@@ -116,10 +116,6 @@ Use namespaces to keep things tidy:
 
 * `printify.product_id` (text, optional)
 
-**Optional**
-
-* `compliance.rights_status` (single select: `public_domain | fair_use_risk | licensed`)
-
 ### Variants
 
 * **Prints/Canvas:** Option = `Size` (e.g., 8×10, 11×14, 18×24, 24×36).
