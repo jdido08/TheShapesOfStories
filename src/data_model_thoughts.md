@@ -1,5 +1,16 @@
-# Data Model Considerations
+# Notes about Tags and Metafields
+# Primary using product metafields and not tags --> I might use tags in the future for temproary campaigns e.g. best-sellets, halloween stories, etc.. 
+# Product Data Model:
+# - I'll be creating a new shopify product for every [story]-[character]-[medium] combo where medium is like print, canvas, t-shirt, mugs, etc..
+# - I won't be starting with many product variants but the way I see them expanding is: size (e.g. 8x10), color (e.g. Navy/Gold), Style (e.g. line|text)
+# - In the future, I'll work to make Shopify metaobjects like:
+#   - stories -- to tie together all the different products of a story
+#   - authories -- to tie together all the different stories of an author
+#   - author groups -- to tie together all the different authors of a particular group 
+# - see shopify_create_update_product_metafields.py to see all the product fields I'll be using to start with 
 
+
+# Data Model Considerations
 
 # Products
 - Products have default fields title, description, etc.. 

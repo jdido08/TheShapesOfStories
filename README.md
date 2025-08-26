@@ -201,3 +201,11 @@ Product Data Model
 # Publication Year
 # Universe
 # Series 
+
+
+# 8/26/2025:
+1. Create MetaFields for Shopify Product Model
+2. Script for Creating Metafields for Product
+3. Script for Setting metafields for Shopify 
+
+- Need to think about Variants 
