@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Shapes of Stories – 4x6 Insert</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ----- PRINT SETUP ----- */
+  @page { size: 4in 6in; margin: 0; }               /* Portrait 4x6" */
+  /* For bleed, use: @page { size: 4.25in 6.25in; margin: 0; } */
+
+  :root{
+    --ink:#0A0A0A;
+    --sub:#5A5A5A;
+    --accent:#111;         /* you can swap to brand navy */
+    --bg:#FFFFFF;
+    --gold:#F2C94C;        /* optional accent swatch */
+  }
+
+  html, body { height:100%; background:#eee; }
+  body { margin:0; font-family: "Courier New", Courier, monospace; color:var(--ink); }
+
+  .sheet {
+    display:flex; flex-wrap:wrap; gap:0.5in;
+    padding:1rem; justify-content:center;
+  }
+
+  .page{
+    width:4in; height:6in;           /* For bleed: 4.25in x 6.25in */
+    background:var(--bg);
+    box-shadow: 0 0 0.05in rgba(0,0,0,.15);
+    position:relative;
+    overflow:hidden;
+    page-break-after:always;
+  }
+
+  /* Safe margins for text */
+  .content { position:absolute; inset:0.25in; display:flex; flex-direction:column; }
+
+  /* Front */
+  .brand-row { display:flex; align-items:center; gap:0.4rem; }
+  .logo { height:40px; width:auto; object-fit:contain; }
+  .brand-name { font-weight:700; letter-spacing:0.5px; }
+
+  .tagline {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 18px; line-height:1.25; margin:0.3rem 0 0.6rem;
+  }
+
+  .blurb { color:var(--sub); font-size:12.25px; line-height:1.45; margin:0.25rem 0 0.75rem; }
+
+  .mini-axes {
+    width:100%; height:84px; margin:0.25rem 0 0.75rem;
+    border:1px solid #000; border-radius:6px; display:flex; align-items:center; justify-content:center;
+  }
+  .mini-axes svg { width:95%; height:70px; }
+
+  .cta {
+    display:flex; align-items:center; gap:0.5rem; margin-top:auto;
+  }
+
+  .qr { width:1.2in; height:1.2in; border:1px dashed #bbb; display:flex; align-items:center; justify-content:center; font-size:10px; color:#999; }
+  .cta-copy { font-size:12.25px; line-height:1.45; }
+  .url { font-weight:700; color:var(--ink); text-decoration:none; }
+
+  .offer {
+    margin-top:0.5rem; padding:0.5rem 0.6rem; border:1px solid #000; border-radius:6px;
+    font-size:12.25px;
+  }
+  .code { font-family: monospace; font-weight:700; padding:2px 6px; border:1px dashed #000; }
+
+  .social { margin-top:0.4rem; font-size:11.5px; color:var(--sub); }
+
+  /* Back */
+  .section { margin-bottom:0.6rem; }
+  .h { font-weight:700; font-size:13px; letter-spacing:0.4px; margin-bottom:0.25rem; }
+  .list { margin:0; padding-left:1em; font-size:11.75px; line-height:1.5; }
+  .note {
+    margin-top:0.4rem; border:1px dashed #bbb; border-radius:6px; padding:0.5rem; min-height:1.1in;
+    font-size:11.75px; color:#666;
+  }
+
+  /* Tiny brand footer on back */
+  .footer { margin-top:auto; font-size:11px; color:var(--sub); display:flex; justify-content:space-between; align-items:center; }
+  .swatch { display:inline-block; width:10px; height:10px; background:var(--gold); border:1px solid #000; margin-left:6px; }
+
+  /* Print clean */
+  @media print {
+    html, body { background:#fff; }
+    .sheet { padding:0; gap:0; }
+    .page { box-shadow:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <!-- ===== FRONT ===== -->
+  <section class="page" aria-label="Front">
+    <div class="content">
+
+      <div class="brand-row">
+        <!-- Swap this src with your hosted logo URL -->
+        <img class="logo" src="INSERT-LOGO.png" alt="The Shapes of Stories logo" />
+        <div class="brand-name">The Shapes of Stories</div>
+      </div>
+
+      <div class="tagline">Every story has a shape.</div>
+
+      <p class="blurb">
+        We turn beloved stories into minimalist “story shapes” mapped on a simple graph:
+        BE = Time (Beginning→End) and GI = Fortune (Good↑ / Ill↓).
+      </p>
+
+      <!-- Mini GI/BE motif -->
+      <div class="mini-axes" aria-hidden="true">
+        <svg viewBox="0 0 400 160" role="img">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10Z" fill="black"/></marker></defs>
+          <!-- BE axis -->
+          <line x1="20" y1="80" x2="380" y2="80" stroke="black" stroke-width="2" marker-end="url(#arr)"/>
+          <!-- GI axis up/down -->
+          <line x1="60" y1="20" x2="60" y2="140" stroke="black" stroke-width="2"/>
+          <line x1="60" y1="20" x2="60" y2="18" stroke="black" stroke-width="2" marker-end="url(#arr)"/>
+          <line x1="60" y1="140" x2="60" y2="142" stroke="black" stroke-width="2" marker-end="url(#arr)"/>
+          <!-- Labels -->
+          <text x="18" y="94" font-size="14" font-weight="700">B</text>
+          <text x="382" y="94" font-size="14" font-weight="700" text-anchor="end">E</text>
+          <text x="48" y="16" font-size="14" font-weight="700">G</text>
+          <text x="50" y="156" font-size="14" font-weight="700">I</text>
+          <!-- Simple curve -->
+          <path d="M 80 110 Q 200 30 340 110" fill="none" stroke="black" stroke-width="3"/>
+        </svg>
+      </div>
+
+      <div class="offer">
+        Thanks for supporting indie art! Enjoy <strong>10% off</strong> your next order with code
+        <span class="code">SAVE10</span>.
+      </div>
+
+      <div class="cta">
+        <div class="qr">QR here</div>
+        <div class="cta-copy">
+          Explore more shapes, series, and sizes:<br/>
+          <a class="url" href="https://theshapesofstories.com">theshapesofstories.com</a><br/>
+          Share your setup &nbsp;—&nbsp; use <strong>#TheShapesOfStories</strong>.
+        </div>
+      </div>
+
+      <div class="social">
+        Tip: tag us with your framed print for a chance to be featured.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BACK ===== -->
+  <section class="page" aria-label="Back">
+    <div class="content">
+
+      <div class="section">
+        <div class="h">Care & Display</div>
+        <ul class="list">
+          <li>Handle prints with clean, dry hands; avoid touching the print surface.</li>
+          <li>Frame behind glass/UV acrylic; keep out of direct sunlight and high humidity.</li>
+          <li>For mats: choose an inner window slightly smaller than the artwork area.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="h">Love Your Print?</div>
+        <ul class="list">
+          <li>Reviews help other readers discover us—thanks for taking a minute to leave one!</li>
+          <li>Questions or issues? Reach out via the site and we’ll make it right.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="h">Collect Them All</div>
+        <ul class="list">
+          <li>Explore classics, films, biographies, sports, and more shapes & sizes.</li>
+          <li>Look for multi-story posters that group your favorites together.</li>
+        </ul>
+      </div>
+
+      <div class="note">Room for a handwritten note / signature</div>
+
+      <div class="footer">
+        <span>The Shapes of Stories</span>
+        <span>Every story has a shape <span class="swatch" aria-hidden="true"></span></span>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

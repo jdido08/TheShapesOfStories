@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Shapes of Stories — 6x4 Insert (Single-sided)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Brand fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* ----- Printify Insert: single side, 6" x 4" (landscape) ----- */
+  @page { size: 6in 4in; margin: 0; }  /* Edge-to-edge if printer supports borderless */
+
+  :root{
+    /* From your About page tokens */
+    --gatsby-gold: hsl(45, 92%, 62%);
+    --gatsby-navy: hsl(207, 71%, 14%);
+    --ink: #000;
+    --sub: #5a5a5a;
+    --safe: 0.30in;     /* safe margin so text never hugs the edge */
+  }
+
+  html, body { height: 100%; background: #eee; }
+  body {
+    margin: 0;
+    font-family: "Courier Prime", "Courier New", Courier, monospace;  /* brand body */
+    color: var(--ink);
+  }
+
+  .page {
+    width: 6in; height: 4in; background: #fff; position: relative; overflow: hidden;
+    box-shadow: 0 0 0.05in rgba(0,0,0,.15);
+  }
+
+  /* Subtle top accent bar in Gatsby Gold */
+  .accent { position:absolute; left:0; top:0; right:0; height:0.14in; background:var(--gatsby-gold); }
+
+  .content {
+    position: absolute; inset: var(--safe);
+    display: grid; grid-template-rows: auto auto 1fr auto auto; gap: 0.35rem;
+  }
+
+  /* Header row */
+  .row { display:flex; align-items:center; gap:0.45rem; }
+  .logo { height: 36px; width:auto; object-fit:contain; }
+  .brand { font: 700 16px "Century Gothic","Futura",system-ui,sans-serif; letter-spacing:.3px; color: var(--gatsby-navy); }
+
+  /* Headline & explainer */
+  .tagline { font: 700 22px/1.15 "Century Gothic","Futura",system-ui,sans-serif; margin: .1rem 0 .2rem; color: var(--gatsby-navy); }
+  .blurb { font-size: 12.75px; color:#444; line-height:1.45; }
+
+  /* GI/BE motif — mirrors About page axes/labels */
+  .motif { margin: .1rem 0 .35rem; }
+  .motif svg { width: 100%; height: 48px; }
+
+  /* CTA: QR + copy */
+  .cta { display:grid; grid-template-columns: 1.15in 1fr; gap:.45rem; align-items:center; }
+  .qr {
+    width: 1.15in; height: 1.15in; border: 1px dashed #bbb; display:flex;
+    align-items:center; justify-content:center; font-size:10px; color:#999;
+  }
+  .cta-copy { font-size: 12.5px; line-height:1.45; }
+  .url { font-weight:700; text-decoration:none; color: var(--gatsby-navy); }
+
+  /* Optional offer box */
+  .offer { margin-top:.1rem; padding:.45rem .55rem; border:1px solid var(--gatsby-navy); border-radius:6px; font-size:12.25px; }
+  .code { font-family:monospace; font-weight:700; padding:2px 6px; border:1px dashed var(--gatsby-navy); }
+
+  /* Fine print / review nudge */
+  .fine { font-size: 11px; color:#666; }
+
+  @media print { html, body { background:#fff; } .page { box-shadow:none; } }
+</style>
+</head>
+<body>
+  <main class="page" aria-label="Insert">
+    <div class="accent"></div>
+    <div class="content">
+
+      <!-- Brand header -->
+      <div class="row">
+        <img class="logo" src="INSERT-LOGO.png" alt="The Shapes of Stories logo">
+        <div class="brand">The Shapes of Stories</div>
+      </div>
+
+      <!-- Headline + one-line explainer (brand voice) -->
+      <h1 class="tagline">Every story has a shape.</h1>
+      <p class="blurb">
+        We turn beloved stories into minimalist “story shapes” on a simple graph:
+        BE = Time (Beginning→End) and GI = Fortune (Good↑ / Ill↓).
+      </p>
+
+      <!-- Subtle GI/BE motif (axes + tiny curve + B/E/G/I labels) -->
+      <div class="motif" aria-hidden="true">
+        <svg viewBox="0 0 400 70" role="img">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10Z" fill="black"></path>
+            </marker>
+          </defs>
+          <!-- BE axis -->
+          <line x1="12" y1="35" x2="388" y2="35" stroke="black" stroke-width="2" marker-end="url(#arr)"/>
+          <!-- GI up/down -->
+          <line x1="48" y1="8" x2="48" y2="62" stroke="black" stroke-width="2"/>
+          <line x1="48" y1="8"  x2="48" y2="6"  stroke="black" stroke-width="2" marker-end="url(#arr)"/>
+          <line x1="48" y1="62" x2="48" y2="64" stroke="black" stroke-width="2" marker-end="url(#arr)"/>
+          <!-- Labels -->
+          <text x="10"  y="48" font-size="12" font-weight="700">B</text>
+          <text x="390" y="48" font-size="12" font-weight="700" text-anchor="end">E</text>
+          <text x="38"  y="12" font-size="12" font-weight="700">G</text>
+          <text x="40"  y="68" font-size="12" font-weight="700">I</text>
+          <!-- Curve -->
+          <path d="M 68 50 Q 200 12 340 50" fill="none" stroke="black" stroke-width="3"/>
+        </svg>
+      </div>
+
+      <!-- CTA / URL / QR -->
+      <div class="cta">
+        <div class="qr">QR here</div>
+        <div class="cta-copy">
+          Explore more shapes, series, and sizes:<br />
+          <a class="url" href="https://theshapesofstories.com">theshapesofstories.com</a><br />
+          Share your setup — use <strong>#TheShapesOfStories</strong>.
+        </div>
+      </div>
+
+      <!-- Optional next-order offer (remove if not using) -->
+      <div class="offer">Thanks for supporting indie art! Enjoy <strong>10% off</strong> your next order with code <span class="code">SAVE10</span>.</div>
+
+      <!-- Gentle review nudge -->
+      <div class="fine">Loved your print? A quick review helps other readers discover us. Questions? Reach out via the site — we’ll make it right.</div>
+
+    </div>
+  </main>
+</body>
+</html>

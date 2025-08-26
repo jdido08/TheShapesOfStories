@@ -16,6 +16,12 @@ Usage:
 
   # (Optional) Pin a few handy fields in the Admin sidebar
   python shopify_metafield_definitions.py --pin
+
+
+Practical workflow:
+- Add fields? Update DEF_LIST → run create_all_metafields
+- Adjust labels/choices? Call metafieldDefinitionUpdate.
+- Need a different type/key? New field + migrate.
 """
 import os, json, time, yaml
 from typing import Any, Dict, List, Optional
@@ -119,6 +125,52 @@ mutation PinDef($ownerType: MetafieldOwnerType!, $namespace: String!, $key: Stri
 }
 """
 
+QUERY_DEFS = """
+query GetDefs($ownerType: MetafieldOwnerType!, $first: Int!) {
+  metafieldDefinitions(ownerType: $ownerType, first: $first) {
+    nodes {
+      id
+      name
+      namespace
+      key
+      ownerType
+      type { name }
+      description
+      validations { name value }
+    }
+  }
+}
+"""
+
+
+UPDATE_DEF = """
+mutation UpdateDef($id: ID!, $def: MetafieldDefinitionUpdateInput!) {
+  metafieldDefinitionUpdate(id: $id, definition: $def) {
+    updatedDefinition {
+      id
+      name
+      description
+      type { name }
+      validations { name value }
+    }
+    userErrors { field message code }
+  }
+}
+"""
+
+
+def get_definition(owner_type: str, namespace: str, key: str) -> Optional[dict]:
+    """Return the metafield definition node for (owner_type, namespace, key), or None."""
+    resp = call(QUERY_DEFS, {"ownerType": owner_type, "first": 250})
+    if "errors" in resp and resp["errors"]:
+        print(" ! GraphQL errors in GetDefs:", resp["errors"])
+        return None
+    nodes = resp.get("data", {}).get("metafieldDefinitions", {}).get("nodes", [])
+    for n in nodes:
+        if n["namespace"] == namespace and n["key"] == key:
+            return n
+    return None
+
 def call(query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(3):
@@ -160,7 +212,6 @@ def create_all_metafields():
             tname = created.get("type", {}).get("name")
             print(f"+ Created {created['ownerType']}.{created['namespace']}.{created['key']} (type={tname})")
 
-
 def pin_some_metafields():
     pins = [
         ("PRODUCT", "story", "slug"),
@@ -172,43 +223,132 @@ def pin_some_metafields():
     print("Pinning definitions in Admin sidebar...")
     for owner, ns, key in pins:
         resp = call(PIN, {"ownerType": owner, "namespace": ns, "key": key})
-        if "errors" in resp and resp["errors"]:
-            print(f" ! GraphQL errors while pinning {owner}.{ns}.{key}: {resp['errors']}")
-            continue
-        node = resp.get("data", {}).get("metafieldDefinitionPin")
-        if not node:
-            print(f" ! Unexpected response while pinning {owner}.{ns}.{key}: {json.dumps(resp, indent=2)}")
-            continue
-        uerrs = node.get("userErrors") or []
-        if uerrs:
-            print(f"- Pin {owner}.{ns}.{key}: {uerrs}")
+        ue = resp.get("data",{}).get("metafieldDefinitionPin",{}).get("userErrors") or []
+        if ue:
+            print(f"- Pin {owner}.{ns}.{key}: {ue}")
         else:
-            pinned = node.get("pinnedDefinition")
-            if pinned:
-                print(f"+ Pinned {pinned['ownerType']}.{pinned['namespace']}.{pinned['key']}")
+            pinned = resp["data"]["metafieldDefinitionPin"]["pinnedDefinition"]
+            print(f"+ Pinned {pinned['ownerType']}.{pinned['namespace']}.{pinned['key']}")
 
+def update_metafield_definition(owner_type: str,
+                                namespace: str,
+                                key: str,
+                                name: Optional[str] = None,
+                                description: Optional[str] = None,
+                                add_choices: Optional[List[str]] = None,
+                                remove_choices: Optional[List[str]] = None,
+                                replace_choices: Optional[List[str]] = None,
+                                set_regex: Optional[str] = None) -> None:
+    """
+    - name/description: simple text changes.
+    - choices: for single_line_text_field using 'choices' validation.
+      Use replace_choices to overwrite, or add/remove to patch.
+    - set_regex: replace/define a 'regex' validation value.
+    """
+    node = get_definition(owner_type, namespace, key)
+    if not node:
+        print(f" ! Definition not found: {owner_type}.{namespace}.{key}")
+        return
 
+    def_input: Dict[str, Any] = {}
+    if name is not None:
+        def_input["name"] = name
+    if description is not None:
+        def_input["description"] = description
+
+    # Start from current validations
+    curr_validations = node.get("validations", []) or []
+    # Build dict -> so we can edit by name
+    vmap = {v["name"]: v["value"] for v in curr_validations}
+
+    # Handle choices
+    if any([add_choices, remove_choices, replace_choices]):
+        # Parse current choices JSON (if present)
+        curr_choices = []
+        if "choices" in vmap:
+            try:
+                curr_choices = json.loads(vmap["choices"])
+            except Exception:
+                curr_choices = []
+        if replace_choices is not None:
+            new_choices = list(dict.fromkeys(replace_choices))
+        else:
+            new_choices = list(dict.fromkeys(curr_choices + (add_choices or [])))
+            if remove_choices:
+                new_choices = [c for c in new_choices if c not in set(remove_choices)]
+        vmap["choices"] = _json.dumps(new_choices)
+
+    # Handle regex (completely replace)
+    if set_regex is not None:
+        vmap["regex"] = set_regex
+
+    # Rebuild validations array from map
+    new_validations = [{"name": k, "value": v} for k, v in vmap.items()]
+    if new_validations:
+        def_input["validations"] = new_validations
+
+    # Call update
+    resp = call(UPDATE_DEF, {"id": node["id"], "def": def_input})
+    if "errors" in resp and resp["errors"]:
+        print(" ! GraphQL errors in UpdateDef:", resp["errors"])
+        return
+    payload = resp.get("data", {}).get("metafieldDefinitionUpdate")
+    if not payload:
+        print(" ! Unexpected update response:", json.dumps(resp, indent=2))
+        return
+    uerrs = payload.get("userErrors") or []
+    if uerrs:
+        print(" - Update userErrors:", uerrs)
+        return
+    updated = payload.get("updatedDefinition")
+    print(" ✓ Updated:", json.dumps(updated, indent=2))
 
 
 # CREATE METAFIELDS
-create_all_metafields()
+# create_all_metafields() ## creates new metafields listed in DEF_LIST
 
 # PIN METAFIELDS 
 # pin_some_metafields()
 
-# ## 
-# if __name__ == "__main__":
-#     import argparse
-#     ap = argparse.ArgumentParser(description="Create Shopify metafield definitions (products & variants).")
-#     ap.add_argument("--create", action="store_true", help="Create all definitions")
-#     ap.add_argument("--pin", action="store_true", help="Pin common definitions in Admin")
-#     args = ap.parse_args()
+# UPDATE METAFIELDS
 
-#     if not (args.create or args.pin):
-#         ap.print_help()
-#         raise SystemExit(0)
+## EXAMPLES OF UPDATING METAFIELDS:
 
-#     if args.create:
-#         create_all()
-#     if args.pin:
-#         pin_some()
+# A) Add a new allowed value to design.medium:
+# update_metafield_definition(
+#     owner_type="PRODUCT",
+#     namespace="design",
+#     key="medium",
+#     add_choices=["poster"]  # appends 'poster' to existing choices
+# )
+
+# B) Replace the entire choices list (be careful—tightens validation):
+# update_metafield_definition(
+#     owner_type="PRODUCT",
+#     namespace="design",
+#     key="medium",
+#     replace_choices=["print","canvas","t-shirt","mug","poster"]
+# )
+
+
+# C) Rename the field as it appears in Admin:
+# update_metafield_definition(
+#     owner_type="PRODUCT",
+#     namespace="story",
+#     key="title",
+#     name="Story Title (Display)"
+# )
+
+
+# D) Update the regex for shapes.symbols:
+# update_metafield_definition(
+#     owner_type="PRODUCT",
+#     namespace="shapes",
+#     key="symbols",
+#     set_regex=r"^[↑↓→←↗↘↖↙\s-]+$"  # note: keep the double backslash if this lives inside JSON
+# )
+
+#Notes & guardrails
+# You cannot change ownerType, namespace, key, or the type of a definition. If those need to change, create a new definition and migrate values.
+# Tightening validations (e.g., removing a choice) won’t retroactively delete old values, but future writes with out-of-range values will error. Plan a small data cleanup if needed.
+# Your current symbols regex in DEF_LIST should use a double backslash so \s reaches Shopify correctly:
