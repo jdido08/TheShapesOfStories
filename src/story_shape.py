@@ -288,6 +288,16 @@ def create_shape(
     new_title = story_data['title'].lower().replace(' ', '-')
     new_size = f'{width_in_inches}x{height_in_inches}'
     new_protagonist = story_data['protagonist'].lower().replace(' ', '-')
+
+    #adding hex color values
+    story_data['font_color_hex'] = font_color_hex
+    story_data['background_color_hex'] = background_value_hex
+    story_data['border_color_hex'] = border_color_hex #NOT USING THIS 
+    story_data['font_color_name'] = hex_to_color_name(font_color_hex)
+    story_data['background_color_name'] = hex_to_color_name(background_value_hex)
+    story_data['border_color_name'] = hex_to_color_name(border_color_hex) #NOT USING THIS 
+
+
     
     
     
@@ -3052,3 +3062,25 @@ def _layout_single_phrase_on_curve(
     # End of: for char_idx, char_glyph in enumerate(phrase_text)
 
     return True, distance_on_curve, idx_on_curve, char_render_info_list, new_boxes_for_this_phrase
+
+
+import webcolors
+from webcolors import CSS3_NAMES_TO_HEX
+
+def hex_to_color_name(hex_color: str) -> str:
+    """Return exact CSS3 name if available; otherwise the nearest CSS3 name."""
+    # exact match first
+    try:
+        return webcolors.hex_to_name(hex_color, spec='css3')
+    except ValueError:
+        pass
+
+    # nearest by Euclidean RGB distance
+    r, g, b = webcolors.hex_to_rgb(hex_color)  # returns ints 0–255
+    best_name, best_dist = None, float('inf')
+    for name, hx in CSS3_NAMES_TO_HEX.items():
+        cr, cg, cb = webcolors.hex_to_rgb(hx)
+        dist = (cr - r)**2 + (cg - g)**2 + (cb - b)**2
+        if dist < best_dist:
+            best_name, best_dist = name, dist
+    return best_name

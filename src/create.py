@@ -11,6 +11,7 @@ import time
 import platform
 from PIL import ImageFont
 from googleapiclient.discovery import build
+import webcolors
 
 
 from matplotlib import font_manager
@@ -345,7 +346,7 @@ for row in rows:
     background_color = row.get("background_color (optional)")
     font_color = row.get("font_color (optional)")
     #border_color = row.get("border_color (optional)")
-    border_color = "FFFFFF"
+    border_color = "#FFFFFF"
     font = row.get("font (optional)")
     width = row.get("width (in) (optional)")
     height = row.get("height (in) (optional)")
