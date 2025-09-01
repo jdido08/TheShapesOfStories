@@ -49,3 +49,27 @@
 #   - first_sentence
 
 
+from pathlib import Path
+import json
+from extract_story_metadata import StoryInput, extract_story_metadata_all
+
+CONFIG, PROVIDER, MODEL = "config.yaml", "openai", "gpt-5"
+path = Path("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/moby-dick_ishmael.json")
+
+doc = json.loads(path.read_text(encoding="utf-8"))
+story = StoryInput(
+    title=doc["title"],
+    author=doc["author"],
+    publication_year=int(doc["year"]),
+    summary=doc["summary"]
+)
+
+
+
+res = extract_story_metadata_all(CONFIG, story, PROVIDER, MODEL)
+
+doc["extracted_story_metadata"] = res["metadata"]
+doc["extracted_story_metadata_evidence"] = res["evidence"]
+doc["extracted_story_metadata_confidence"] = res["confidence"]
+
+path.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")

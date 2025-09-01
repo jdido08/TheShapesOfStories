@@ -308,7 +308,7 @@ def update_metafield_definition(owner_type: str,
 
 
 # CREATE METAFIELDS
-create_all_metafields() ## creates new metafields listed in DEF_LIST
+#create_all_metafields() ## creates new metafields listed in DEF_LIST
 
 # PIN METAFIELDS 
 # pin_some_metafields()
