@@ -80,9 +80,12 @@ DEF_LIST: List[dict] = [
          validations=[{"name":"choices","value":json.dumps(LINE_TYPE_CHOICES)}]),
     dict(name="Background Color (Hex)", namespace="design", key="bg_hex", type="color", ownerType="PRODUCT"),
     dict(name="Background Color Name", namespace="design", key="bg_name", type="single_line_text_field", ownerType="PRODUCT"),
+    dict(name="Background Color Family", namespace="design", key="bg_family", type="single_line_text_field", ownerType="PRODUCT"),
     dict(name="Font Family", namespace="design", key="font_family", type="single_line_text_field", ownerType="PRODUCT"),
     dict(name="Font Color (Hex)", namespace="design", key="font_color_hex", type="color", ownerType="PRODUCT"),
     dict(name="Font Color Name", namespace="design", key="font_color_name", type="single_line_text_field", ownerType="PRODUCT"),
+    dict(name="Font Color Family", namespace="design", key="font_color_family", type="single_line_text_field", ownerType="PRODUCT"),
+
 
     # PRODUCT: shapes.*
     dict(name="Shape Archetype", namespace="shapes", key="archetype", type="single_line_text_field", ownerType="PRODUCT",
@@ -305,7 +308,7 @@ def update_metafield_definition(owner_type: str,
 
 
 # CREATE METAFIELDS
-# create_all_metafields() ## creates new metafields listed in DEF_LIST
+create_all_metafields() ## creates new metafields listed in DEF_LIST
 
 # PIN METAFIELDS 
 # pin_some_metafields()

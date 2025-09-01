@@ -49,27 +49,3 @@
 #   - first_sentence
 
 
-
-import webcolors
-from webcolors import CSS3_NAMES_TO_HEX
-
-def hex_to_color_name(hex_color: str) -> str:
-    """Return exact CSS3 name if available; otherwise the nearest CSS3 name."""
-    # exact match first
-    try:
-        return webcolors.hex_to_name(hex_color, spec='css3')
-    except ValueError:
-        pass
-
-    # nearest by Euclidean RGB distance
-    r, g, b = webcolors.hex_to_rgb(hex_color)  # returns ints 0–255
-    best_name, best_dist = None, float('inf')
-    for name, hx in CSS3_NAMES_TO_HEX.items():
-        cr, cg, cb = webcolors.hex_to_rgb(hx)
-        dist = (cr - r)**2 + (cg - g)**2 + (cb - b)**2
-        if dist < best_dist:
-            best_name, best_dist = name, dist
-#     return best_name
-
-# print(hex_to_color_name("#F9D342"))   # -> "gold"
-# print(hex_to_color_name("#0A1F3B"))   # -> "midnightblue" (very close to your Gatsby navy)
