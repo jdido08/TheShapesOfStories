@@ -209,3 +209,21 @@ Product Data Model
 3. Script for Setting metafields for Shopify 
 
 - Need to think about Variants 
+
+
+
+# Set Basic Fields
+# Create Story Data
+# Validate Shape
+# Determine Shape 
+# Create Metadata
+
+# Create Versions -- 10x8, 8x10, 11x14, 14x11
+# Grade Text 
+# Verify Shape hasn't changed 
+
+<!-- # Style: line, text -->
+# Size: 8x10, 11x14
+# Orientation: Portrait, Landscape 
+# Color: Navy/Gold 
+

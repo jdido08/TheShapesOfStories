@@ -272,7 +272,9 @@ TAXONOMY = {
         "Gaslamp": "Gaslamp Fantasy",
         "Grim Dark": "Grimdark",
         "Cli Fi": "Climate Fiction (Cli-Fi)"
-    }
+    },
+    "heritage": ["Classic", "Modern Classic", "Contemporary", "Cult Classic"]
+
 }
 
 
@@ -450,71 +452,59 @@ def _coerce_to_text(msg: Any) -> str:
     # Last resort
     return "" if content is None else str(content)
 
+def validate_heritage(h: Optional[str]) -> Optional[str]:
+    if h in TAXONOMY["heritage"]:
+        return h
+    return None
+
 
 
 # ----------------------------
 # Prompt A — Setting Extractor
 # ----------------------------
 
-SETTING_PROMPT_TEMPLATE = """SYSTEM
-You extract setting metadata. If not ≥0.60 confident, return null.
+GENRE_PROMPT_TEMPLATE = """SYSTEM
+You classify books using a strict taxonomy. If a label isn’t in TAXONOMY, return null.
 
 TAXONOMY
-{{ setting_taxonomy_json }}
+{{taxonomy_json}}
 
 CONTEXT
-<title>{{ title }}</title>
-<author>{{ author }}</author>
-<publication_year>{{ publication_year }}</publication_year>
-<summary>{{ summary }}</summary>
+<title>{{title}}</title>
+<author>{{author}}</author>
+<publication_year>{{publication_year}}</publication_year>
+<summary>{{summary}}</summary>
 
 RULES
-- Use both summary and world knowledge; prefer well-established canon on conflicts.
-- Return named places (toponyms) AND controlled facets from TAXONOMY.
-- Order arrays by prominence/page time. De-duplicate.
-- Normalize obvious toponym variants using TAXONOMY.normalize_toponym when applicable.
+- Normalize candidate labels using normalization_map, then select.
+- ≤2 genres total; ≤3 subgenres per selected genre.
+- Heritage is NOT a genre; assign one heritage label independently (do not count toward genre limits).
+- Use publication year + enduring reputation to guide heritage:
+  Classic (pre-1970 + canonical), Modern Classic (≈1970–1999 with canonical status), Contemporary (≈2000+ or current-market), Cult Classic (significant subcultural following).
+- Mystery vs Thriller: puzzle/investigation → Mystery; imminent danger/clock → Thriller.
+- Dystopian/Post-Apocalyptic → Science Fiction.
+- Magical Realism → Fantasy. If marketed as “literary,” note that in `notes` (do not add as a genre).
 
 OUTPUT (JSON only)
 {
-  "setting_city":    ["City 1","City 2"] | null,
-  "setting_region":  ["State/Province/Region 1"] | null,
-  "setting_country": ["Country 1"] | null,
-  "setting_era":     "Era label or decade/century" | null,
-  "setting_time":    "Season/day/time-window" | null,
-
-  "place_types":     ["City","Island","Ship (onboard)"] | null,
-  "environment":     ["Open Ocean","Coastal","Island"] | null,
-  "macroregion":     ["North America"] | null,
-  "mobility":        ["Sea Voyage"] | null,
-  "time_window":     "Multiple years" | null,
-
+  "genre":    ["Top-level genre", "Optional second genre"] | null,
+  "subgenre": ["Subgenre 1","Subgenre 2","Subgenre 3"] | null,
+  "heritage": "Classic" | "Modern Classic" | "Contemporary" | "Cult Classic" | null,
   "evidence": {
-    "setting_city":    { "from": "summary|world", "note": "…" } | null,
-    "setting_region":  { "from": "summary|world", "note": "…" } | null,
-    "setting_country": { "from": "summary|world", "note": "…" } | null,
-    "setting_era":     { "from": "summary|world", "note": "…" } | null,
-    "setting_time":    { "from": "summary|world", "note": "…" } | null,
-    "place_types":     { "from": "summary|world", "note": "…" } | null,
-    "environment":     { "from": "summary|world", "note": "…" } | null,
-    "macroregion":     { "from": "summary|world", "note": "…" } | null,
-    "mobility":        { "from": "summary|world", "note": "…" } | null,
-    "time_window":     { "from": "summary|world", "note": "…" } | null
+    "genre":    { "from": "summary|normalization|world", "note": "…" } | null,
+    "subgenre": { "from": "summary|normalization|world", "note": "…" } | null,
+    "heritage": { "from": "summary|world", "note": "…" } | null
   },
   "confidence": {
-    "setting_city": 0.0-1.0 | null,
-    "setting_region": 0.0-1.0 | null,
-    "setting_country": 0.0-1.0 | null,
-    "setting_era": 0.0-1.0 | null,
-    "setting_time": 0.0-1.0 | null,
-    "place_types": 0.0-1.0 | null,
-    "environment": 0.0-1.0 | null,
-    "macroregion": 0.0-1.0 | null,
-    "mobility": 0.0-1.0 | null,
-    "time_window": 0.0-1.0 | null,
+    "genre": 0.0-1.0 | null,
+    "subgenre": 0.0-1.0 | null,
+    "heritage": 0.0-1.0 | null,
     "_overall": 0.0-1.0
-  }
+  },
+  "notes": "Brief edge-case comment if needed; else \"\""
 }
 """
+
 
 
 def extract_setting_metadata(
@@ -638,6 +628,8 @@ def classify_genre_subgenre(
     g, s = validate_genres_subgenres(result.get("genre"), result.get("subgenre"))
     result["genre"] = g
     result["subgenre"] = s
+    result["heritage"] = validate_heritage(result.get("heritage"))
+
     return result
 
 # ----------------------------------------------
@@ -859,6 +851,7 @@ def extract_story_metadata_all(
             "time_window":     A.get("time_window"),
             "genre":           B.get("genre"),
             "subgenre":        B.get("subgenre"),
+            "heritage":        B.get("heritage"),
             "series":          series_value,
             "universe":        universe_value,
             "awards":          C.get("awards", []),
@@ -869,6 +862,7 @@ def extract_story_metadata_all(
             **(A.get("evidence") or {}),
             "genre":    (B.get("evidence") or {}).get("genre"),
             "subgenre": (B.get("evidence") or {}).get("subgenre"),
+            "heritage": (B.get("evidence") or {}).get("heritage"),
         },
         "confidence": {
             "setting_city":    (A.get("confidence") or {}).get("setting_city"),
@@ -883,6 +877,7 @@ def extract_story_metadata_all(
             "time_window": (A.get("confidence") or {}).get("time_window"),
             "genre":           (B.get("confidence") or {}).get("genre"),
             "subgenre":        (B.get("confidence") or {}).get("subgenre"),
+            "heritage":  (B.get("confidence") or {}).get("heritage"),
             "_overall":        None
         },
         "notes": B.get("notes") or ""
