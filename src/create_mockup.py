@@ -1,3 +1,18 @@
+# MOCKUP STRATEGY:
+# 1. shows the [8x10, 11x14] poster by itself no frame 
+# 2. shows the [8x10, 11x14] poster framed on a table with no mat i.e. frames are [8x10, 11x14]
+# 3. shows the [8x10, 11x14] poster framed on a wall with mat i.e. frames that are [11x14, 16x20]
+# 4. shows 3 [8x10, 11x14] posters together on a wall with mat i.e. frames taht are [11x14, 16x20]
+# 5. shows two posters one 8x10 and the other 11x14 on wall wit matt i.e. frames taht are [11x14, 16x20]
+# Each image should have a small annotation clarifying the print and frame size that's in the photo
+
+
+# “Print size: 8×10 in (unframed). Fits any 8×10 frame, or use an 11×14 frame with 8×10 mat.”
+# “Print size: 11×14 in (unframed). Fits any 11×14 frame, or use a 16×20 frame with 11×14 mat for a gallery look.”
+# Annotations in photo should clarify the design print size and also the frame size 
+
+
+
 from PIL import Image
 
 def find_coeffs(pa, pb):
