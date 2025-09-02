@@ -68,8 +68,8 @@ story = StoryInput(
 
 res = extract_story_metadata_all(CONFIG, story, PROVIDER, MODEL)
 
-doc["extracted_story_metadata"] = res["metadata"]
-doc["extracted_story_metadata_evidence"] = res["evidence"]
-doc["extracted_story_metadata_confidence"] = res["confidence"]
+doc["story_metadata"] = res["metadata"]
+doc["story_metadata_evidence"] = res["evidence"]
+doc["story_metadata_confidence"] = res["confidence"]
 
 path.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
