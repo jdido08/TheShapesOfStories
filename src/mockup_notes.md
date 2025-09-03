@@ -1,3 +1,37 @@
+New Mockup Strategy:
+
+
+
+(0) Poster-only — flat-lay, no frame (8×10)
+
+Top-down flat-lay of a single 8×10 fine-art poster on neutral off-white mat board. Paper is BLANK (no text, no artwork), subtle EGGSHELL texture, perfectly rectangular. Orthographic/top-down camera to avoid perspective skew. Soft north-facing window light from upper-left; gentle, believable shadows. Sparse literary props placed with negative space and NOT touching edges: one closed linen hardcover (spine unreadable), a fountain pen, a few brass paperclips. Technical: 50mm equivalent, f/5.6, ISO 200, 1/125s; grid-level alignment (0° rotation); no barrel distortion. Aspect ratio 4:5. No text or logos anywhere.
+
+
+(0) Poster-only — flat-lay, no frame (11×14)
+
+Top-down flat-lay of a single 11×14 fine-art poster on neutral off-white mat board. Paper is BLANK (no text, no artwork), subtle EGGSHELL texture, perfect rectangle via orthographic/top-down camera. Soft window light from upper-left; gentle shadows; props identical to the 8×10 version (linen hardcover, fountain pen, brass paperclips) arranged with negative space and not touching the sheet. Technical: 50mm equivalent, f/5.6, ISO 200, 1/125s; no barrel distortion. Aspect ratio 11:14. No text or logos anywhere.
+
+
+Shared templates (reused for both variants; you’ll swap the inserted art)
+
+(1) Table vignette — no mat, frame = 8×10 (print size)
+A single 8×10 fine-art print inside a slim MATTE-BLACK frame WITHOUT a mat, leaning against a clean white wall on a light oak console table. The visible artwork area is exactly 8×10 inches (frame interior equals print size). The print area is BLANK (no text or artwork), fine-art paper with a subtle EGGSHELL texture, seen behind glass; include a soft, realistic reflection (no harsh glare). Minimal, literary props: a small stack of neutral clothbound books, a ceramic bud vase, and a porcelain coffee cup; keep them understated and not overlapping the frame. Camera is STRAIGHT-ON at mid-height with perfect verticals/horizontals (no keystone). Soft daylight from the left creates a gentle wall shadow; background stays uncluttered and airy.
+Detail cues: crisp frame corners, true paper whites (not blue), believable surface micro-contrast.
+Technical: 50–70mm, f/4, ISO 200, 1/125s, neutral white balance, sRGB. Aspect ratio 3:2. No text or logos anywhere.
+
+
+(2) Wall hero — with mat, close-crop (inner window = 11×14 print)
+A tight, STRAIGHT-ON crop of a slim MATTE-BLACK frame WITH a WHITE MAT, hung on a clean white wall. Compose intentionally close so the OUTER frame size is not inferable; show just enough wall to breathe but keep focus on the mat opening. Inside the mat is a BLANK fine-art print area sized for an 11×14 print (visible opening ≈10.5×13.5 inches), with a subtle EGGSHELL paper texture. Light is soft window light from the left, producing a delicate right-side wall shadow and a gentle, realistic glass reflection (no hard glare).
+Detail cues: real mat bevel and gap, crisp mitered frame corners, perfectly parallel edges (no keystone), true paper whites (not blue).
+Technical: 55mm, f/5.6, ISO 200, 1/125s, neutral white balance, sRGB. Aspect ratio 3:2. No text or logos anywhere.
+
+(3) Uniform 3-up gallery wall — all 8×10 prints in 11×14 frames (with mats)
+Three framed prints arranged horizontally on a white wall, photographed STRAIGHT-ON. ALL THREE are 8×10 prints in 11×14 slim MATTE-BLACK frames WITH WHITE MATS. All print areas are BLANK (no text/art), fine-art EGGSHELL paper. Equal spacing (clean 3–4 inch gaps), shared centerline, perfectly level. Optional narrow shelf below with 2–3 neutral clothbound books; styling airy, minimal, bookish. Detail accuracy: mat bevels visible; consistent soft wall shadows; crisp frame corners. Technical: 50–60mm, f/5.6, ISO 200, 1/125s, neutral WB, sRGB. Aspect ratio 16:9. No text or logos anywhere.
+
+(4) Two-size comparison — both matted, side-by-side
+Two framed prints on a white wall, photographed STRAIGHT-ON. LEFT: an 11×14 print in a 16×20 slim MATTE-BLACK frame WITH a WHITE MAT. RIGHT: an 8×10 print in an 11×14 slim MATTE-BLACK frame WITH a WHITE MAT. Both print areas are BLANK (no text/art), fine-art EGGSHELL paper. Frames share the same centerline with a clear 3–4 inch gap; the size difference must be unmistakable at a glance. Soft window light from left; soft-edged, credible wall shadows. Optional narrow shelf below with a tidy stack of neutral clothbound books and a small stoneware vase; minimal and literary. Detail accuracy: real mat bevels; true paper whites; crisp mitered corners; subtle, non-distracting glass reflections. Technical: 50–60mm, f/5.6, ISO 200, 1/125s, neutral WB, sRGB. Aspect ratio 3:2 or 16:9. No text or logos anywhere.
+
+_____________
 Perfect—here are your **clean prompts (no on-image annotations)**. They produce blank, photoreal mockups; you’ll add the badges later in your editor.
 
 ---
