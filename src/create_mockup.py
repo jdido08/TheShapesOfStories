@@ -11,6 +11,11 @@
 # “Print size: 11×14 in (unframed). Fits any 11×14 frame, or use a 16×20 frame with 11×14 mat for a gallery look.”
 # Annotations in photo should clarify the design print size and also the frame size 
 
+#NEW MOCKUP
+# only 11x14 prints --> consider 8x10 later; it's too confusing to offer multiple sizes
+# include white border 
+# mockups no matt (like obvious state) they're my inspiration 
+# mockups poster, table, wall, three prints
 
 
 from PIL import Image
