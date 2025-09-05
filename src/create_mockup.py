@@ -73,16 +73,22 @@ def main():
     #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/poster-mockup-without-clips.png'
 
     #framed w/ mat on wall 
-    mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/framed-wall-mockup-template-for-8x10-poster.png'
+    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/framed-wall-mockup-template-for-8x10-poster.png'
 
+    #new table
+    mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/8x10_print_on_table_in_11x14_frame_with_matt.jpeg'
 
     #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/Frame_Mockup_PSD 2.psd'
     # 2. Filename of the artwork you want to insert
     #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-#0A1F3B_font-color-#F9D342_border-color-#26834A_font-Josefin Sans_title-display-yes.png' # <-- EDIT THIS
     #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png'
     artwork_path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
+    
+    #table mockup 
+    #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/8x10_print_on_table_in_11x14_frame_with_matt.jpeg'
+    
     # 3. Filename for the final output file
-    output_path = 'final_mockup_test_3.jpg'
+    output_path = 'final_mockup_test_4.jpg'
 
     # 4. Paste the coordinates you found here
     #dest_corners = [(908, 445), (2100, 445), (2100, 1930), (908, 1930)] # <-- EDIT THIS
@@ -98,7 +104,11 @@ def main():
     #dest_corners = [(403, 114), (1116, 114), (1116, 918), (403, 918)]
 
     #framed mockup with mat on wall 
-    dest_corners = [(603, 234), (930, 234), (930, 654), (603, 654)]
+   # dest_corners = [(603, 234), (930, 234), (930, 654), (603, 654)]
+
+
+    #new one one table 
+    dest_corners = [(219, 415), (532, 415), (532,779 ), (219,779)]
 
     # --- END CONFIGURATION ---
 
