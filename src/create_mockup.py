@@ -81,19 +81,25 @@ def main():
     #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/framed-wall-mockup-template-for-8x10-poster.png'
 
     #new table
-    mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/8x10_print_on_table_in_11x14_frame_with_matt.jpeg'
+    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/8x10_print_on_table_in_11x14_frame_with_matt.jpeg'
+
+    #11x14_1_frame_on_table.jpeg
+    mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_table.jpeg'
 
     #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/Frame_Mockup_PSD 2.psd'
     # 2. Filename of the artwork you want to insert
     #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-#0A1F3B_font-color-#F9D342_border-color-#26834A_font-Josefin Sans_title-display-yes.png' # <-- EDIT THIS
     #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png'
-    artwork_path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
+    #artwork_path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
     
     #table mockup 
     #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/8x10_print_on_table_in_11x14_frame_with_matt.jpeg'
     
+    artwork_path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-moby-dick_protagonist-ishmael_product-print_size-11x14_line-type-char_background-color-#1B2E4B_font-color-#F5E6D3_border-color-#FFFFFF_font-Alegreya_title-display-yes.png'
+
+
     # 3. Filename for the final output file
-    output_path = 'final_mockup_test_4.jpg'
+    output_path = 'final_mockup_test_5.jpg'
 
     # 4. Paste the coordinates you found here
     #dest_corners = [(908, 445), (2100, 445), (2100, 1930), (908, 1930)] # <-- EDIT THIS
@@ -113,7 +119,9 @@ def main():
 
 
     #new one one table 
-    dest_corners = [(219, 415), (532, 415), (532,779 ), (219,779)]
+    #dest_corners = [(219, 415), (532, 415), (532,779 ), (219,779)]
+
+    dest_corners = [(152, 401), (483, 401), (483, 857), (146, 857)]
 
     # --- END CONFIGURATION ---
 

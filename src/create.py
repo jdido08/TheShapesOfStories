@@ -533,8 +533,7 @@ for row in rows:
         top_text_font_size = 8
         bottom_text_font_size = 8
         top_and_bottom_text_band = 1
-        #border_thickness = 75 #use thinner border 
-        border_thickness = 150 #use thinner border 
+        border_thickness = 150 #this is in pixels with DPI = 300 so 150 --> 0.5 in
         width_in_inches = 8
         height_in_inches = 10
         wrap_in_inches = 0
@@ -542,8 +541,54 @@ for row in rows:
         step_k = 6
         #has_border = False
         has_border = True
-        fixed_margin_in_inches = 0.6
-    
+        fixed_margin_in_inches = 0.6 #this is suppose to be where text ends
+        #so difference between fixed_margin_in_inches - (border_thickness/300) = space between text and white border
+
+    elif product == "print" and size == "11x14":
+
+        total_chars_line1 = len(title) + len(protagonist)
+        if total_chars_line1 <= 38:
+            title_font_size       = 27
+            protagonist_font_size = 16
+            author_font_size      = 16
+        elif total_chars_line1 <= 65:
+            title_font_size       = 25
+            protagonist_font_size = 15
+            author_font_size      = 15
+        elif total_chars_line1 <= 85:
+            title_font_size       = 19
+            protagonist_font_size = 14
+            author_font_size      = 14
+        else:
+            title_font_size       = 18
+            protagonist_font_size = 13
+            author_font_size      = 13
+
+        line_thickness = 38
+        font_size = 12
+        gap_above_title = 102 #value was 26
+        top_text = author + ", " + str(year)
+        top_text_font_size = 12
+        bottom_text_font_size = 12
+        top_and_bottom_text_band = 1
+        border_thickness = 360 ## --> (360/300)/2 DPI --> 0.6 inches 
+        width_in_inches = 11
+        height_in_inches = 14
+        wrap_in_inches = 0
+        max_num_steps = 2
+        step_k = 6
+        has_border = True
+        fixed_margin_in_inches = 0.85 
+        #1 = 0.6 + 0.4 = 1
+        #0.85 ## --> border thickness (0.6) + 0.25 = 0.85
+
+        #note that:
+        #border thickness is in pixels and apparently half of it gets clipped (idk why) so with 300 DPI --> (150/300) --> 0.25
+        #fixed_margin_in_inches is space between edge of print and where text begins
+        #space between white edge and text is fixed_margin_in_inches -(border_thickness/300)
+        #so if we want ~0.25in between white border and text AND a 0.6 in white border that means
+        #border thickness = 
+
     elif product == "print" and size == "custom":
         print_params = get_scaled_print_parameters(width, height)
         print(print_params)

@@ -598,25 +598,6 @@ def create_shape_single_pass(
                        - title_band_height # Use the combined height
                        - gap_above_title)
 
-    # --- extra padding for PATH/TEXT ONLY (left, right, top) ---
-    # inches; set to 0.10" for ~0.45" total side/top safe zone when your base is 0.25"
-    TEXT_PAD_SIDE_IN = 0.2   # left and right only
-    TEXT_PAD_TOP_IN  = 0.2   # top only
-
-    pad_x   = round(TEXT_PAD_SIDE_IN * CURRENT_DPI)   # px
-    pad_top = round(TEXT_PAD_TOP_IN  * CURRENT_DPI)   # px
-
-    # Build a "path-only" box. Bottom stays anchored at (margin_y + drawable_height).
-    path_margin_x      = margin_x + pad_x
-    path_margin_y_top  = margin_y + pad_top
-    path_drawable_w    = drawable_width  - 2 * pad_x
-    path_drawable_h    = drawable_height - pad_top
-
-    # Scale the path to this path-only box (do NOT use for the title band)
-    scale_x = path_drawable_w / x_range if x_range else 1
-    scale_y = path_drawable_h / y_range if y_range else 1
-
-
     if drawable_height <= 0:
          raise ValueError("Drawable height is zero or negative. Check margins, font sizes, paddings.")
     # --- END MODIFIED BAND HEIGHT & DRAWABLE AREA ---
@@ -633,19 +614,11 @@ def create_shape_single_pass(
     scale_y = drawable_height / y_range if y_range else 1
 
     # The bottom edge for arcs is margin_y + drawable_height
-    # x_values_scaled = [(x - x_min)*scale_x + margin_x for x in x_values]
-    # y_values_scaled = [
-    #     (margin_y + drawable_height) - ((y - y_min)*scale_y)
-    #     for y in y_values
-    # ]
-    x_values_scaled = [(x - x_min)*scale_x + path_margin_x for x in x_values]
+    x_values_scaled = [(x - x_min)*scale_x + margin_x for x in x_values]
     y_values_scaled = [
-        (path_margin_y_top + path_drawable_h) - ((y - y_min)*scale_y)
+        (margin_y + drawable_height) - ((y - y_min)*scale_y)
         for y in y_values
     ]
-
-
-
 
     # Create a mapping from original to scaled coordinates
     coordinate_mapping = dict(zip(zip(x_values, y_values), zip(x_values_scaled, y_values_scaled)))
@@ -716,10 +689,8 @@ def create_shape_single_pass(
                     arc_y_values_scaled.append(coordinate_mapping[(xx, yy)][1])
                 else:
                     # fallback
-                    # sx = (xx - x_min) * scale_x + margin_x
-                    # sy = (margin_y + drawable_height) - ((yy - y_min) * scale_y)
-                    sx = (xx - x_min) * scale_x + path_margin_x
-                    sy = (path_margin_y_top + path_drawable_h) - ((yy - y_min) * scale_y)
+                    sx = (xx - x_min) * scale_x + margin_x
+                    sy = (margin_y + drawable_height) - ((yy - y_min) * scale_y)
                     arc_x_values_scaled.append(sx)
                     arc_y_values_scaled.append(sy)
 
