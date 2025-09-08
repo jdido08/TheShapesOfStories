@@ -1,103 +1,70 @@
+from PIL import Image
 
-# create_mockup.py
-# Perspective-safe mockup compositor: auto-detects the inner mat opening
-# as a quadrilateral and warps your art into it.
-#
-# Set BASE_PATH, ART_PATH, OUT_PATH below and run:
-#   python create_mockup.py
+def create_mockup(mockup_path, design_path, output_path, coordinates):
+    """
+    Inserts a design into a mockup template, preserving realism.
 
-from PIL import Image, ImageOps, ImageDraw
-import numpy as np
+    Args:
+        mockup_path (str): File path to the mockup template image.
+        design_path (str): File path to the design image to insert.
+        output_path (str): File path to save the final composite image.
+        coordinates (tuple): A tuple containing the (x1, y1, x2, y2) coordinates
+                             of the target area in the mockup.
+    """
+    # 1. Load the mockup and design images
+    mockup = Image.open(mockup_path).convert("RGBA")
+    design = Image.open(design_path).convert("RGBA")
 
-# ------------------- USER INPUTS -------------------
-BASE_PATH = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_table.jpeg"  # mockup image
-ART_PATH  = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-moby-dick_protagonist-ishmael_product-print_size-11x14_line-type-char_background-color-#1B2E4B_font-color-#F5E6D3_border-color-#FFFFFF_font-Alegreya_title-display-yes.png"              # your artwork
-OUT_PATH  = "final_mockup_test_6.png"            # output
+    # 2. Define the target area from the coordinates
+    x1, y1, x2, y2 = coordinates
+    target_width = x2 - x1
+    target_height = y2 - y1
+    
+    # 3. Extract the reflection/glare layer from the original mockup for realism
+    # This captures the subtle lighting on the glass.
+    reflection_layer = mockup.crop(coordinates)
 
-# Measured on the 1024×1024 reference mockup (TL, TR, BR, BL)
-QUAD_REF = [(132, 383), (484, 383), (483, 857), (129, 857)]
-REF_SIZE = (1024, 1024)
+    # 4. Resize the design to fit the target area exactly
+    design_resized = design.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-INSET_PX_REF = 2      # inward safety inset at reference size
-SAVE_DEBUG = False    # set True to export an outline overlay
+    # 5. Paste the resized design onto the mockup
+    mockup.paste(design_resized, (x1, y1), design_resized)
+    
+    # 6. Blend the original reflection layer back on top to add realism
+    # We use the reflection layer itself as the mask for transparency.
+    # This adds the glass effect back over your design.
+    mockup.paste(reflection_layer, (x1, y1), reflection_layer)
 
-def scale_point(p, base_size, ref_size=REF_SIZE):
-    rx, ry = ref_size
-    bx, by = base_size
-    return (int(round(p[0] * bx / rx)), int(round(p[1] * by / ry)))
+    # 7. Save the final image
+    # Convert back to RGB if saving as JPEG
+    final_image = mockup.convert("RGB")
+    final_image.save(output_path, quality=95)
+    print(f"Mockup saved successfully to: {output_path}")
 
-def scale_quad(quad, base_size):
-    return [scale_point(p, base_size) for p in quad]
 
-def inset_quad(quad, inset_px):
-    if inset_px <= 0:
-        return quad
-    cx = sum(p[0] for p in quad) / 4.0
-    cy = sum(p[1] for p in quad) / 4.0
-    out = []
-    for (x, y) in quad:
-        dx, dy = cx - x, cy - y
-        d = (dx*dx + dy*dy) ** 0.5 or 1.0
-        out.append((int(round(x + inset_px * dx / d)),
-                    int(round(y + inset_px * dy / d))))
-    return out
-
-def find_coeffs(pa, pb):
-    # pa: destination quad (TL,TR,BR,BL); pb: source quad (TL,TR,BR,BL)
-    matrix = []
-    for (x, y), (u, v) in zip(pa, pb):
-        matrix.extend([
-            [x, y, 1, 0, 0, 0, -u*x, -u*y],
-            [0, 0, 0, x, y, 1, -v*x, -v*y],
-        ])
-    A = [row[:] for row in matrix]
-    B = [u for (u, v) in pb] + [v for (u, v) in pb]
-    # small 8×8 solve
-    import numpy as np
-    return np.linalg.lstsq(np.array(A, float), np.array(B, float), rcond=None)[0].tolist()
-
-def warp_into_quad(base, art, dst_quad):
-    bw, bh = base.size
-    xs, ys = zip(*dst_quad)
-    bb_w, bb_h = max(1, max(xs) - min(xs)), max(1, max(ys) - min(ys))
-
-    # Fit art to bounding box to keep resolution reasonable
-    art_fit = ImageOps.fit(art, (bb_w, bb_h), method=Image.LANCZOS)
-    src_quad = [(0, 0), (bb_w, 0), (bb_w, bb_h), (0, bb_h)]
-
-    coeffs = find_coeffs(dst_quad, src_quad)
-    warped = art_fit.transform((bw, bh), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
-
-    # Polygon mask for crisp edges
-    mask = Image.new("L", (bw, bh), 0)
-    ImageDraw.Draw(mask).polygon(dst_quad, fill=255)
-
-    # Composite (use paste with mask to avoid the earlier alpha_composite error)
-    base.paste(warped, (0, 0), mask)
-    return base
-
-def main():
-    base = Image.open(BASE_PATH).convert("RGBA")
-    art  = Image.open(ART_PATH).convert("RGBA")
-
-    quad = scale_quad(QUAD_REF, base.size)
-
-    # scale inset to your image size
-    inset_scaled = max(1, round(INSET_PX_REF * (base.width / REF_SIZE[0] + base.height / REF_SIZE[1]) / 2))
-    quad_in = inset_quad(quad, inset_scaled)
-
-    if SAVE_DEBUG:
-        dbg = base.copy()
-        d = ImageDraw.Draw(dbg)
-        d.polygon(quad, outline=(255, 0, 0))
-        d.polygon(quad_in, outline=(0, 255, 0))
-        dbg.save(OUT_PATH.replace(".jpg", "_debug.jpg").replace(".png", "_debug.png"))
-
-    out = warp_into_quad(base, art, quad_in)
-    out.convert("RGB").save(OUT_PATH, quality=95)
-    print("Saved →", OUT_PATH)
-    print("Quad (TL,TR,BR,BL):", quad)
-    print("Inset quad:", quad_in)
+# --- HOW TO USE THE SCRIPT ---
 
 if __name__ == "__main__":
-    main()
+    mockup_template_file = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_table.jpeg" # Your frame mockup image
+    design_to_insert_file = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png" # Your Moby Dick design image
+    final_output_file = "final_moby_dick_mockup.jpg" # The name for the final file
+
+    # The coordinates we found in Step 2 for the inner frame
+    # Format: (top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+    frame_coords = (145, 400, 484, 858)
+
+    # Call the function to create the mockup
+    create_mockup(
+        mockup_path=mockup_template_file,
+        design_path=design_to_insert_file,
+        output_path=final_output_file,
+        coordinates=frame_coords
+    )
+
+    # --- To process another design, just change the file paths and run again! ---
+    # create_mockup(
+    #     mockup_path=mockup_template_file,
+    #     design_path="another_design.png",
+    #     output_path="final_another_design_mockup.jpg",
+    #     coordinates=frame_coords
+    # )

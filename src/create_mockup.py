@@ -123,6 +123,20 @@ def main():
 
     dest_corners = [(152, 401), (483, 401), (483, 857), (146, 857)]
 
+
+    #11x14 wall 
+    #mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg"
+    
+    #11x14 table
+    mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_table.jpeg"
+    
+    artwork_path  = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"
+    output_path = "fina_mockup_test_8.png"
+
+    #11x14 on wall
+    dest_corners = [(329, 225), (693, 225), (693, 698), (329, 698)] 
+    dest_corners = [(145,400 ), (484, 400), (484, 858), (145, 858)] 
+
     # --- END CONFIGURATION ---
 
     try:
