@@ -612,10 +612,14 @@ def create_shape_single_pass(
     path_drawable_w    = drawable_width  - 2 * pad_x
     path_drawable_h    = drawable_height - pad_top
 
-    # Scale the path to this path-only box (do NOT use for the title band)
-    scale_x = path_drawable_w / x_range if x_range else 1
-    scale_y = path_drawable_h / y_range if y_range else 1
+    # NEW: scale for the PATH ONLY
+    scale_x_path = path_drawable_w / x_range if x_range else 1
+    scale_y_path = path_drawable_h / y_range if y_range else 1
 
+    # NEW: alias so any existing code that references scale_x/scale_y
+    # (angles, spacing, etc.) now uses the PATH scales automatically.
+    scale_x = scale_x_path
+    scale_y = scale_y_path
 
     if drawable_height <= 0:
          raise ValueError("Drawable height is zero or negative. Check margins, font sizes, paddings.")
@@ -629,8 +633,8 @@ def create_shape_single_pass(
     x_range = x_max - x_min
     y_range = y_max - y_min
 
-    scale_x = drawable_width / x_range if x_range else 1
-    scale_y = drawable_height / y_range if y_range else 1
+    # scale_x = drawable_width / x_range if x_range else 1
+    # scale_y = drawable_height / y_range if y_range else 1
 
     # The bottom edge for arcs is margin_y + drawable_height
     # x_values_scaled = [(x - x_min)*scale_x + margin_x for x in x_values]
