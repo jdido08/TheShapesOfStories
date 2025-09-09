@@ -67,75 +67,42 @@ from PIL import Image
 
 def main():
     # --- CONFIGURATION ---
-    # 1. Filename of your main mockup image
-    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/1_8x10_wood_frame_on_ground.psd' # <-- EDIT THIS
-    
 
-    #scholar path 
-    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/literary-art-print-mockup-template-with-black-frame-straight-on.png'
-    
-    #unframed mockup 
-    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/poster-mockup-without-clips.png'
-
-    #framed w/ mat on wall 
-    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/framed-wall-mockup-template-for-8x10-poster.png'
-
-    #new table
-    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/8x10_print_on_table_in_11x14_frame_with_matt.jpeg'
-
-    #11x14_1_frame_on_table.jpeg
-    mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_table.jpeg'
-
-    #mockup_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/Frame_Mockup_PSD 2.psd'
-    # 2. Filename of the artwork you want to insert
-    #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-#0A1F3B_font-color-#F9D342_border-color-#26834A_font-Josefin Sans_title-display-yes.png' # <-- EDIT THIS
-    #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/title-pride-and-prejudice_protagonist-elizabeth-bennet_product-print_size-8x10_line-type-char_background-color-#1B365D_font-color-#F5E6D3_border-color-FFFFFF_font-Baskerville_title-display-yes.png'
-    #artwork_path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-for-whom-the-bell-tolls_protagonist-robert-jordan_product-print_size-8x10_line-type-char_background-color-#3B4A3B_font-color-#F3F0E8_border-color-FFFFFF_font-Merriweather_title-display-yes.png'
-    
-    #table mockup 
-    #artwork_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/8x10_print_on_table_in_11x14_frame_with_matt.jpeg'
-    
-    artwork_path = '/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_shapes/title-moby-dick_protagonist-ishmael_product-print_size-11x14_line-type-char_background-color-#1B2E4B_font-color-#F5E6D3_border-color-#FFFFFF_font-Alegreya_title-display-yes.png'
-
-
-    # 3. Filename for the final output file
-    output_path = 'final_mockup_test_5.jpg'
-
-    # 4. Paste the coordinates you found here
-    #dest_corners = [(908, 445), (2100, 445), (2100, 1930), (908, 1930)] # <-- EDIT THIS
-   
-    #dest_corners = [(625, 425), (2345, 425), (2345, 2633), (625, 2633)] # <-- EDIT THIS
-
-    #######
-
-    #scholar mockup 
-    #dest_corners = [(612, 170), (1157, 170), (1157, 793), (612, 793)]
-
-    #unframed mockup 
-    #dest_corners = [(403, 114), (1116, 114), (1116, 918), (403, 918)]
-
-    #framed mockup with mat on wall 
-   # dest_corners = [(603, 234), (930, 234), (930, 654), (603, 654)]
-
-
-    #new one one table 
-    #dest_corners = [(219, 415), (532, 415), (532,779 ), (219,779)]
-
-    dest_corners = [(152, 401), (483, 401), (483, 857), (146, 857)]
+    artwork_path  = ["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"]
 
 
     #11x14 wall 
     #mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg"
-    
+    #output_path = "fina_mockup_11x14_wall.png"
+    dest_corners = [(329, 225), (693, 225), (693, 698), (329, 698)] 
+
+
     #11x14 table
-    mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_table.jpeg"
-    
-    artwork_path  = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"
-    output_path = "fina_mockup_test_8.png"
+    mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg"
+    output_path = "fina_mockup_11x14_table.png"
+    #dest_corners = [(237, 222), (722, 222), (722, 853), (237, 853)] #cutting into borders
+    dest_corners = [(238, 222), (722, 222), (722, 853), (238, 853)] #cutting into borders --> this one 
+    #dest_corners = [(239, 222), (722, 222), (722, 853), (239, 853)] #cutting into borders
+
+    #11x14 3x wall
+    mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg"
+    output_path = "fina_mockup_11x14_3x_wall.png"
+
+    dest_corners = [
+        (125, 340), (353, 340), (353, 637), (125, 637), #--> frame on left
+        (398, 340), (626, 340), (626, 637), (398, 637), #--> frame in center
+        (672, 340), (900, 340), (900, 637), (672, 637 ) #--> frame on right 
+    ]
+
+
+
+
 
     #11x14 on wall
-    dest_corners = [(329, 225), (693, 225), (693, 698), (329, 698)] 
-    dest_corners = [(145,400 ), (484, 400), (484, 858), (145, 858)] 
+ 
+
+    
+   
 
     # --- END CONFIGURATION ---
 
