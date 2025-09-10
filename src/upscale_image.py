@@ -53,22 +53,22 @@ def report_slot_sizes(slots):
 
 
 
-poster_quad = [(30, 55), (853, 55), (853, 1102), (30, 1102)]
-poster_slots = [{"quad": poster_quad}]
 
-
-scale_poster, poster_slots_big = upscale_template_and_slots(
-    in_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base.jpeg",
-    out_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
-    slots=poster_slots,
-    target_short_side=1200,   # bump to 1400–1500 if you want even crisper
-    min_scale=2
-)
-print("WALL scale used:", scale_poster)
-report_slot_sizes(poster_slots_big)
-# (optional) Save scaled slots for reuse
-with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.slots.json","w") as f:
-    json.dump(poster_slots_big, f)
+## POSTER SCALE UO
+# poster_quad = [(30, 55), (853, 55), (853, 1102), (30, 1102)]
+# poster_slots = [{"quad": poster_quad}]
+# scale_poster, poster_slots_big = upscale_template_and_slots(
+#     in_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base.jpeg",
+#     out_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
+#     slots=poster_slots,
+#     target_short_side=1200,   # bump to 1400–1500 if you want even crisper
+#     min_scale=2
+# )
+# print("WALL scale used:", scale_poster)
+# report_slot_sizes(poster_slots_big)
+# # (optional) Save scaled slots for reuse
+# with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.slots.json","w") as f:
+#     json.dump(poster_slots_big, f)
 
 
 #UPSCALE 1 FRAM ON WALL
@@ -133,3 +133,29 @@ with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/
 # # (optional) Save slots to JSON for reuse
 # with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.slots.json","w") as f:
 #     json.dump(slots_big, f)
+
+
+
+#UPSCALING CLIP
+
+# paths
+clip_in  = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip.png"
+clip_out = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip@BIG.png"
+
+# describe the full image as a single 'slot' so scale is computed properly
+w, h = Image.open(clip_in).size
+clip_slots = [{"rect": (0, 0, w, h)}]
+
+# upscale: aim for a larger short side; 1600–1800 is a good target for crisp rotation/resampling
+scale_clip, _ = upscale_template_and_slots(
+    in_path=clip_in,
+    out_path=clip_out,
+    slots=clip_slots,
+    target_short_side=1600,   # try 1800 if you want bigger
+    min_scale=2,              # at least 2×
+    unsharp=(0.6, 120, 1)     # mild crisping
+)
+
+print("Clip scale used:", scale_clip)
+report_slot_sizes([{"rect": (0, 0, w*scale_clip, h*scale_clip)}])
+# Now use `clip_out` in your overlay step

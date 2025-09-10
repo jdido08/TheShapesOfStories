@@ -2,8 +2,13 @@
 
 A single 11×14 slim MATTE-BLACK frame leaning against a clean white wall on a light-oak console. NO MAT. Do not depict any matboard, passepartout, inner window, bevel, or inset border. The print surface runs edge-to-edge to the frame’s interior lip; show only one continuous white paper surface behind glass. Minimal bookish props (small stack of neutral clothbound books, a ceramic bud vase, a porcelain cup) placed clear of the frame. Straight-on at mid-height, perfect verticals/horizontals. Soft daylight from the left; gentle, realistic glass reflection (no harsh glare). Technical: 50–70 mm, f/4, ISO 200, 1/125 s, neutral WB, sRGB. 3:2. No text/logos.
 
+A single 11×14 slim MATTE-BLACK frame standing upright on a light-oak console, propped by a rear kickstand/tabletop easel (support not visible from the front). NOT HANGING and NOT LEANING; the frame’s face is parallel to the camera sensor with perfect verticals/horizontals (no keystone). Clean white wall backdrop with a slight gap behind the frame. NO MAT. Do not depict any matboard, passepartout, inner window, bevel, or inset border. The print surface runs edge-to-edge to the frame’s interior lip; show one continuous white paper surface behind glass. Minimal bookish props (small stack of neutral clothbound books, a ceramic bud vase, a porcelain cup) placed to the sides and not touching or supporting the frame. Soft daylight from the left; gentle, realistic glass reflection (no harsh glare). Include a soft tabletop contact shadow under the frame and a faint right-side wall shadow. Technical: 50–70 mm, f/4, ISO 200, 1/125 s, neutral WB, sRGB. 3:2. No text/logos.
+
+__________________________
 
 A STRAIGHT-ON mid-distance scene of a slim MATTE-BLACK 11×14 frame hung above a narrow light-oak shelf. Include the ENTIRE frame with modest wall margin. NO MAT. No matboard, no inner window, no bevel, no inset border—only one continuous white paper surface behind glass, running to the frame’s interior lip. Minimal styling (2–3 neutral books and a small ceramic bud vase) placed to the sides. Soft left window light; subtle reflection only. Technical: 55 mm, f/5.6, ISO 200, 1/125 s, neutral WB, sRGB. 3:2. No text/logos.
+
+__________________________
 
 Three slim MATTE-BLACK 11×14 frames arranged horizontally, photographed STRAIGHT-ON. NO MAT in any frame—no inner window or bevel; each shows a single continuous white paper surface behind glass to the interior lip. Equal spacing (clean 3–4″ gaps), shared centerline, perfectly level. Optional narrow shelf below with 2–3 neutral books and a tiny vase. Soft, consistent wall shadows; subtle reflections only. Technical: 50–60 mm, f/5.6, ISO 200, 1/125 s, neutral WB, sRGB. 16:9. No text/logos.
 
