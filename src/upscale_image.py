@@ -53,46 +53,59 @@ def report_slot_sizes(slots):
 
 
 
+poster_quad = [(30, 55), (853, 55), (853, 1102), (30, 1102)]
+poster_slots = [{"quad": poster_quad}]
 
 
-
-#UPSCALE 1 FRAM ON WALL
-
-
-# 1) 11×14 — 1 frame on wall
-wall_quad = [(329,225),(693,225),(693,698),(329,698)]
-wall_slots = [{"quad": wall_quad}]
-
-scale_wall, wall_slots_big = upscale_template_and_slots(
-    in_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg",
-    out_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
-    slots=wall_slots,
+scale_poster, poster_slots_big = upscale_template_and_slots(
+    in_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base.jpeg",
+    out_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
+    slots=poster_slots,
     target_short_side=1200,   # bump to 1400–1500 if you want even crisper
     min_scale=2
 )
-print("WALL scale used:", scale_wall)
-report_slot_sizes(wall_slots_big)
+print("WALL scale used:", scale_poster)
+report_slot_sizes(poster_slots_big)
 # (optional) Save scaled slots for reuse
-with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.slots.json","w") as f:
-    json.dump(wall_slots_big, f)
+with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.slots.json","w") as f:
+    json.dump(poster_slots_big, f)
+
+
+#UPSCALE 1 FRAM ON WALL
+# 1) 11×14 — 1 frame on wall
+# wall_quad = [(329,225),(693,225),(693,698),(329,698)]
+# wall_slots = [{"quad": wall_quad}]
+
+# scale_wall, wall_slots_big = upscale_template_and_slots(
+#     in_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg",
+#     out_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
+#     slots=wall_slots,
+#     target_short_side=1200,   # bump to 1400–1500 if you want even crisper
+#     min_scale=2
+# )
+# print("WALL scale used:", scale_wall)
+# report_slot_sizes(wall_slots_big)
+# # (optional) Save scaled slots for reuse
+# with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.slots.json","w") as f:
+#     json.dump(wall_slots_big, f)
 
 
 
 # 11x14 FRAME ON TABLE
-table_quad = [(238,222),(722,222),(722,853),(238,853)]
-table_slots = [{"quad": table_quad}]
+# table_quad = [(238,222),(722,222),(722,853),(238,853)]
+# table_slots = [{"quad": table_quad}]
 
-scale_table, table_slots_big = upscale_template_and_slots(
-    in_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg",
-    out_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
-    slots=table_slots,
-    target_short_side=1200,
-    min_scale=2
-)
-print("TABLE scale used:", scale_table)
-report_slot_sizes(table_slots_big)
-with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.slots.json","w") as f:
-    json.dump(table_slots_big, f)
+# scale_table, table_slots_big = upscale_template_and_slots(
+#     in_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg",
+#     out_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
+#     slots=table_slots,
+#     target_short_side=1200,
+#     min_scale=2
+# )
+# print("TABLE scale used:", scale_table)
+# report_slot_sizes(table_slots_big)
+# with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.slots.json","w") as f:
+#     json.dump(table_slots_big, f)
 
 
 
