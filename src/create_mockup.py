@@ -72,16 +72,16 @@ def main():
 
 
     #11x14 wall 
-    #mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg"
-    #output_path = "fina_mockup_11x14_wall.png"
+    mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg"
+    output_path = "fina_mockup_11x14_wall.png"
     dest_corners = [(329, 225), (693, 225), (693, 698), (329, 698)] 
 
 
     #11x14 table
     mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg"
     output_path = "fina_mockup_11x14_table.png"
-    #dest_corners = [(237, 222), (722, 222), (722, 853), (237, 853)] #cutting into borders
     dest_corners = [(238, 222), (722, 222), (722, 853), (238, 853)] #cutting into borders --> this one 
+    #dest_corners = [(237, 222), (722, 222), (722, 853), (237, 853)] #cutting into borders
     #dest_corners = [(239, 222), (722, 222), (722, 853), (239, 853)] #cutting into borders
 
     #11x14 3x wall

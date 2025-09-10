@@ -5,6 +5,22 @@ import itertools
 
 # ---------------------- geometry & transforms ----------------------
 
+def _sanitize_poly(poly, W, H):
+    """Return a list of (int,int) tuples clamped to [0..W-1],[0..H-1]."""
+    clean = []
+    for pt in poly:
+        # Accept (x,y) as tuple or list; cast to float->int to be safe
+        x, y = pt
+        xi = int(round(float(x)))
+        yi = int(round(float(y)))
+        # clamp to valid canvas so PIL doesn't complain
+        xi = 0 if xi < 0 else (W-1 if xi >= W else xi)
+        yi = 0 if yi < 0 else (H-1 if yi >= H else yi)
+        clean.append((xi, yi))
+    return clean
+
+
+
 def linsolve(A, B):
     """Simple Gaussian elimination (no numpy)."""
     n = len(A)
@@ -109,28 +125,30 @@ def warp_art_into_quad(base_size, art_rgba, quad):
     warped = art_rgba.transform((W,H), Image.PERSPECTIVE, coeffs, resample=Image.BICUBIC)
     return warped
 
+
 def polygon_mask(size, poly, feather=0.5):
-    m = Image.new("L", size, 0)
-    ImageDraw.Draw(m, "L").polygon(poly, fill=255)
+    W, H = size
+    poly_int = _sanitize_poly(poly, W, H)
+    m = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(m, "L").polygon(poly_int, fill=255)
     if feather > 0:
         m = m.filter(ImageFilter.GaussianBlur(feather))
     return m
 
 def overlay_inner_lip(base_rgba, quad, width_px=5, feather=1.0):
-    """
-    Draw a thin line on top using pixels from base to hide micro seams along the inner edge.
-    """
-    W,H = base_rgba.size
-    mask = Image.new("L", (W,H), 0)
-    draw = ImageDraw.Draw(mask, "L")
-    # closed polygon as a stroked path
-    pts = quad + [quad[0]]
-    draw.line(pts, fill=255, width=width_px, joint="curve")
+    W, H = base_rgba.size
+    quad_int = _sanitize_poly(quad, W, H)
+    mask = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(mask, "L")
+    pts = quad_int + [quad_int[0]]
+    # Some Pillow builds don't support joint=..., so keep it simple:
+    d.line(pts, fill=255, width=width_px)
     if feather > 0:
         mask = mask.filter(ImageFilter.GaussianBlur(feather))
     overlay = base_rgba.copy()
     overlay.putalpha(mask)
     return Image.alpha_composite(base_rgba, overlay)
+
 
 # ---------------------- main placement function ----------------------
 
@@ -330,19 +348,29 @@ if __name__ == "__main__":
     ]
 
     
-    # place_artworks(
-    #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg",
-    #     output_path="fina_mockup_11x14_wall.png",
-    #     slots={"quad": [(329, 225), (693, 225), (693, 698), (329, 698)], "mode": "fill"},
-    #     artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
-    # )
+    place_artworks(
+        mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
+        output_path="fina_mockup_11x14_wall.png",
+        slots=[{"quad": [(1316, 900), (2772, 900), (2772, 2792), (1316, 2792)], "mode": "fill"}],
+        artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
+        supersample=1,
+        sharpen=True,
+        unsharp=(0.7, 200, 0),
+        lip_width_px=5,
+        lip_feather=0.8,
+    )
 
-    # place_artworks(
-    #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg",
-    #     output_path="fina_mockup_11x14_table.png",
-    #     slots={"quad": [(238, 222), (722, 222), (722, 853), (238, 853)] , "mode": "fill"},
-    #     artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
-    # )
+    place_artworks(
+        mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
+        output_path="fina_mockup_11x14_table.png",
+        slots=[{"quad": [(714, 666), (2166, 666), (2166, 2559), (714, 2559)], "mode": "fill"}],
+        artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
+        supersample=1,
+        sharpen=True,
+        unsharp=(0.7, 200, 0),
+        lip_width_px=5,
+        lip_feather=0.8,
+    )
 
     # 2) Three frames on wall (quad example)
     three_quads = [
@@ -371,6 +399,9 @@ if __name__ == "__main__":
             "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"
         ],
         default_mode="fill", #fill --> default
+        supersample=1,
+        sharpen=True,
+        unsharp=(0.7, 200, 0),
         lip_width_px=5,
         lip_feather=0.8,
     )

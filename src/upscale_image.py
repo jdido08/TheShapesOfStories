@@ -52,26 +52,71 @@ def report_slot_sizes(slots):
         print(f"slot {i}: {int(w)}×{int(h)} px (short={int(short)})")
 
 
-# your original (low-res) quads
-three_quads = [
-    [(125,340),(353,340),(353,637),(125,637)],
-    [(398,340),(626,340),(626,637),(398,637)],
-    [(672,340),(900,340),(900,637),(672,637)],
-]
-three_slots = [{"quad": q} for q in three_quads]
 
-# 1) Upscale the template + coords
-scale, slots_big = upscale_template_and_slots(
-    in_path  = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg",
-    out_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.png",
-    slots    = three_slots,
-    target_short_side=1200,   # aim for ≥1200 px short side per opening
-    min_scale=2               # at least 2× even if already big
+
+
+
+#UPSCALE 1 FRAM ON WALL
+
+
+# 1) 11×14 — 1 frame on wall
+wall_quad = [(329,225),(693,225),(693,698),(329,698)]
+wall_slots = [{"quad": wall_quad}]
+
+scale_wall, wall_slots_big = upscale_template_and_slots(
+    in_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg",
+    out_path= "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
+    slots=wall_slots,
+    target_short_side=1200,   # bump to 1400–1500 if you want even crisper
+    min_scale=2
 )
+print("WALL scale used:", scale_wall)
+report_slot_sizes(wall_slots_big)
+# (optional) Save scaled slots for reuse
+with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.slots.json","w") as f:
+    json.dump(wall_slots_big, f)
 
-print("scale used:", scale)
-report_slot_sizes(slots_big)
 
-# (optional) Save slots to JSON for reuse
-with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.slots.json","w") as f:
-    json.dump(slots_big, f)
+
+# 11x14 FRAME ON TABLE
+table_quad = [(238,222),(722,222),(722,853),(238,853)]
+table_slots = [{"quad": table_quad}]
+
+scale_table, table_slots_big = upscale_template_and_slots(
+    in_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg",
+    out_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
+    slots=table_slots,
+    target_short_side=1200,
+    min_scale=2
+)
+print("TABLE scale used:", scale_table)
+report_slot_sizes(table_slots_big)
+with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.slots.json","w") as f:
+    json.dump(table_slots_big, f)
+
+
+
+
+# UPSCALE 3 FRAMES ON WALL
+# three_quads = [
+#     [(125,340),(353,340),(353,637),(125,637)],
+#     [(398,340),(626,340),(626,637),(398,637)],
+#     [(672,340),(900,340),(900,637),(672,637)],
+# ]
+# three_slots = [{"quad": q} for q in three_quads]
+
+# # 1) Upscale the template + coords
+# scale, slots_big = upscale_template_and_slots(
+#     in_path  = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg",
+#     out_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.png",
+#     slots    = three_slots,
+#     target_short_side=1200,   # aim for ≥1200 px short side per opening
+#     min_scale=2               # at least 2× even if already big
+# )
+
+# print("scale used:", scale)
+# report_slot_sizes(slots_big)
+
+# # (optional) Save slots to JSON for reuse
+# with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.slots.json","w") as f:
+#     json.dump(slots_big, f)
