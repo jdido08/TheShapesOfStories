@@ -28,6 +28,70 @@ class ClipSpec:
 
 # ---------- CORE HELPERS ----------
 
+def _unsharp_rgb(img: Image.Image, params=(0.5, 180, 0)) -> Image.Image:
+    """UnsharpMask on RGB only (keeps alpha edges clean; no light halo)."""
+    if img.mode != "RGBA":
+        return img.filter(ImageFilter.UnsharpMask(*params))
+    r, g, b, a = img.split()
+    rgb = Image.merge("RGB", (r, g, b)).filter(ImageFilter.UnsharpMask(*params))
+    return Image.merge("RGBA", (*rgb.split(), a))
+
+def overlay_clips_exact(
+    base_path: str,
+    clips: List[ClipSpec],
+    output_path: str,
+    supersample: int = 1,                 # 2 gives extra crisp edges; 1 = off
+    post_unsharp: tuple = (0.5, 180, 0),  # after rotate/resize (per clip)
+    final_unsharp: tuple = (0.4, 120, 1), # gentle pass after downsample
+):
+    base = Image.open(base_path).convert("RGBA")
+    W0, H0 = base.size
+    ss = max(1, int(supersample))
+
+    # render larger, then shrink once (optional but recommended)
+    if ss > 1:
+        base = base.resize((W0 * ss, H0 * ss), Resampling.LANCZOS)
+
+    for spec in clips:
+        overlay = Image.open(spec.path).convert("RGBA")
+        if spec.trim_transparent_edges:
+            overlay = _trim_transparent_edges(overlay)
+
+        # scale to requested size (honor aspect) — scale the target by supersample
+        tw, th = spec.size_px
+        if tw is not None: tw = int(round(tw * ss))
+        if th is not None: th = int(round(th * ss))
+        overlay = _resize_keep_aspect(overlay, (tw, th))
+
+        # rotate, then sharpen RGB a touch to recover edge contrast
+        if abs(spec.rotation_deg) > 1e-6:
+            overlay = overlay.rotate(spec.rotation_deg, expand=True, resample=Resampling.BICUBIC)
+        overlay = _unsharp_rgb(overlay, post_unsharp)
+
+        # anchor math (positions scaled by supersample)
+        cx, cy = spec.pos
+        cx, cy = int(round(cx * ss)), int(round(cy * ss))
+        ax, ay = _ANCHOR_OFFSETS[spec.anchor](overlay.width, overlay.height)
+        x = int(cx - ax)
+        y = int(cy - ay)
+
+        # shadow (optional)
+        if spec.add_shadow:
+            sh, shift = _make_shadow(overlay, spec.shadow_offset, spec.shadow_blur, spec.shadow_opacity)
+            base.alpha_composite(sh, (x + shift[0], y + shift[1]))
+
+        base.alpha_composite(overlay, (x, y))
+
+    # one high-quality downscale + light global sharpen
+    if ss > 1:
+        base = base.resize((W0, H0), Resampling.LANCZOS)
+        base = _unsharp_rgb(base, final_unsharp)
+
+    base.save(output_path, "PNG", optimize=True)
+    return output_path
+
+
+
 _ANCHOR_OFFSETS = {
     "top_left":       lambda w,h: (0, 0),
     "top_center":     lambda w,h: (w//2, 0),
@@ -69,26 +133,61 @@ def _make_shadow(img: Image.Image, offset=(3,6), blur=6, opacity=110) -> Tuple[I
     canvas.alpha_composite(shadow, (ox, oy))
     return canvas, (-ox, -oy)  # how much to shift overlay to align with its shadow
 
+
+def clip_positions_from_poster_quad(poster_quad, inset_pct=0.06, raise_px=18):
+    """
+    Returns ((x_left,y_top), (x_right,y_top)) for ClipSpec(anchor='top_center').
+    - inset_pct: horizontal inset from the poster edges (as % of poster width)
+    - raise_px: how far ABOVE the poster top the clip's TOP should sit.
+                This creates a small 'bite' below the top edge like the reference.
+    """
+    (xL, yT), (xR, _), *_ = poster_quad
+    poster_w = xR - xL
+    inset = int(round(poster_w * inset_pct))
+    x_left  = xL + inset
+    x_right = xR - inset
+    y_top   = yT - int(round(raise_px))
+    return (x_left, y_top), (x_right, y_top)
+
+
 def overlay_clips_exact(
     base_path: str,
     clips: List[ClipSpec],
     output_path: str,
+    supersample: int = 1,                 # 2 gives extra crisp edges; 1 = off
+    post_unsharp: tuple = (0.5, 180, 0),  # after rotate/resize (per clip)
+    final_unsharp: tuple = (0.4, 120, 1), # gentle pass after downsample
 ):
     base = Image.open(base_path).convert("RGBA")
+    W0, H0 = base.size
+    ss = max(1, int(supersample))
+
+    # render larger, then shrink once (optional but recommended)
+    if ss > 1:
+        base = base.resize((W0 * ss, H0 * ss), Resampling.LANCZOS)
 
     for spec in clips:
         overlay = Image.open(spec.path).convert("RGBA")
         if spec.trim_transparent_edges:
             overlay = _trim_transparent_edges(overlay)
 
-        overlay = _resize_keep_aspect(overlay, spec.size_px)
+        # scale to requested size (honor aspect) — scale the target by supersample
+        tw, th = spec.size_px
+        if tw is not None: tw = int(round(tw * ss))
+        if th is not None: th = int(round(th * ss))
+        overlay = _resize_keep_aspect(overlay, (tw, th))
+
+        # rotate, then sharpen RGB a touch to recover edge contrast
         if abs(spec.rotation_deg) > 1e-6:
             overlay = overlay.rotate(spec.rotation_deg, expand=True, resample=Resampling.BICUBIC)
+        overlay = _unsharp_rgb(overlay, post_unsharp)
 
-        # anchor math
+        # anchor math (positions scaled by supersample)
+        cx, cy = spec.pos
+        cx, cy = int(round(cx * ss)), int(round(cy * ss))
         ax, ay = _ANCHOR_OFFSETS[spec.anchor](overlay.width, overlay.height)
-        x = int(spec.pos[0] - ax)
-        y = int(spec.pos[1] - ay)
+        x = int(cx - ax)
+        y = int(cy - ay)
 
         # shadow (optional)
         if spec.add_shadow:
@@ -97,9 +196,13 @@ def overlay_clips_exact(
 
         base.alpha_composite(overlay, (x, y))
 
+    # one high-quality downscale + light global sharpen
+    if ss > 1:
+        base = base.resize((W0, H0), Resampling.LANCZOS)
+        base = _unsharp_rgb(base, final_unsharp)
+
     base.save(output_path, "PNG", optimize=True)
     return output_path
-
 
 
 # ---------------------- geometry & transforms ----------------------
@@ -523,28 +626,44 @@ if __name__ == "__main__":
     #     lip_feather=0.8,
     # )
 
+    poster_quad = [(60,110), (1706,110), (1706,2204), (60,2204)]
+    (left_xy, right_xy) = clip_positions_from_poster_quad(
+        poster_quad,
+        inset_pct=0.06,   # ~6% inset feels like the reference
+        raise_px=18       # small bite; bump to 20–22 if you want more bite
+    )
+
+
 
     out = overlay_clips_exact(
     base_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/fina_mockup_poster_only.png",
     clips=[
         ClipSpec(
-            path="mockup_templates/gold-clip.png",
-            pos=(230, 50),              # EXACT pixel where the anchor should land
-            size_px=(60, None),         # EXACT width (height auto)
-            rotation_deg=-1.2,
-            anchor="top_center"          # anchor aligns the ring/center at pos
+            path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip@BIG.png",
+             pos=(230, 30),  
+            size_px=(65, None),
+            rotation_deg=-0.3,
+            anchor="top_center",
+            shadow_offset=(1, 2),
+            shadow_blur=2,
+            shadow_opacity=105
         ),
         ClipSpec(
-            path="mockup_templates/gold-clip.png",
-            pos=(1560, 50),
-            size_px=(60, None),
-            rotation_deg=1.5,
-            anchor="top_center"
+            path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip@BIG.png",
+            pos=(1560, 30),
+            size_px=(65, None),
+            rotation_deg=0.3,
+            anchor="top_center",
+            shadow_offset=(1, 2),
+            shadow_blur=2,
+            shadow_opacity=105
         ),
     ],
-    output_path="poster_with_clips_exact.png",
+    output_path="poster_with_clips_60px.png",
+    supersample=3,                   # key for tiny overlays
+    post_unsharp=(0.6, 240, 0),      # per-clip after rotate
+    final_unsharp=(0.35, 110, 1),    # gentle overall after downscale
 )
-
 
 
 

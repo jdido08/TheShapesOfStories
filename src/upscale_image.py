@@ -51,6 +51,41 @@ def report_slot_sizes(slots):
         short,(w,h) = _short_side(q)
         print(f"slot {i}: {int(w)}×{int(h)} px (short={int(short)})")
 
+from PIL import Image, ImageFilter
+from PIL.Image import Resampling
+import math, json, os
+
+def upscale_paper_clip(in_path, out_path, slots,
+                               target_short_side=1200,
+                               min_scale=2,
+                               unsharp=(0.6,120,1)):
+    scale = compute_scale(slots, target_short_side, min_scale)
+
+    # Keep transparency if present (PNG clips)
+    img = Image.open(in_path).convert("RGBA")
+
+    # High-quality resize
+    up = img.resize((img.width*scale, img.height*scale), Resampling.LANCZOS)
+
+    # Sharpen only the color channels (alpha untouched)
+    r, g, b, a = up.split()
+    rgb_sharp = Image.merge("RGB", (r, g, b)).filter(ImageFilter.UnsharpMask(*unsharp))
+    up = Image.merge("RGBA", (*rgb_sharp.split(), a))
+
+    # Save as PNG to preserve alpha
+    up.save(out_path, "PNG")
+
+    # Scale any slot metadata you pass in
+    scaled_slots = []
+    for s in slots:
+        t = dict(s)
+        if "rect" in s:
+            x,y,w,h = s["rect"]
+            t["rect"] = (x*scale, y*scale, w*scale, h*scale)
+        if "quad" in s:
+            t["quad"] = [(x*scale, y*scale) for (x,y) in _quad_from_slot(s)]
+        scaled_slots.append(t)
+    return scale, scaled_slots
 
 
 
@@ -147,7 +182,7 @@ w, h = Image.open(clip_in).size
 clip_slots = [{"rect": (0, 0, w, h)}]
 
 # upscale: aim for a larger short side; 1600–1800 is a good target for crisp rotation/resampling
-scale_clip, _ = upscale_template_and_slots(
+scale_clip, _ = upscale_paper_clip(
     in_path=clip_in,
     out_path=clip_out,
     slots=clip_slots,
