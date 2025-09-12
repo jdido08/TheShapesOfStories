@@ -228,5 +228,74 @@ Product Data Model
 # Color: Navy/Gold 
 
 
+### 9/12/2025 To Dos:
+- I have the basic pieces and function and need to string things together now
+- I need to create clean interfaces for all of my functions
+
+1. Create Base Story Data
+    - Inputs: Title, Author, Protagonist, Year, Summary File 
+    - Logic: Transforms summary into story data file 
+    - Outputs: [title]-[protagonist].json --> where to save this probably in like base story data files
+    - Note: (a) replace spaces with "_" in output file name; (b) open question of format
+2. Grade Story Data Shape
+    - Input: [title]-[protagonist].json, Summary (need to think if just going to reuse summary initially provided)
+    - Logic: Double Checks that Generated Story Shape is Accurate; If not a passing grade then need to redo step #1 
+    - Ouput: updated [title]-[protagonist].json w/ field
+3. Categorize Story Shape
+    - Input: [title]-[protagonist].json
+    - Logic: analyzes story shape to determine shape representative and any archetypes 
+    - Output: updated [title]-[protagonist].json w/ shape fields 
+4. Create Base Story Style 
+    - Inputs: [title]-[protagonist].json
+    - Logic: Get story colors + font 
+    - Outputs: [title]-[protagonist].json --> add fields to base story data file 
+
+# --- Content Specific -- # 
+
+5. Create Story Shape Varaint
+    - Inputs: Product + product specific parameters e.g. print-11x14; other input parameters
+    - Logic: Transforms Story Data to Art
+    - Outputs: --> need to figure out where to save
+        - [title]-[protagonist]-[product]-[size]-[style].json --> this as text specific things with it
+        - [title]-[protagonist]-[product]-[size]-[style].png 
+6. Compare Story Shape 
+    - Inputs: [title]-[protagonist]-[product]-[size]-[style].json, [title]-[protagonist].json
+    - Logic: recategorizes story shape of new version and compares to original to makes sure basic shape did not shape 
+    - Outputs: updated [title]-[protagonist]-[product]-[size]-[style].json with field that verifies accuracy
+7. Grade Story Data Text
+    - Inputs: [title]-[protagonist]-[product]-[size]-[style].json, (maybe summary?)
+    - Logic: Verfies that generates story text is accurate 
+    - Output: updated [title]-[protagonist]-[product]-[size]-[style].json
+8. Create Product Description 
+    - Inputs: 
+        - [title]-[protagonist]-[product]-[size]-[style].json
+        - [title]-[protagonist]-[product]-[size]-[style].png
+    - Logic: turns story data + data into description
+    - Output: updated [title]-[protagonist]-[product]-[size]-[style].json
+9. Create Product Metafields
+    - Inputs: [title]-[protagonist]-[product]-[size]-[style].json
+    - Logic: turns story data to product metafields
+    - Output: updated [title]-[protagonist]-[product]-[size]-[style].json
+10. Create Mockups:
+    - Inputs: Product Type is probably an input
+        - [title]-[protagonist]-[product]-[size]-[style].json
+        - [title]-[protagonist]-[product]-[size]-[style].png
+    - Logic: turns story designs into product mockups
+    - Outputs: (for prints)
+        - png files for 11x14-wall, 11x14-table, 11x14-poster, 11x14-3-wall
+        - updated[title]-[protagonist]-[product]-[size]-[style].json for local links
+11. 
+
+___
+11. Create SVG version
+12. Create Line PNG Version
+13. Create Line SVG Version
+
+___
+
+14. Create Printify Product 
+15. Publish Printify Product to Shopify
+16. Edit Shopify Product
+
 
 Mockups

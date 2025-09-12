@@ -347,7 +347,7 @@ if __name__ == "__main__":
         {"rect": (238, 222, 722-238, 853-222), "mode": "fill"}  # your chosen crop that slightly overlaps under the lip
     ]
 
-    
+    ## 11x14 WALL
     # place_artworks(
     #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
     #     output_path="fina_mockup_11x14_wall.png",
@@ -361,22 +361,12 @@ if __name__ == "__main__":
     # )
 
 
-    # place_artworks(
-    #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
-    #     output_path="fina_mockup_11x14_table.png",
-    #     slots=[{"quad": [(714, 666), (2166, 666), (2166, 2559), (714, 2559)], "mode": "fill"}],
-    #     artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
-    #     supersample=1,
-    #     sharpen=True,
-    #     unsharp=(0.7, 200, 0),
-    #     lip_width_px=5,
-    #     lip_feather=0.8,
-    # )
-
+    ## 11x14 TABLE
     place_artworks(
-        mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
-        output_path="fina_mockup_poster_only.png",
-        slots=[{"quad": [(60, 110), (1706, 110), (1706, 2204), (60, 2204)], "mode": "fill"}],
+        #mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
+        mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2_wood@BIG.png",
+        output_path="fina_mockup_11x14_table_wood.png",
+        slots=[{"quad": [(714, 666), (2166, 666), (2166, 2559), (714, 2559)], "mode": "fill"}],
         artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
         supersample=1,
         sharpen=True,
@@ -385,10 +375,21 @@ if __name__ == "__main__":
         lip_feather=0.8,
     )
 
-    
 
-    mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base.jpeg"
-    dest_corners = [(30, 55), (853, 55), (853, 1102), (30, 1102)] #cutting into borders
+    # ## POSTER ONLY
+    # place_artworks(
+    #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
+    #     output_path="fina_mockup_poster_only.png",
+    #     slots=[{"quad": [(60, 110), (1706, 110), (1706, 2204), (60, 2204)], "mode": "fill"}],
+    #     artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
+    #     supersample=1,
+    #     sharpen=True,
+    #     unsharp=(0.7, 200, 0),
+    #     lip_width_px=5,
+    #     lip_feather=0.8,
+    # )
+    # mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base.jpeg"
+    # dest_corners = [(30, 55), (853, 55), (853, 1102), (30, 1102)] #cutting into borders
 
 
 

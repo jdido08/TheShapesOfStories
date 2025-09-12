@@ -127,20 +127,22 @@ def upscale_paper_clip(in_path, out_path, slots,
 
 
 # 11x14 FRAME ON TABLE
-# table_quad = [(238,222),(722,222),(722,853),(238,853)]
-# table_slots = [{"quad": table_quad}]
+table_quad = [(238,222),(722,222),(722,853),(238,853)]
+table_slots = [{"quad": table_quad}]
 
-# scale_table, table_slots_big = upscale_template_and_slots(
-#     in_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg",
-#     out_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
-#     slots=table_slots,
-#     target_short_side=1200,
-#     min_scale=2
-# )
-# print("TABLE scale used:", scale_table)
-# report_slot_sizes(table_slots_big)
-# with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.slots.json","w") as f:
-#     json.dump(table_slots_big, f)
+scale_table, table_slots_big = upscale_template_and_slots(
+    in_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg",
+    out_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
+    # in_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2_wood.png",
+    # out_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2_wood@BIG.png",
+    slots=table_slots,
+    target_short_side=1200,
+    min_scale=2
+)
+print("TABLE scale used:", scale_table)
+report_slot_sizes(table_slots_big)
+with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2_wood@BIG.slots.json","w") as f:
+    json.dump(table_slots_big, f)
 
 
 
