@@ -229,9 +229,40 @@ Product Data Model
 
 
 ### 9/12/2025 To Dos:
+
+# Folders
+1. Summaries
+2. Story Data
+3. Product Data
+4. Product Designs
+    - TEXT PNG
+    - LINE PNG
+    - TEXT SVG
+    - LINE SVG 
+
+
 - I have the basic pieces and function and need to string things together now
 - I need to create clean interfaces for all of my functions
 
+#High Level Overview:
+1. Create Story Base Data
+    - base story data
+    - grade story shape 
+    - categorize story 
+    - create default story style --> font + color 
+2. Create Story Product Data
+    - story product size, style (color, font)
+    - text + designs 
+    - assess shape 
+    - description
+    - metafields
+    - mockups
+    - supporting variants svg, lines, etc.. 
+3. Create Story Product Printify
+4. Publish Story Product 
+5. Edit Story Product
+
+#Steps 1-4 --> Create Story Base --> Basics of the story used to create products
 1. Create Base Story Data
     - Inputs: Title, Author, Protagonist, Year, Summary File 
     - Logic: Transforms summary into story data file 
@@ -251,7 +282,7 @@ Product Data Model
     - Outputs: [title]-[protagonist].json --> add fields to base story data file 
 
 # --- Content Specific -- # 
-
+## Create Story Product --> 
 5. Create Story Shape Varaint
     - Inputs: Product + product specific parameters e.g. print-11x14; other input parameters
     - Logic: Transforms Story Data to Art
@@ -284,10 +315,7 @@ Product Data Model
     - Outputs: (for prints)
         - png files for 11x14-wall, 11x14-table, 11x14-poster, 11x14-3-wall
         - updated[title]-[protagonist]-[product]-[size]-[style].json for local links
-11. 
-
-___
-11. Create SVG version
+11. Create SVG
 12. Create Line PNG Version
 13. Create Line SVG Version
 
