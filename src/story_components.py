@@ -297,14 +297,15 @@ def num_tokens_from_string(string: str, model: str) -> int:
 
 
 # return story components 
-def get_story_components(story_summary = "", author="", year="", protagonist="", output_path="", 
+def get_story_components(config_path,story_title,story_summary, author, year, protagonist, 
                       llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
 
    
     #print(story_summary_source)
-    story_components = analyze_story(config_path=CONFIG_PATH, author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
+    story_components = analyze_story(config_path=config_path, author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
                                     llm_provider=llm_provider,llm_model=llm_model)
     story_components = json.loads(story_components)
+    print(story_components)
 
     #chekc if story_component are valid
     story_components_validity = validate_story_arcs(story_components) #call to confirm story_components are valid
@@ -316,16 +317,16 @@ def get_story_components(story_summary = "", author="", year="", protagonist="",
         raise ValueError
 
     #check if right author was chosen
-    if story_components['author'] != author:
-        print("LLM designated author as: ", story_components['author'], " but I specified author as: ", author)
+    if story_components['title'] != story_title:
+        print("LLM designated title as: ", story_components['title'], " but I specified title as: ", story_title)
         print("PLEASE RESOLVE")
         raise ValueError
    
-
+    #end modified times -- needed for product creation
     for component in story_components["story_components"]:
         component['modified_end_time'] = component['end_time']
         component['modified_end_emotional_score'] = component['end_emotional_score']
-
+    
     return story_components["story_components"]
 
 

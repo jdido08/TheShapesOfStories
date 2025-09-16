@@ -6,6 +6,8 @@ import yaml
 from story_style import get_story_style #move to this sheet
 from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
+from story_shape_category import get_story_symbolic_and_archetype
+from datetime import datetime
 
 
 from story_shape import create_shape
@@ -18,7 +20,7 @@ from PIL import ImageFont
 from googleapiclient.discovery import build
 import webcolors
 
-CONFIG_PATH = "/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml"
+
 
 #WHAT DOES CRAETE STORY DATA DO???
 # INPUTS:
@@ -178,7 +180,6 @@ PATHS['config'] = os.path.join(BASE_DIR, 'config.yaml')
 # --- Automatically create output directories if they don't exist ---
 os.makedirs(PATHS['story_data'], exist_ok=True)
 os.makedirs(PATHS['shapes_output'], exist_ok=True)
-os.makedirs(PATHS['posters_output'], exist_ok=True)
 
 # --- Add the 'src' directory to the system path ---
 # This allows your scripts to import from each other using "from llm import ..."
@@ -224,24 +225,24 @@ except Exception as e:
 
 # Open the Google Sheet by its ID
 #link https://docs.google.com/spreadsheets/d/1T0ThSHKK_sMIKTdwC14WZoWFNFD3dU7xIheQ5AF9NLU/edit?usp=sharing
-sheet_id = "1C0CytarUcbUrRpqi5RK7MJUOb2DBR_bjQ_IeqcCi-Yw"
-spreadsheet = client.open_by_key(sheet_id)
-worksheet = spreadsheet.sheet1 # Access the first worksheet
+# sheet_id = "1C0CytarUcbUrRpqi5RK7MJUOb2DBR_bjQ_IeqcCi-Yw"
+# spreadsheet = client.open_by_key(sheet_id)
+# worksheet = spreadsheet.sheet1 # Access the first worksheet
 
 
 # Get all rows from the sheet
-rows = worksheet.get_all_records()
+# rows = worksheet.get_all_records()
 
-#loop through all rows but really should just be first row
-for row in rows:
+# #loop through all rows but really should just be first row
+# for row in rows:
 
-    #get input parameters from sheet
-    story_type          = row.get('story_type')
-    story_title	        = row.get('story_title')    
-    story_author	    = row.get('story_author')
-    story_protagonist	= row.get('story_protagonist')
-    story_year	        = row.get('story_year')
-    story_summary_path  = row.get('story_summary_path')
+#     #get input parameters from sheet
+#     story_type          = row.get('story_type')
+#     story_title	        = row.get('story_title')    
+#     story_author	    = row.get('story_author')
+#     story_protagonist	= row.get('story_protagonist')
+#     story_year	        = row.get('story_year')
+#     story_summary_path  = row.get('story_summary_path')
 
 
 
@@ -265,17 +266,21 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # get story summary from story summary path 
     story_summary = get_story_summary(story_summary_path)
 
-    # get story components
+    # get story components --> don't use google you often get blocked
+    story_components_llm_model = "claude-3-5-sonnet-latest"
     story_components = get_story_components(
+        config_path=PATHS['config'],
+        story_title=story_title,
         story_summary = story_summary,
         author=story_author,
         year=story_year,
         protagonist=story_protagonist,
-        llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-        llm_model = "gemini-2.5-pro"#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+        llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+        llm_model = story_components_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
 
     #grade story components
+    story_components_grader_llm_model = "gemini-2.5-pro"
     story_component_grades = grade_story_components(
         config_path = PATHS['config'], 
         story_components=story_components, 
@@ -284,19 +289,22 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         author=story_author, 
         protagonist=story_protagonist, 
         llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-        llm_model = "gemini-2.5-pro"#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+        llm_model = story_components_grader_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
-    
-    
 
-    # STORY STYLE / DESIGN
+    
+    # get category of shape
+    story_symbolic_rep,  story_archetype = get_story_symbolic_and_archetype(story_components)
+    
+    # get stort style
+    story_style_llm_model = "claude-3-5-sonnet-latest"
     story_style = get_story_style(
         config_path = PATHS['config'],
         story_title = story_title, 
         author = story_author,
         protagonist = story_protagonist, 
         llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-        llm_model = "claude-3-5-sonnet-latest"#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+        llm_model = story_style_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
     story_style = json.loads(story_style)
     design_rationale        = story_style.get('design_rationale')
@@ -310,297 +318,43 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         raise ValueError(f"'{design_font}' not found on this system.")
 
 
-    
-
-
-    ### YOU JUST NEED 12x12 and then you shrinnk it down 
-    # size     | 6x6 | 12x12 | 10x10 | 8x10
-    # wrap     | 1.5 | 3     | 1.5   |  ?
-    # t/b band | 1.5 | 1.5   | 1.5   |  ?
-    # ----------------------------------
-    # arc      | 8   | 16    | 14    |  12
-    # title    | 24  | 48    | 40    |  32
-    # protag   | 12  | 24    | 20    |  16
-    # top      | 24  | 48    | 20    |  16
-    # bottom   | 6   | 12    | 12    |  12
-    #-----------------------------------
-    # line     | 20  | 40    | 33    |  26
-    # border   | ?   | 150   | 150   |  150
-    # gap      | 20  | 40    | 33    |
-    #-----------------------------------
-
-    if product == "canvas" and size == "12x12":
-        line_thickness = 40
-        font_size = 16
-        title_font_size = 48
-        gap_above_title = 40
-        protagonist_font_size = 24
-        author_font_size = 24
-        top_text = author + ", " + str(year)
-        top_text_font_size = 48
-        bottom_text_font_size = 12
-        top_and_bottom_text_band = 1.5
-        border_thickness = 150
-        width_in_inches = 12
-        height_in_inches = 12
-        wrap_in_inches = 3
-        max_num_steps = 3
-        step_k = 10
-        has_border = True
-        fixed_margin_in_inches = 0.6
-    elif product == "canvas" and size == "10x10":
-        line_thickness = 33
-        font_size = 14
-        title_font_size = 40
-        gap_above_title = 33
-        protagonist_font_size = 20
-        author_font_size = 20
-        top_text = author + ", " + str(year)
-        top_text_font_size = 20
-        bottom_text_font_size = 12
-        top_and_bottom_text_band = 1
-        border_thickness = 150 #use thicker border
-        width_in_inches = 10
-        height_in_inches = 10
-        wrap_in_inches = 1.5
-        max_num_steps = 3
-        step_k = 10
-        has_border = True
-        fixed_margin_in_inches = 0.6
-    elif product == "print" and size == "8x10":
-
-        total_chars_line1 = len(title) + len(protagonist)
-        if total_chars_line1 > 45:
-             title_font_size = 14
-             protagonist_font_size = 10
-             author_font_size = 10
-        else:
-            title_font_size = 20
-            protagonist_font_size = 12
-            author_font_size = 12
-     
-
-        line_thickness = 26
-        font_size = 8
-        gap_above_title = 70 #value was 26
-        top_text = author + ", " + str(year)
-        top_text_font_size = 8
-        bottom_text_font_size = 8
-        top_and_bottom_text_band = 1
-        border_thickness = 150 #this is in pixels with DPI = 300 so 150 --> 0.5 in
-        width_in_inches = 8
-        height_in_inches = 10
-        wrap_in_inches = 0
-        max_num_steps = 2
-        step_k = 6
-        #has_border = False
-        has_border = True
-        fixed_margin_in_inches = 0.6 #this is suppose to be where text ends
-        #so difference between fixed_margin_in_inches - (border_thickness/300) = space between text and white border
-
-    elif product == "print" and size == "11x14":
-
-        total_chars_line1 = len(title) + len(protagonist)
-        if total_chars_line1 <= 38:
-            title_font_size       = 27
-            protagonist_font_size = 16
-            author_font_size      = 16
-        elif total_chars_line1 <= 65:
-            title_font_size       = 25
-            protagonist_font_size = 15
-            author_font_size      = 15
-        elif total_chars_line1 <= 85:
-            title_font_size       = 19
-            protagonist_font_size = 14
-            author_font_size      = 14
-        else:
-            title_font_size       = 18
-            protagonist_font_size = 13
-            author_font_size      = 13
-
-        line_thickness = 38
-        font_size = 12
-        gap_above_title = 102 #value was 26
-        top_text = author + ", " + str(year)
-        top_text_font_size = 12
-        bottom_text_font_size = 12
-        top_and_bottom_text_band = 1
-        border_thickness = 360 #600 #300 #360 ## --> (360/300)/2 DPI --> 0.6 inches OR (300/300 DPI)/2 --> 0.5 in 
-        width_in_inches = 11
-        height_in_inches = 14
-        wrap_in_inches = 0
-        max_num_steps = 2
-        step_k = 6
-        has_border = True
-        fixed_margin_in_inches = 0.85  #1.25 #0.75 #0.85 
-        #1 = 0.6 + 0.4 = 1
-        #0.85 ## --> border thickness (0.6) + 0.25 = 0.85
-
-        #note that:
-        #border thickness is in pixels and apparently half of it gets clipped (idk why) so with 300 DPI --> (150/300) --> 0.25
-        #fixed_margin_in_inches is space between edge of print and where text begins
-        #space between white edge and text is fixed_margin_in_inches -(border_thickness/300)
-        #so if we want ~0.25in between white border and text AND a 0.6 in white border that means
-        #border thickness = 
-
-    elif product == "print" and size == "custom":
-        print_params = get_scaled_print_parameters(width, height)
-        print(print_params)
+    story_data = {
+        "title": story_title,
+        "author": story_author,
+        "protagonist": story_protagonist, 
+        "year": story_year,
+        "shape_symbolic_representation": story_symbolic_rep,
+        "shape_archetype": story_archetype,
+        "story_components": story_components,
+        "default_style": {
+            "background_color": design_background_color,
+            "font_color": design_font_color,
+            "border_color": design_border_color,
+            "font": design_font,
+            "design_rationale":design_rationale
+        },
+        "story_type": story_type,
+        "summary": story_summary,
+        "story_component_grades":story_component_grades,
+        "llm_models": {
+            "story_components": story_components_llm_model,
+            "story_components_grade": story_components_grader_llm_model,
+            "story_default_style": story_style_llm_model
+        },
+        "story_data_create_timestamp":datetime.now().isoformat()
         
-        line_thickness = print_params["line_thickness"]
-        font_size = print_params["font_size"]
-        title_font_size = print_params["title_font_size"]
-        gap_above_title = print_params["gap_above_title"]
-        protagonist_font_size = print_params["protagonist_font_size"]
-        author_font_size = print_params["author_font_size"]
-        top_text_font_size = print_params["top_text_font_size"]
-        bottom_text_font_size = print_params["bottom_text_font_size"]
-        top_and_bottom_text_band = print_params["top_and_bottom_text_band"]
-        border_thickness = print_params["border_thickness"]
-        width_in_inches = print_params["width_in_inches"]
-        height_in_inches = print_params["height_in_inches"]
-        wrap_in_inches = print_params["wrap_in_inches"]
-        max_num_steps = print_params["max_num_steps"]
-        step_k = print_params["step_k"]
-        has_border = print_params["has_border"]
-        fixed_margin_in_inches = print_params["fixed_margin_in_inches"]
+    }
 
-
-        top_text = ""
-
-    else:
-        raise ValueError
-
-
-    print("creating story shape")
-    new_story_data_path, story_shape_path = create_shape(
-                    config_path = PATHS['config'],
-                    output_dir = PATHS['shapes_output'], # <-- ADD THIS LINE
-                    story_data_dir=PATHS['story_data'],      # For reading/writing data files
-                    story_data_path = story_data_path,
-                    product = product,
-                    x_delta= 0.015,#0.015, #number of points in the line 
-                    step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
-                    max_num_steps = max_num_steps,
-                    line_type = line_type, #values line or char
-                    line_thickness = line_thickness, #only used if line_type = line
-                    line_color = font_color, #only used if line_type = line
-                    font_style= font, #only used if line_type set to char
-                    font_size= font_size, #only used if line_type set to char
-                    font_color = font_color, #only used if line_type set to char
-                    background_type='solid', #values solid or transparent
-                    background_value = background_color, #only used if background_type = solid
-                    has_title = "YES", #values YES or NO
-                    title_text = "", #optinal if left blank then will use story title as default
-                    title_font_style = font, #only used if has_title = "YES"
-                    title_font_size=title_font_size, #only used if has_title = "YES"
-                    title_font_color = font_color, #only used if has_title = "YES"
-                    title_font_bold = False, #can be True or False
-                    title_font_underline = False, #can be true or False
-                    title_padding = 0, #extra padding in pixels between bottom and title
-                    gap_above_title=gap_above_title, #padding in pixels between title and story shape
-                    protagonist_text = protagonist, #if you leave blank will include protognaist name in lower right corner; can get rid of by just setting to " ", only works if has title is true
-                    protagonist_font_style = font,
-                    protagonist_font_size=protagonist_font_size, 
-                    protagonist_font_color=font_color,
-                    protagonist_font_bold = False, #can be True or False
-                    protagonist_font_underline = False, #can be True or False
-
-                    author_text=subtitle, # Optional, defaults to story_data['author']
-                    author_font_style=font, # Defaults to title font style if empty
-                    author_font_size=author_font_size, # Suggest smaller than title
-                    author_font_color=font_color, # Use hex, defaults to title color
-                    author_font_bold=False,
-                    author_font_underline=False,
-                    author_padding=5, 
-
-                    top_text = top_text, #only applies when wrapped > 0; if "" will default to author, year
-                    top_text_font_style = font,
-                    top_text_font_size = top_text_font_size,
-                    top_text_font_color = font_color,
-                    bottom_text = "", #only applies when wrapped > 0; if "" will default to "Shapes of Stories"
-                    bottom_text_font_style = "Sans",
-                    bottom_text_font_size = bottom_text_font_size,
-                    bottom_text_font_color = "#000000",
-                    top_and_bottom_text_band = top_and_bottom_text_band, #this determines the band which top and center text is centered on above/below design; if you want to center along full wrap in inches set value to wrap_in_inches else standard is 1.5 
-                    border=has_border, #True or False
-                    border_thickness= border_thickness, #only applicable if border is set to True
-                    border_color=border_color, #only applicable if border is set to True
-                    width_in_inches = width_in_inches,  #design width size
-                    height_in_inches = height_in_inches, #design width size
-                    wrap_in_inches=wrap_in_inches,  # for canvas print outs 
-                    wrap_background_color = border_color, #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
-                    fixed_margin_in_inches = fixed_margin_in_inches, #fixed margins for output
-                    recursive_mode = True, #if you want to recurisvely generate story
-                    recursive_loops = 1000, #the number of iterations 
-                    llm_provider = "anthropic",#"groq",#"openai", #anthropic",#"google" #for generating descriptors
-                    llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
-                    #llm_provider = "google", #"anthropic", #google", 
-                    #llm_model = "gemini-2.5-pro-preview-05-06", #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-                    output_format=file_format
-                ) #options png or svg
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
-    print(f"The script took {elapsed_time:.4f} seconds to execute.")
-
-   # --- NEW CODE TO UPDATE THE CATALOGUE ---
-try:
-    print("Opening Catalogue spreadsheet...")
-    catalogue_sheet_id = "1V63O3KwADfTKivRVnz_YfONmWu8kmfwk_mgvu7cdGLY"
-    catalogue_spreadsheet = client.open_by_key(catalogue_sheet_id)
-    catalogue_worksheet = catalogue_spreadsheet.worksheet("To-Be Published")
-
-    print("Fetching Google Drive links for created files...")
-
-    # Get just the filenames from the full local paths
-    story_data_filename = os.path.basename(new_story_data_path)
-    shape_filename = os.path.basename(story_shape_path)
-    summary_filename = os.path.basename(summary_file)
-
-    # Call our new function to get the web URL for each file
-    # This might take a minute as it waits for files to sync to the cloud.
-    story_data_url = get_google_drive_link(drive_service, story_data_filename)
-    shape_image_url = get_google_drive_link(drive_service, shape_filename)
-    summary_filename_url = get_google_drive_link(drive_service, summary_filename)
-
-    print("Updating Catalogue...")
-
-    design_style_info = story_style.get('design_rationale', 'N/A')
-
-    # Assemble the row data with the new clickable URLs
-    # IMPORTANT: Make sure this order perfectly matches your Google Sheet columns
-    new_row_data = [
-        product,
-        size,
-        line_type,
-        file_format,
-        title,
-        subtitle,
-        author,
-        protagonist,
-        year,
-        design_style_info,
-        background_color,
-        font_color,
-        border_color,
-        font,
-        summary_filename_url, # <-- Using the new clickable URL
-        story_data_url,     # <-- Using the new clickable URL
-        shape_image_url,     # <-- Using the new clickable URL
-        summary_file, #local path
-        new_story_data_path, #local path
-        story_shape_path    #<--- local path of story shape (for uploading into printify)
-    ]
-
-    # Append the new row to the Catalogue worksheet
-    catalogue_worksheet.append_row(new_row_data)
+    # Write story data to JSON
+    with open(story_data_file_path, 'w') as f:
+        json.dump(story_data, f, indent=4)
     
-    print("Successfully updated Catalogue.")
 
-except gspread.exceptions.SpreadsheetNotFound:
-    print("--- CATALOGUE ERROR ---")
-    print("The spreadsheet named 'Catalogue' was not found.")
-    print("Please ensure the ID is correct and that it has been shared with your service account.")
-except Exception as e:
-    print(f"An error occurred while updating the Catalogue: {e}")
-# --- END OF NEW CODE ---
+
+
+create_story_data(story_type="Literature", 
+                  story_title="To Kill a Mockingbird", 
+                  story_author="Harper Lee",
+                  story_protagonist="Scout Finch", 
+                  story_year="1960", 
+                  story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
