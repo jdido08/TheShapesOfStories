@@ -1,7 +1,7 @@
 from google.oauth2.service_account import Credentials
 import gspread
 import yaml
-from story_data import create_story_data
+from story_data_archive import create_story_data
 from story_style import get_story_style
 from story_shape import create_shape
 import json 
