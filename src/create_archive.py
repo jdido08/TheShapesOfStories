@@ -3,7 +3,7 @@ import gspread
 import yaml
 from story_data_archive import create_story_data
 from story_style import get_story_style
-from story_shape import create_shape
+from archive_story_shape import create_shape
 import json 
 import os
 import re
@@ -588,6 +588,8 @@ for row in rows:
         #space between white edge and text is fixed_margin_in_inches -(border_thickness/300)
         #so if we want ~0.25in between white border and text AND a 0.6 in white border that means
         #border thickness = 
+
+
 
     elif product == "print" and size == "custom":
         print_params = get_scaled_print_parameters(width, height)

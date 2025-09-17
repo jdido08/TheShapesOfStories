@@ -7,6 +7,55 @@ import json
 import os 
 from llm import load_config, get_llm, extract_json
 
+#HELP FUNCTIONS -- CHECK IF FONT EXISTS
+
+
+## HELPER FUNCTIONS ###
+def get_font_path(font_name):
+    """
+    Finds the full file path for a given font name using matplotlib's font manager.
+
+    Args:
+        font_name (str): The name of the font to find (e.g., "Merriweather").
+
+    Returns:
+        str: The full file path to the font. Exits script if font is not found.
+    """
+    try:
+        # findfont will search your system and return the best match.
+        # The FontProperties object is needed to properly query the font.
+        font_prop = font_manager.FontProperties(family=font_name)
+        return font_manager.findfont(font_prop)
+    except ValueError:
+        # This error is raised if findfont can't find any matching font.
+        print(f"--- FONT FINDER ERROR ---", file=sys.stderr)
+        print(f"The font '{font_name}' could not be found by the font manager.", file=sys.stderr)
+        print("Please ensure it is properly installed and its cache is updated.", file=sys.stderr)
+        sys.exit(1)
+
+def pango_font_exists(font_name):
+    from gi.repository import Pango, PangoCairo
+    """
+    Checks whether the given font is available using Pango.
+    Returns True if the font is found, False otherwise.
+    """
+    if not font_name:
+        return True  # nothing to check if font_name is empty
+
+    # Get the default font map from PangoCairo.
+    font_map = PangoCairo.FontMap.get_default()
+    families = font_map.list_families()
+
+    # Iterate through the font families and see if any name matches (case-insensitive).
+    for family in families:
+        if font_name.lower() in family.get_name().lower():
+            return True
+
+    return False
+
+
+###
+
 def get_story_style(config_path,story_title, author, protagonist, llm_provider, llm_model):
 
 

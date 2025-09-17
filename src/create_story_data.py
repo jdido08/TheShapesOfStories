@@ -1,25 +1,15 @@
-from google.oauth2.service_account import Credentials
-import gspread
-import yaml
+# imports 
+import os
+import time 
+import sys
+import json
 
-#imports
-from story_style import get_story_style #move to this sheet
+# imports from my code
+from story_style import get_story_style, pango_font_exists #move to this sheet
 from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from datetime import datetime
-
-
-from story_shape import create_shape
-import json 
-import os
-import re
-import time 
-import platform
-from PIL import ImageFont
-from googleapiclient.discovery import build
-import webcolors
-
 
 
 #WHAT DOES CRAETE STORY DATA DO???
@@ -45,65 +35,6 @@ import webcolors
 #   - grade of story components
 #   - default colors + font
 #   - story shape category
-
-from matplotlib import font_manager
-import sys
-
-from llm import load_config, get_llm, extract_json
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-import yaml
-import tiktoken
-import json 
-import os 
-
-
-def get_font_path(font_name):
-    """
-    Finds the full file path for a given font name using matplotlib's font manager.
-
-    Args:
-        font_name (str): The name of the font to find (e.g., "Merriweather").
-
-    Returns:
-        str: The full file path to the font. Exits script if font is not found.
-    """
-    try:
-        # findfont will search your system and return the best match.
-        # The FontProperties object is needed to properly query the font.
-        font_prop = font_manager.FontProperties(family=font_name)
-        return font_manager.findfont(font_prop)
-    except ValueError:
-        # This error is raised if findfont can't find any matching font.
-        print(f"--- FONT FINDER ERROR ---", file=sys.stderr)
-        print(f"The font '{font_name}' could not be found by the font manager.", file=sys.stderr)
-        print("Please ensure it is properly installed and its cache is updated.", file=sys.stderr)
-        sys.exit(1)
-
-
-def pango_font_exists(font_name):
-    from gi.repository import Pango, PangoCairo
-    """
-    Checks whether the given font is available using Pango.
-    Returns True if the font is found, False otherwise.
-    """
-    if not font_name:
-        return True  # nothing to check if font_name is empty
-
-    # Get the default font map from PangoCairo.
-    font_map = PangoCairo.FontMap.get_default()
-    families = font_map.list_families()
-
-    # Iterate through the font families and see if any name matches (case-insensitive).
-    for family in families:
-        if font_name.lower() in family.get_name().lower():
-            return True
-
-    return False
-
-
-from googleapiclient.discovery import build
-import time
 
 # This is the helper function that will find our files in Google Drive
 def get_google_drive_link(drive_service, file_name, retries=5, delay=10):
@@ -156,17 +87,11 @@ import sys
 # This dictionary will hold all our configured paths
 PATHS = {}
 
-# Example for macOS:
 local_drive_path = os.path.expanduser('~/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive')
 if not os.path.exists(local_drive_path): # Fallback for older Google Drive versions
     local_drive_path = '/Volumes/GoogleDrive/My Drive'
 
-# Example for Windows:
-# local_drive_path = 'G:\\My Drive' # Use a raw string or double backslashes
-
-#BASE_DIR = os.path.join(local_drive_path, 'Projects/TheShapesOfStories')
 BASE_DIR = local_drive_path
-print(BASE_DIR)
 
 # --- Define all other paths relative to the base directory ---
 PATHS['src'] = os.path.join(BASE_DIR, 'src')
@@ -194,63 +119,10 @@ print(f"\nProject Base Directory: {BASE_DIR}")
 print("All paths configured successfully.")
 
 
-def load_credentials_from_yaml(file_path):
-    with open(file_path, "r") as yaml_file:
-        config = yaml.safe_load(yaml_file)
-    return config["google_sheets"]
-
-# Use the configured path from the PATHS dictionary
-creds_data = load_credentials_from_yaml(PATHS['config'])
-
-# Define the correct scope
-# SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-]
-
-# Create credentials with the correct scope
-credentials = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
-
-# Authorize and create a client
-client = gspread.authorize(credentials)
-
-# NOW, USE THE SAME CREDENTIALS TO BUILD THE GOOGLE DRIVE CLIENT
-try:
-    drive_service = build('drive', 'v3', credentials=credentials)
-    print("Google Drive service client created successfully.")
-except Exception as e:
-    print(f"An error occurred while building the Drive service: {e}")
-    exit()
-
-
-# Open the Google Sheet by its ID
-#link https://docs.google.com/spreadsheets/d/1T0ThSHKK_sMIKTdwC14WZoWFNFD3dU7xIheQ5AF9NLU/edit?usp=sharing
-# sheet_id = "1C0CytarUcbUrRpqi5RK7MJUOb2DBR_bjQ_IeqcCi-Yw"
-# spreadsheet = client.open_by_key(sheet_id)
-# worksheet = spreadsheet.sheet1 # Access the first worksheet
-
-
-# Get all rows from the sheet
-# rows = worksheet.get_all_records()
-
-# #loop through all rows but really should just be first row
-# for row in rows:
-
-#     #get input parameters from sheet
-#     story_type          = row.get('story_type')
-#     story_title	        = row.get('story_title')    
-#     story_author	    = row.get('story_author')
-#     story_protagonist	= row.get('story_protagonist')
-#     story_year	        = row.get('story_year')
-#     story_summary_path  = row.get('story_summary_path')
-
-
-
-
 def create_story_data(story_type, story_title, story_author,story_protagonist, story_year, story_summary_path):
 
     # create story data file name --> [story_title]-[story_protagonist].json
-    story_data_file_name = story_title.lower().replace(' ', '_') + "-" + story_protagonist.lower().replace(' ', '_')
+    story_data_file_name = story_title.lower().replace(' ', '-') + "-" + story_protagonist.lower().replace(' ', '-')
     story_data_file_name = story_data_file_name.replace("’", "'")   # Normalize the path to replace curly apostrophes with straight ones
     story_data_file_name = story_data_file_name.replace(",", "")    # Normalize the path to replace commas
 
@@ -341,6 +213,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
             "story_components_grade": story_components_grader_llm_model,
             "story_default_style": story_style_llm_model
         },
+        "slug":story_data_file_name,
         "story_data_create_timestamp":datetime.now().isoformat()
         
     }
@@ -352,9 +225,191 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
 
-create_story_data(story_type="Literature", 
-                  story_title="To Kill a Mockingbird", 
-                  story_author="Harper Lee",
-                  story_protagonist="Scout Finch", 
-                  story_year="1960", 
-                  story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
+# Examle Call 
+# create_story_data(story_type="Literature", 
+#                   story_title="To Kill a Mockingbird", 
+#                   story_author="Harper Lee",
+#                   story_protagonist="Scout Finch", 
+#                   story_year="1960", 
+#                   story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
+
+
+# CREATE PRODUCT DATA
+# INPUTS:
+# - story data json 
+# - product type -> print | t-shirt | canvas | etc.. 
+# - product size (if applicable)
+# - product style / colors (if different from default)
+#
+# LOGIC:
+# - create product design variant e.g. print-11x14
+# - ensure shape the same (make sure you're using modified times/values)
+# - grade story data text
+# - create product description
+# - create product metafields
+# - create product mockups 
+# - create line and svg variants
+
+from product_shape import create_shape
+
+test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json"
+def create_product_data(story_data_path, product_type="", product_size="", product_style=""):
+
+    #check if story_data path exists and if so then open data 
+    if not os.path.exists(story_data_path):
+        print(f"Error: Analysis file not found at {story_data_path}")
+        return
+    with open(story_data_path, 'r') as f:
+        story_data = json.load(f)
+    
+    #determine product style
+    if product_style == "": #if product_style left empty that use default
+        background_color = story_data.get("default_style", {}).get("background_color")
+        font_color = story_data.get("default_style", {}).get("font_color")
+        font = story_data.get("default_style", {}).get("font")
+    else: #else set product style but not supporting that for the moment 
+        print(f"Error: Product (currently) only supports using default story styles")
+        return
+
+    # right now only print 11x14 is support for product types
+    if product_type != "print" and product_type != "11x14":
+        print(f"Error: only print 11x14 products are supported at this time but you requested {product_type} {product_size}")
+        return
+    
+
+    title = story_data.get("title")
+    protagonist = story_data.get("protagonist")
+    author = story_data.get("author")
+    year = story_data.get("year")
+
+    if product_type == "print" and product_type == "11x14":
+
+        total_chars_line1 = len(title) + len(protagonist)
+        if total_chars_line1 <= 38:
+            title_font_size       = 27
+            protagonist_font_size = 16
+            author_font_size      = 16
+        elif total_chars_line1 <= 65:
+            title_font_size       = 25
+            protagonist_font_size = 15
+            author_font_size      = 15
+        elif total_chars_line1 <= 85:
+            title_font_size       = 19
+            protagonist_font_size = 14
+            author_font_size      = 14
+        else:
+            title_font_size       = 18
+            protagonist_font_size = 13
+            author_font_size      = 13
+
+        #FIX SETTINGS
+        line_thickness = 38
+        font_size = 12
+        gap_above_title = 102 #value was 26
+        top_text = author + ", " + str(year)
+        top_text_font_size = 12
+        bottom_text_font_size = 12
+        top_and_bottom_text_band = 1
+        border_thickness = 360 #600 #300 #360 ## --> (360/300)/2 DPI --> 0.6 inches OR (300/300 DPI)/2 --> 0.5 in 
+        width_in_inches = 11
+        height_in_inches = 14
+        wrap_in_inches = 0
+        max_num_steps = 2
+        step_k = 6
+        has_border = True
+        fixed_margin_in_inches = 0.85  #1.25 #0.75 #0.85 
+        border_color = "#FFFFFF" # --> manually set border to be white
+
+
+        #FINAL DECISION:
+        # Fixed Margins in Inches = 0.85
+        # border_thickness = 360 --> 0.6 inches 
+        # space between border and text = 0.2 = 0.85 - 0.6
+        # but not that I have special logic in product_shape to make sure space between border and text on left, right, and top are 0.4
+        #note that:
+        #border thickness is in pixels and apparently half of it gets clipped (idk why) so with 300 DPI --> (150/300) --> 0.25
+        #fixed_margin_in_inches is space between edge of print and where text begins
+        #space between white edge and text is fixed_margin_in_inches -(border_thickness/300)
+        #so if we want ~0.25in between white border and text AND a 0.6 in white border that means
+        #border thickness = 
+
+    #I need to think about this because I want re-run this a couple times:
+    # 1.) char png
+    # 2.) line png
+    # 3.) char svg
+    # 4.) line svg
+    print("creating story shape")
+    new_story_data_path, story_shape_path = create_shape(
+                    config_path = PATHS['config'],
+                    output_dir = PATHS['shapes_output'], # <-- ADD THIS LINE
+                    story_data_dir=PATHS['story_data'],      # For reading/writing data files
+                    story_data_path = story_data_path,
+                    product = product,
+                    x_delta= 0.015,#0.015, #number of points in the line 
+                    step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
+                    max_num_steps = max_num_steps,
+                    line_type = line_type, #values line or char
+                    line_thickness = line_thickness, #only used if line_type = line
+                    line_color = font_color, #only used if line_type = line
+                    font_style= font, #only used if line_type set to char
+                    font_size= font_size, #only used if line_type set to char
+                    font_color = font_color, #only used if line_type set to char
+                    background_type='solid', #values solid or transparent
+                    background_value = background_color, #only used if background_type = solid
+                    has_title = "YES", #values YES or NO
+                    title_text = "", #optinal if left blank then will use story title as default
+                    title_font_style = font, #only used if has_title = "YES"
+                    title_font_size=title_font_size, #only used if has_title = "YES"
+                    title_font_color = font_color, #only used if has_title = "YES"
+                    title_font_bold = False, #can be True or False
+                    title_font_underline = False, #can be true or False
+                    title_padding = 0, #extra padding in pixels between bottom and title
+                    gap_above_title=gap_above_title, #padding in pixels between title and story shape
+                    protagonist_text = protagonist, #if you leave blank will include protognaist name in lower right corner; can get rid of by just setting to " ", only works if has title is true
+                    protagonist_font_style = font,
+                    protagonist_font_size=protagonist_font_size, 
+                    protagonist_font_color=font_color,
+                    protagonist_font_bold = False, #can be True or False
+                    protagonist_font_underline = False, #can be True or False
+
+                    author_text=subtitle, # Optional, defaults to story_data['author']
+                    author_font_style=font, # Defaults to title font style if empty
+                    author_font_size=author_font_size, # Suggest smaller than title
+                    author_font_color=font_color, # Use hex, defaults to title color
+                    author_font_bold=False,
+                    author_font_underline=False,
+                    author_padding=5, 
+
+                    top_text = top_text, #only applies when wrapped > 0; if "" will default to author, year
+                    top_text_font_style = font,
+                    top_text_font_size = top_text_font_size,
+                    top_text_font_color = font_color,
+                    bottom_text = "", #only applies when wrapped > 0; if "" will default to "Shapes of Stories"
+                    bottom_text_font_style = "Sans",
+                    bottom_text_font_size = bottom_text_font_size,
+                    bottom_text_font_color = "#000000",
+                    top_and_bottom_text_band = top_and_bottom_text_band, #this determines the band which top and center text is centered on above/below design; if you want to center along full wrap in inches set value to wrap_in_inches else standard is 1.5 
+                    border=has_border, #True or False
+                    border_thickness= border_thickness, #only applicable if border is set to True
+                    border_color=border_color, #only applicable if border is set to True
+                    width_in_inches = width_in_inches,  #design width size
+                    height_in_inches = height_in_inches, #design width size
+                    wrap_in_inches=wrap_in_inches,  # for canvas print outs 
+                    wrap_background_color = border_color, #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
+                    fixed_margin_in_inches = fixed_margin_in_inches, #fixed margins for output
+                    recursive_mode = True, #if you want to recurisvely generate story
+                    recursive_loops = 1000, #the number of iterations 
+                    llm_provider = "anthropic",#"groq",#"openai", #anthropic",#"google" #for generating descriptors
+                    llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
+                    #llm_provider = "google", #"anthropic", #google", 
+                    #llm_model = "gemini-2.5-pro-preview-05-06", #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+                    output_format=file_format
+                ) #options png or svg
+
+
+
+
+        
+
+
+    
