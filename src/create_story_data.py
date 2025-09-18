@@ -199,9 +199,9 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         "shape_archetype": story_archetype,
         "story_components": story_components,
         "default_style": {
-            "background_color": design_background_color,
-            "font_color": design_font_color,
-            "border_color": design_border_color,
+            "background_color_hex": design_background_color,
+            "font_color_hex": design_font_color,
+            "border_color_hex": design_border_color,
             "font": design_font,
             "design_rationale":design_rationale
         },
@@ -213,7 +213,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
             "story_components_grade": story_components_grader_llm_model,
             "story_default_style": story_style_llm_model
         },
-        "slug":story_data_file_name,
+        "story_slug":story_data_file_name,
         "story_data_create_timestamp":datetime.now().isoformat()
         
     }
@@ -226,12 +226,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
 # Examle Call 
-# create_story_data(story_type="Literature", 
-#                   story_title="To Kill a Mockingbird", 
-#                   story_author="Harper Lee",
-#                   story_protagonist="Scout Finch", 
-#                   story_year="1960", 
-#                   story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
+create_story_data(story_type="Literature", 
+                  story_title="To Kill a Mockingbird", 
+                  story_author="Harper Lee",
+                  story_protagonist="Scout Finch", 
+                  story_year="1960", 
+                  story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
 
 
 # CREATE PRODUCT DATA
@@ -251,6 +251,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 # - create line and svg variants
 
 from product_shape import create_shape
+from product_color import map_hex_to_simple_color
 
 test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json"
 def create_product_data(story_data_path, product_type="", product_size="", product_style=""):
@@ -264,8 +265,10 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     
     #determine product style
     if product_style == "": #if product_style left empty that use default
-        background_color = story_data.get("default_style", {}).get("background_color")
-        font_color = story_data.get("default_style", {}).get("font_color")
+        background_color_hex = story_data.get("default_style", {}).get("background_color_hex")
+        background_color_name = map_hex_to_simple_color(background_color_hex)
+        font_color_hex = story_data.get("default_style", {}).get("font_color_hex")
+        font_color_name = map_hex_to_simple_color(font_color_hex)
         font = story_data.get("default_style", {}).get("font")
     else: #else set product style but not supporting that for the moment 
         print(f"Error: Product (currently) only supports using default story styles")
