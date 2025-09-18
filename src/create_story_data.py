@@ -226,12 +226,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
 # Examle Call 
-create_story_data(story_type="Literature", 
-                  story_title="To Kill a Mockingbird", 
-                  story_author="Harper Lee",
-                  story_protagonist="Scout Finch", 
-                  story_year="1960", 
-                  story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
+# create_story_data(story_type="Literature", 
+#                   story_title="To Kill a Mockingbird", 
+#                   story_author="Harper Lee",
+#                   story_protagonist="Scout Finch", 
+#                   story_year="1960", 
+#                   story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
 
 
 # CREATE PRODUCT DATA
@@ -266,9 +266,10 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     #determine product style
     if product_style == "": #if product_style left empty that use default
         background_color_hex = story_data.get("default_style", {}).get("background_color_hex")
-        background_color_name = map_hex_to_simple_color(background_color_hex)
+        #print(background_color_hex)
+        background_color_name = map_hex_to_simple_color(background_color_hex)['name']
         font_color_hex = story_data.get("default_style", {}).get("font_color_hex")
-        font_color_name = map_hex_to_simple_color(font_color_hex)
+        #font_color_name = map_hex_to_simple_color(font_color_hex)['name']
         font = story_data.get("default_style", {}).get("font")
     else: #else set product style but not supporting that for the moment 
         print(f"Error: Product (currently) only supports using default story styles")
@@ -285,7 +286,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     author = story_data.get("author")
     year = story_data.get("year")
 
-    if product_type == "print" and product_type == "11x14":
+    if product_type == "print" and product_size == "11x14":
 
         total_chars_line1 = len(title) + len(protagonist)
         if total_chars_line1 <= 38:
@@ -322,7 +323,9 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         has_border = True
         fixed_margin_in_inches = 0.85  #1.25 #0.75 #0.85 
         border_color = "#FFFFFF" # --> manually set border to be white
-
+    else:
+        print("ERROR: Only print 11x14 supported today")
+        return
 
         #FINAL DECISION:
         # Fixed Margins in Inches = 0.85
@@ -344,26 +347,26 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     print("creating story shape")
     new_story_data_path, story_shape_path = create_shape(
                     config_path = PATHS['config'],
-                    output_dir = PATHS['shapes_output'], # <-- ADD THIS LINE
-                    story_data_dir=PATHS['story_data'],      # For reading/writing data files
+                    output_dir = PATHS['product_designs'],        # where to save designs
+                    story_data_dir=PATHS['product_data'],      # For reading/writing data files
                     story_data_path = story_data_path,
-                    product = product,
+                    product = product_type,
                     x_delta= 0.015,#0.015, #number of points in the line 
                     step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                     max_num_steps = max_num_steps,
-                    line_type = line_type, #values line or char
+                    line_type = "chat", #values line or char
                     line_thickness = line_thickness, #only used if line_type = line
-                    line_color = font_color, #only used if line_type = line
+                    line_color = font_color_hex, #only used if line_type = line
                     font_style= font, #only used if line_type set to char
                     font_size= font_size, #only used if line_type set to char
-                    font_color = font_color, #only used if line_type set to char
+                    font_color = font_color_hex, #only used if line_type set to char
                     background_type='solid', #values solid or transparent
-                    background_value = background_color, #only used if background_type = solid
+                    background_value = background_color_hex, #only used if background_type = solid
                     has_title = "YES", #values YES or NO
                     title_text = "", #optinal if left blank then will use story title as default
                     title_font_style = font, #only used if has_title = "YES"
                     title_font_size=title_font_size, #only used if has_title = "YES"
-                    title_font_color = font_color, #only used if has_title = "YES"
+                    title_font_color = font_color_hex, #only used if has_title = "YES"
                     title_font_bold = False, #can be True or False
                     title_font_underline = False, #can be true or False
                     title_padding = 0, #extra padding in pixels between bottom and title
@@ -371,14 +374,14 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
                     protagonist_text = protagonist, #if you leave blank will include protognaist name in lower right corner; can get rid of by just setting to " ", only works if has title is true
                     protagonist_font_style = font,
                     protagonist_font_size=protagonist_font_size, 
-                    protagonist_font_color=font_color,
+                    protagonist_font_color=font_color_hex,
                     protagonist_font_bold = False, #can be True or False
                     protagonist_font_underline = False, #can be True or False
 
-                    author_text=subtitle, # Optional, defaults to story_data['author']
+                    author_text=author, # Optional, defaults to story_data['author']
                     author_font_style=font, # Defaults to title font style if empty
                     author_font_size=author_font_size, # Suggest smaller than title
-                    author_font_color=font_color, # Use hex, defaults to title color
+                    author_font_color=font_color_hex, # Use hex, defaults to title color
                     author_font_bold=False,
                     author_font_underline=False,
                     author_padding=5, 
@@ -386,7 +389,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
                     top_text = top_text, #only applies when wrapped > 0; if "" will default to author, year
                     top_text_font_style = font,
                     top_text_font_size = top_text_font_size,
-                    top_text_font_color = font_color,
+                    top_text_font_color = font_color_hex,
                     bottom_text = "", #only applies when wrapped > 0; if "" will default to "Shapes of Stories"
                     bottom_text_font_style = "Sans",
                     bottom_text_font_size = bottom_text_font_size,
@@ -406,8 +409,8 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
                     llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     #llm_provider = "google", #"anthropic", #google", 
                     #llm_model = "gemini-2.5-pro-preview-05-06", #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-                    output_format=file_format
-                ) #options png or svg
+                    output_format="png" #options png or svg
+                ) 
 
 
 
@@ -416,3 +419,8 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
 
 
     
+# Example 
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json",
+                    product_type="print", 
+                    product_size="11x14", 
+                    product_style="")

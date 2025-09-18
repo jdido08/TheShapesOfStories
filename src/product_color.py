@@ -251,3 +251,8 @@ def map_hex_to_simple_color(hex_color: str, max_delta_e: float | None = None):
     family = COLOR_FAMILY.get(best_name)
     return {"name": best_name, "family": family, "shade": _shade_from_L(L),
             "distance": round(best_d, 2), "matched_hex": matched_hex}
+
+
+
+# color_name = map_hex_to_simple_color("#E6DCC8")
+# print(color_name)

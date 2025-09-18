@@ -124,57 +124,71 @@ def create_shape(
     background_value = hex_to_rgb(background_value)
     wrap_background_color = hex_to_rgb(wrap_background_color)
 
-
+    #open story data
     with open(story_data_path, 'r', encoding='utf-8') as file:
         story_data = json.load(file)
         if 'story_plot_data' in story_data:
             story_data = story_data['story_plot_data']
+
     
     #get title 
-    path_title = story_data['title'].lower().replace(' ', '-')
-    path_size = f'{width_in_inches}x{height_in_inches}'
-    path_protagonist= story_data['protagonist'].lower().replace(' ', '-')
-    
+    path_name = story_data['title'].lower().replace(' ', '-') + "-" + story_data['protagonist'].lower().replace(' ', '-') + "-" + product.lower().replace(' ', '-') + "-" + str(width_in_inches) + "x" + str(height_in_inches)
+    path_name = path_name.replace("’", "'")   # Normalize the path to replace curly apostrophes with straight ones
+    path_name = path_name.replace(",", "")    # Normalize the path to replace commas
 
     #check_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{path_title}_{path_protagonist}_{path_size}.json'
     # Use os.path.join with the new story_data_dir argument
-    check_path = os.path.join(story_data_dir, f'{path_title}_{path_protagonist}_{path_size}.json')
+    check_path = os.path.join(story_data_dir, f'{path_name}.json')
     print(check_path)
     if os.path.exists(check_path):
         story_data_path = check_path
-        print("Story Data for " , path_size ," exists")
+        print("Story Data for " , path_name ," exists")
         with open(story_data_path, 'r', encoding='utf-8') as file:
             story_data = json.load(file)
             if 'story_plot_data' in story_data:
                 story_data = story_data['story_plot_data']
+    print("CHECK PATH: ", check_path)
 
     #create story_shape_path
 
-    story_shape_product = "product-" + product
-    story_shape_line_type = "line-type-" + line_type
-    story_shape_title = "title-" + story_data['title'].lower().replace(' ', '-')
-    story_shape_size = "size-" + f'{width_in_inches}x{height_in_inches}'
-    story_shape_protagonist = "protagonist-"+story_data['protagonist'].lower().replace(' ', '-')
-    story_shape_background_color = "background-color-" + background_value_hex
-    story_shape_font_color = "font-color-" + font_color_hex
-    story_shape_border_color = "border-color-" + border_color_hex
-    story_shape_font = "font-"+font_style
-    print(font_style)
+    # story_shape_product = "product-" + product
+    # story_shape_line_type = "line-type-" + line_type
+    # story_shape_title = "title-" + story_data['title'].lower().replace(' ', '-')
+    # story_shape_size = "size-" + f'{width_in_inches}x{height_in_inches}'
+    # story_shape_protagonist = "protagonist-"+story_data['protagonist'].lower().replace(' ', '-')
+    # story_shape_background_color = "background-color-" + background_value_hex
+    # story_shape_font_color = "font-color-" + font_color_hex
+    # story_shape_border_color = "border-color-" + border_color_hex
+    # story_shape_font = "font-"+font_style
+    # print(font_style)
 
-    if title_text == "":
-        story_shape_title_display = "title-display-yes"
-    else:
-        story_shape_title_display = "title-display-no"
+    # if title_text == "":
+    #     story_shape_title_display = "title-display-yes"
+    # else:
+    #     story_shape_title_display = "title-display-no"
 
-    unique_filename = (
-        f"{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_"
-        f"{story_shape_size}_{story_shape_line_type}_{story_shape_background_color}_"
-        f"{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_"
-        f"{story_shape_title_display}.{output_format}"
-    )
+    # unique_filename = (
+    #     f"{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_"
+    #     f"{story_shape_size}_{story_shape_line_type}_{story_shape_background_color}_"
+    #     f"{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_"
+    #     f"{story_shape_title_display}.{output_format}"
+    # )
+
+    background_color_name = map_hex_to_simple_color(background_value_hex)['name']
+    font_color_name = map_hex_to_simple_color(font_color_hex)['name']
+
+    #COME BACK TO
+    unique_filename = f"{path_name}-{background_color_name}/{font_color_name}"
+    
+
+    story_data['font_color_name'] = map_hex_to_simple_color(font_color_hex)
+    story_data['background_color_name'] = map_hex_to_simple_color(background_value_hex)
+    story_data['border_color_name'] = map_hex_to_simple_color(border_color_hex) #NOT USING THIS 
+
 
     #story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_{story_shape_size}_{story_shape_line_type}_{line_type}_{story_shape_background_color}_{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_{story_shape_title_display}.{output_format}'
     story_shape_path = os.path.join(output_dir, unique_filename)
+    print("story_shape_path: ", story_shape_path)
 
    
     status = "processing"
@@ -304,8 +318,9 @@ def create_shape(
     
     #new_story_data_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_data/{new_title}_{new_protagonist}_{new_size}.json'
     # Use os.path.join with the new story_data_dir argument
-    new_story_data_filename = f'{new_title}_{new_protagonist}_{new_size}.json'
-    new_story_data_path = os.path.join(story_data_dir, new_story_data_filename)
+    #new_story_data_filename = f'{new_title}_{new_protagonist}_{new_size}.json' #commenting 9/18/2025
+    #new_story_data_path = os.path.join(story_data_dir, new_story_data_filename) #commenting 9/18/2025
+    new_story_data_path = check_path
     
     with open(new_story_data_path, 'w', encoding='utf-8') as file:
         json.dump(story_data, file, ensure_ascii=False, indent=4)
