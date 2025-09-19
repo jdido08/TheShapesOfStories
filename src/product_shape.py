@@ -147,7 +147,7 @@ def create_shape(
             story_data = json.load(file)
             if 'story_plot_data' in story_data:
                 story_data = story_data['story_plot_data']
-    print("CHECK PATH: ", check_path)
+    #print("CHECK PATH: ", check_path)
 
     #create story_shape_path
 
@@ -188,7 +188,7 @@ def create_shape(
 
     #story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_{story_shape_size}_{story_shape_line_type}_{line_type}_{story_shape_background_color}_{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_{story_shape_title_display}.{output_format}'
     story_shape_path = os.path.join(output_dir, unique_filename)
-    print("story_shape_path: ", story_shape_path)
+    #print("story_shape_path: ", story_shape_path)
 
    
     status = "processing"

@@ -252,6 +252,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 from product_shape import create_shape
 from product_color import map_hex_to_simple_color
+from story_shape_category import get_story_symbolic_and_archetype
+from product_description import create_product_description
 
 test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json"
 def create_product_data(story_data_path, product_type="", product_size="", product_style=""):
@@ -266,7 +268,6 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     #determine product style
     if product_style == "": #if product_style left empty that use default
         background_color_hex = story_data.get("default_style", {}).get("background_color_hex")
-        #print(background_color_hex)
         background_color_name = map_hex_to_simple_color(background_color_hex)['name']
         font_color_hex = story_data.get("default_style", {}).get("font_color_hex")
         #font_color_name = map_hex_to_simple_color(font_color_hex)['name']
@@ -287,45 +288,96 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     year = story_data.get("year")
 
     if product_type == "print" and product_size == "11x14":
-
-        total_chars_line1 = len(title) + len(protagonist)
-        if total_chars_line1 <= 38:
-            title_font_size       = 27
-            protagonist_font_size = 16
-            author_font_size      = 16
-        elif total_chars_line1 <= 65:
-            title_font_size       = 25
-            protagonist_font_size = 15
-            author_font_size      = 15
-        elif total_chars_line1 <= 85:
-            title_font_size       = 19
-            protagonist_font_size = 14
-            author_font_size      = 14
-        else:
-            title_font_size       = 18
-            protagonist_font_size = 13
-            author_font_size      = 13
-
-        #FIX SETTINGS
-        line_thickness = 38
-        font_size = 12
-        gap_above_title = 102 #value was 26
-        top_text = author + ", " + str(year)
-        top_text_font_size = 12
-        bottom_text_font_size = 12
-        top_and_bottom_text_band = 1
-        border_thickness = 360 #600 #300 #360 ## --> (360/300)/2 DPI --> 0.6 inches OR (300/300 DPI)/2 --> 0.5 in 
-        width_in_inches = 11
-        height_in_inches = 14
-        wrap_in_inches = 0
-        max_num_steps = 2
-        step_k = 6
-        has_border = True
-        fixed_margin_in_inches = 0.85  #1.25 #0.75 #0.85 
-        border_color = "#FFFFFF" # --> manually set border to be white
+        product_data_path, product_design_path = create_print_11x14_product_data(
+            story_data_path=story_data_path,
+            title=title,
+            protagonist=protagonist,
+            author=author,
+            year=year,
+            background_color_hex=background_color_hex,
+            font_color_hex=font_color_hex,
+            font=font,
+            line_type = "char",
+            output_format="png"
+        )
     else:
         print("ERROR: Only print 11x14 supported today")
         return
+    
+
+
+    # Compare product shape to make sure it's the same as the story -- product shapes can change slightly during product creations
+    with open(product_data_path, 'r') as f:  #open product json data that was just created
+        product_data = json.load(f)
+    product_story_components = product_data.get("story_components")
+    product_symbolic_rep,  product_archetype = get_story_symbolic_and_archetype(product_story_components)
+    if product_symbolic_rep != story_data.get("shape_symbolic_representation"):
+        print("ERROR: Product and Data Symbolic Represensation Data do NOT EQUAL for {title}")
+        print(f"Story Symbolic Rep: {story_data.get('shape_symbolic_representation')}")
+        print(f"Product Symbolic Rep: {product_symbolic_rep}")
+        return 
+    if product_archetype != story_data.get("shape_archetype"):
+        print("ERROR: Product and Data Shape Archetypes do NOT EQUAL for {title}")
+        print(f"Story Shape Archetype: {story_data.get('shape_archetype')}")
+        print(f"Product Shape Archetype: {product_archetype}")
+        return 
+    print("✅ Product Shape matches Story Shape")
+
+
+    #create production description 
+    description = create_product_description(
+        image_path=product_design_path,
+        story_json_or_path=product_data_path
+    )
+    print("✅ Product Description Created")
+    
+    #TO DOS:
+    # grade story text
+    # product descriptin
+    # product metafields
+    # mockups
+    # create line png, char svg, line svg, 
+
+
+
+
+def create_print_11x14_product_data(story_data_path, title, protagonist, author, year, background_color_hex, font_color_hex,font, line_type, output_format):       
+
+    total_chars_line1 = len(title) + len(protagonist)
+    if total_chars_line1 <= 38:
+        title_font_size       = 27
+        protagonist_font_size = 16
+        author_font_size      = 16
+    elif total_chars_line1 <= 65:
+        title_font_size       = 25
+        protagonist_font_size = 15
+        author_font_size      = 15
+    elif total_chars_line1 <= 85:
+        title_font_size       = 19
+        protagonist_font_size = 14
+        author_font_size      = 14
+    else:
+        title_font_size       = 18
+        protagonist_font_size = 13
+        author_font_size      = 13
+
+    #FIX SETTINGS
+    line_thickness = 38
+    font_size = 12
+    gap_above_title = 102 #value was 26
+    top_text = author + ", " + str(year)
+    top_text_font_size = 12
+    bottom_text_font_size = 12
+    top_and_bottom_text_band = 1
+    border_thickness = 360 #600 #300 #360 ## --> (360/300)/2 DPI --> 0.6 inches OR (300/300 DPI)/2 --> 0.5 in 
+    width_in_inches = 11
+    height_in_inches = 14
+    wrap_in_inches = 0
+    max_num_steps = 2
+    step_k = 6
+    has_border = True
+    fixed_margin_in_inches = 0.85  #1.25 #0.75 #0.85 
+    border_color = "#FFFFFF" # --> manually set border to be white
 
         #FINAL DECISION:
         # Fixed Margins in Inches = 0.85
@@ -345,16 +397,16 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     # 3.) char svg
     # 4.) line svg
     print("creating story shape")
-    new_story_data_path, story_shape_path = create_shape(
+    product_data_path, product_design_path = create_shape(
                     config_path = PATHS['config'],
                     output_dir = PATHS['product_designs'],        # where to save designs
                     story_data_dir=PATHS['product_data'],      # For reading/writing data files
                     story_data_path = story_data_path,
-                    product = product_type,
+                    product = "print",
                     x_delta= 0.015,#0.015, #number of points in the line 
                     step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                     max_num_steps = max_num_steps,
-                    line_type = "char", #values line or char
+                    line_type = line_type, #values line or char
                     line_thickness = line_thickness, #only used if line_type = line
                     line_color = font_color_hex, #only used if line_type = line
                     font_style= font, #only used if line_type set to char
@@ -409,13 +461,10 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
                     llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     #llm_provider = "google", #"anthropic", #google", 
                     #llm_model = "gemini-2.5-pro-preview-05-06", #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-                    output_format="png" #options png or svg
+                    output_format=output_format #options png or svg
                 ) 
+    return product_data_path, product_design_path 
 
-
-
-
-        
 
 
     

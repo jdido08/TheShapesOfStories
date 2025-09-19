@@ -327,3 +327,13 @@ ___
 
 
 Mockups
+
+
+# TODOs 9/19/2025:
+
+- story data creation --> DONE
+- product data / design creation --> WIP 
+- printify product creation 
+- shopify production 
+
+- need to revisit logic for summaries as having these accurate with facts will help product 
