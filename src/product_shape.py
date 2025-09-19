@@ -178,7 +178,7 @@ def create_shape(
     font_color_name = map_hex_to_simple_color(font_color_hex)['name']
 
     #COME BACK TO
-    unique_filename = f"{path_name}-{background_color_name}/{font_color_name}"
+    unique_filename = f"{path_name}-{background_color_name.lower().replace(' ', '-')}-{font_color_name.lower().replace(' ', '-')}.{output_format}"
     
 
     story_data['font_color_name'] = map_hex_to_simple_color(font_color_hex)
@@ -259,7 +259,7 @@ def create_shape(
                     llm_provider = llm_provider,
                     llm_model = llm_model,
                     output_format = output_format)
-
+        
         #print(count, " .) ", status)
         if(count % 50 == 0):
             print(count)

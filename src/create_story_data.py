@@ -354,7 +354,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
                     x_delta= 0.015,#0.015, #number of points in the line 
                     step_k = step_k, #step-by-step steepness; higher k --> more steepness; values = 3, 4.6, 6.9, 10, 15
                     max_num_steps = max_num_steps,
-                    line_type = "chat", #values line or char
+                    line_type = "char", #values line or char
                     line_thickness = line_thickness, #only used if line_type = line
                     line_color = font_color_hex, #only used if line_type = line
                     font_style= font, #only used if line_type set to char
