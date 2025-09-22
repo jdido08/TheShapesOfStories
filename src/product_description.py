@@ -19,7 +19,7 @@ from typing import Optional, Union, Dict, Any
 ### INPUTS:
 # Title
 # Author 
-# Protoganist 
+# Protagonist 
 # Size
 # Image 
 # Font Style
@@ -36,6 +36,11 @@ from typing import Optional, Union, Dict, Any
 config_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml'
 llm_provider = 'google'
 llm_model = 'gemini-2.5-pro'
+
+matt_frame_size = {
+    "8x10": "11x14",
+    "11x14": "16x20"
+}
 
 
 # ========= helpers (minimal, additive) =========
@@ -74,46 +79,72 @@ def _collect_arc_texts(story: Optional[Dict[str, Any]]) -> str:
                 arc_texts.append(val.strip())
     return " | ".join(arc_texts)
 
-def _approx_color_name(rgb: List[float]) -> str:
-    """Small heuristic for friendly color names when JSON has RGB floats 0..1."""
-    if not isinstance(rgb, list) or len(rgb) != 3:
-        return ""
-    r, g, b = rgb
-    # brightness
-    brightness = (max(r, g, b) + min(r, g, b)) / 2
-    if brightness > 0.93:
-        return "white"
-    if brightness > 0.85 and r > g >= b:
-        return "soft ivory"
-    # dominant channel
-    if b >= r and b >= g:
-        if b > 0.45 and r < 0.25 and g < 0.35:
-            return "deep navy"
-        return "blue"
-    if r >= g and r >= b:
-        if r > 0.45 and g < 0.25 and b < 0.25:
-            return "crimson"
-        return "red"
-    if g >= r and g >= b:
-        return "green"
-    return "neutral"
 
-def _extract_font_name(story: Dict[str, Any], image_path: Optional[str]) -> str:
-    """Get a human-friendly font name from JSON or the image filename (e.g., font-Baskerville)."""
-    # JSON candidates
-    for key in ("font_name", "font_family", "font", "title_font"):
-        v = story.get(key)
-        if isinstance(v, str) and v.strip():
-            return v.strip()
 
-    # Fallback: parse from filename "font-Baskerville"
-    if image_path:
-        name = Path(image_path).name
-        m = re.search(r'font-([A-Za-z0-9\- ]+)', name)
-        if m:
-            return m.group(1).replace("-", " ").strip()
+import html
+from bs4 import BeautifulSoup
 
-    return ""
+_ALLOWED_TAGS = {"h2","p","ul","li","strong","em","br","code"}
+_ALLOWED_ATTRS = set()
+
+def _shopify_sanitize(html_in: str) -> str:
+    try:
+        soup = BeautifulSoup(html_in, "html.parser")
+        for t in soup(["script","style","link","meta","title","head","html","body"]):
+            t.decompose()
+        for tag in soup.find_all(True):
+            if tag.name not in _ALLOWED_TAGS:
+                tag.unwrap()
+            else:
+                for attr in list(tag.attrs):
+                    if attr not in _ALLOWED_ATTRS:
+                        del tag.attrs[attr]
+        return str(soup).strip()
+    except Exception:
+        return html_in
+
+
+import re
+
+_YOOSOUND_PREFIXES = (
+    "uni", "univ", "urol", "euro", "ewe", "euc", "uter", "use", "user", "ukulele"
+)
+_SILENT_H_PREFIXES = ("honest", "honor", "heir", "hour")
+
+def _indef_article(phrase: str) -> str:
+    """
+    Choose 'a' or 'an' for the start of `phrase` based on common English pronunciation rules.
+    Designed for short descriptors like color names ('ivory', 'navy', 'emerald green').
+    """
+    if not phrase:
+        return "a"
+
+    w = phrase.strip().lower()
+
+    # If phrase starts with a number or an acronym (letters separated by non-letters),
+    # decide based on the spoken first symbol.
+    # Letters that start with vowel sounds when spelled out: A, E, F, H, I, L, M, N, O, R, S, X
+    if re.match(r"^[0-9]", w):
+        # Numbers starting with vowel sound: 8, 11, 18, etc. (anything starting with 8 or 11-like)
+        return "an" if w.startswith(("8", "11", "18")) else "a"
+    if re.match(r"^[^a-z]*[a-z]($|[^a-z])", w):
+        first_letter = re.sub(r"[^a-z]", "", w)[:1]
+        if len(first_letter) == 1 and first_letter in set("aefhilmnorsx"):
+            # 'F' → 'eff', 'H' → 'aitch', 'R' → 'ar', etc.
+            return "an"
+
+    # Silent 'h' cases
+    for pref in _SILENT_H_PREFIXES:
+        if w.startswith(pref):
+            return "an"
+
+    # 'You' sound at start (e.g., 'unique', 'university', 'European')
+    for pref in _YOOSOUND_PREFIXES:
+        if w.startswith(pref):
+            return "a"
+
+    # Default vowel vs consonant rule on first letter
+    return "an" if w[0] in "aeiou" else "a"
 
 
 # ========= main function (kept structure, only revised) =========
@@ -166,6 +197,9 @@ def create_description(
     font_color_name = story.get("font_color_name") or ""
     font_style = story.get("font_style") or ""
 
+    article = _indef_article(background_color_name)
+
+
     # Optional beat labels to ground the prose
     arc_texts_inline = _collect_arc_texts(story)
 
@@ -202,10 +236,10 @@ RESPONSE RULES
 
   3) <h2>Print Details</h2>
      <ul>
-       <li>Premium 11x14&quot; print on archival-quality paper with white border</li>
-       <li>The story’s shape is formed from concise beats positioned at the exact points along {protagonist}’s journey</li>
-       <li>Features {font_style} typography in {font_color_name} against a {background_color_name} background</li>
-       <li>Fits into standard 11x14&quot; frame (or a 16x20&quot; frame matted to 11x14&quot;)</li>
+       <li>Premium {size}&quot; print on archival-quality paper with white border</li>
+       <li>The shape maps key moments in {protagonist}’s journey.</li>
+       <li>Features {font_style} typography in {font_color_name} on {article} {background_color_name} background</li>
+       <li>Fits into standard {size}&quot; frame (or a {matt_frame_size[size]}&quot; frame matted to {size}&quot;)</li>
        <li>Museum-quality inks ensure lasting vibrancy and clarity</li>
      </ul>
 
@@ -236,6 +270,9 @@ STORY DATA (JSON):
     # 6) Invoke the model exactly like you already do
     response = llm.invoke([message])
     product_description = response.content if hasattr(response, "content") else str(response)
+
+    #clean production description
+    product_description = _shopify_sanitize(product_description)
 
     return product_description
 
