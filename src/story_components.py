@@ -305,7 +305,7 @@ def get_story_components(config_path,story_title,story_summary, author, year, pr
     story_components = analyze_story(config_path=config_path, author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
                                     llm_provider=llm_provider,llm_model=llm_model)
     story_components = json.loads(story_components)
-    print(story_components)
+    #print(story_components)
 
     #chekc if story_component are valid
     story_components_validity = validate_story_arcs(story_components) #call to confirm story_components are valid

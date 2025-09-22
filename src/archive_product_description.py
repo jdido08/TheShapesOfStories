@@ -16,22 +16,6 @@ from pathlib import Path
 from typing import Optional, Union, Dict, Any
 
 
-### INPUTS:
-# Title
-# Author 
-# Protoganist 
-# Size
-# Image 
-# Font Style
-# Background Color Name
-# Font Color Name
-# Symbolic_representation
-# Archetype
-
-#Logic: 
-
-
-
 # --- your existing config knobs (unchanged) ---
 config_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml'
 llm_provider = 'google'
@@ -158,13 +142,16 @@ def create_description(
     title = story.get("title") or story.get("work_title") or ""
     author = story.get("author") or ""
     protagonist = story.get("protagonist") or ""
-    year = story.get("year") or ""
-    symbolic = story.get("shape_symbolic_representation", "") or story.get("symbolic", "")
-    archetype = (story.get("shape_archetype") or "").strip()
-    size = story.get("product_size") or ""
-    background_color_name = story.get("background_color_name") or ""
-    font_color_name = story.get("font_color_name") or ""
-    font_style = story.get("font_style") or ""
+
+    symbolic = story.get("symbolic_representation", "") or story.get("symbolic", "")
+    archetype = (story.get("archetype") or "").strip()
+
+    # Hints for color/type line (LLM decides final wording; keep it to one line)
+    bg_rgb = story.get("background_color")
+    text_rgb = story.get("font_color") or story.get("title_font_color")
+    bg_hint = _approx_color_name(bg_rgb) if bg_rgb else ""
+    text_hint = _approx_color_name(text_rgb) if text_rgb else ""
+    font_name = _extract_font_name(story, image_path)
 
     # Optional beat labels to ground the prose
     arc_texts_inline = _collect_arc_texts(story)
@@ -185,15 +172,12 @@ RESPONSE RULES
         Naturally include 2–3 relevant phrases (not spammy) such as:
         “{title} print”, “{author} wall art”, “bookish décor”, “literary gift”, “reading nook”.
         Keep it fluent—do not comma-stack keywords or repeat them.</p>
-    <ul>
-       <li><strong>Title:</strong> {title} ({year})</li>
-       <li><strong>Author:</strong> {author}</li>
-       <li><strong>Protagonist:</strong> {protagonist}</li>
-       <li><strong>Shape:</strong> {symbolic}</li>
+
+  2) <h2>The Story Behind the Shape</h2>
+     <ul>
+       <li><strong>Shape:</strong> {symbolic if symbolic else "(not provided)"}</li>
 {"     <li><strong>Archetype:</strong> " + archetype + "</li>" if (archetype and archetype.lower() != "other") else ""}
      </ul>
-        
-  2) <h2>The Story Behind the Shape</h2>
      <p>Write 2–4 sentences (≈45–90 words) explaining the emotional journey. Embed arrow notation inline and
         follow the Shape **as grouped tokens** left to right: {symbolic}. Keep identical consecutive arrows **together**,
         e.g., if the Shape is "↓ ↑↑ →", reference “(↓)”, “(↑↑)”, “(→)”—never split “(↑↑)” into two “(↑)”.
@@ -204,8 +188,10 @@ RESPONSE RULES
      <ul>
        <li>Premium 11x14&quot; print on archival-quality paper with white border</li>
        <li>The story’s shape is formed from concise beats positioned at the exact points along {protagonist}’s journey</li>
-       <li>Features {font_style} typography in {font_color_name} against a {background_color_name} background</li>
-       <li>Fits into standard 11x14&quot; frame (or a 16x20&quot; frame matted to 11x14&quot;)</li>
+       <li>Write one short line that describes background + typography in natural terms (no hex codes).
+           Infer from the image; you may use these hints only if accurate: background≈{(story.get("background_hint") or "") or "(use image)"}; text≈{(story.get("font_color_hint") or "") or "(use image)"}.
+           Optionally name the typeface if it adds clear value (e.g., “typography in {(_extract_font_name(story, image_path) or '').strip()}”). Keep it brief.</li>
+       <li>Designed for standard framing (stunning when matted in an 11x14&quot; frame)</li>
        <li>Museum-quality inks ensure lasting vibrancy and clarity</li>
      </ul>
 

@@ -181,9 +181,12 @@ def create_shape(
     unique_filename = f"{path_name}-{background_color_name.lower().replace(' ', '-')}-{font_color_name.lower().replace(' ', '-')}.{output_format}"
     
 
-    story_data['font_color_name'] = map_hex_to_simple_color(font_color_hex)
-    story_data['background_color_name'] = map_hex_to_simple_color(background_value_hex)
-    story_data['border_color_name'] = map_hex_to_simple_color(border_color_hex) #NOT USING THIS 
+    story_data['font_color_details'] = map_hex_to_simple_color(font_color_hex)
+    story_data['background_color_details'] = map_hex_to_simple_color(background_value_hex)
+    story_data['border_color_details'] = map_hex_to_simple_color(border_color_hex) #NOT USING THIS 
+    story_data['font_color_name'] = story_data['font_color_details']['name']
+    story_data['background_color_name'] = story_data['background_color_details']['name']
+    story_data['border_color_name'] = story_data['border_color_details']['name']
 
 
     #story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_{story_shape_size}_{story_shape_line_type}_{line_type}_{story_shape_background_color}_{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_{story_shape_title_display}.{output_format}'
@@ -300,6 +303,7 @@ def create_shape(
     story_data['border_color'] = border_color
     story_data['arc_text_llm'] = llm_model
     story_data['fixed_margin_in_inches'] = fixed_margin_in_inches
+    story_data['product_size'] = f'{width_in_inches}x{height_in_inches}'
     new_title = story_data['title'].lower().replace(' ', '-')
     new_size = f'{width_in_inches}x{height_in_inches}'
     new_protagonist = story_data['protagonist'].lower().replace(' ', '-')
@@ -308,9 +312,9 @@ def create_shape(
     story_data['font_color_hex'] = font_color_hex
     story_data['background_color_hex'] = background_value_hex
     story_data['border_color_hex'] = border_color_hex #NOT USING THIS 
-    story_data['font_color_name'] = map_hex_to_simple_color(font_color_hex)
-    story_data['background_color_name'] = map_hex_to_simple_color(background_value_hex)
-    story_data['border_color_name'] = map_hex_to_simple_color(border_color_hex) #NOT USING THIS 
+    # story_data['font_color_name'] = map_hex_to_simple_color(font_color_hex)
+    # story_data['background_color_name'] = map_hex_to_simple_color(background_value_hex)
+    # story_data['border_color_name'] = map_hex_to_simple_color(border_color_hex) #NOT USING THIS 
 
 
     
