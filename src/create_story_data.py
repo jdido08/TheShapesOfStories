@@ -355,13 +355,29 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         print("✅ Product Text Passed; Grade: ", final_grade)
     else:
         print("❌ Product Text Failed; Grade: ", final_grade)
+
     
+
+    # Create Mockups
+    # Mockups:
+    #   1. 11x14 Poster w/ Paper Clips
+    #   2. 11x14 Frame on Table
+    #   3. 11x14 Frame on Wall 
+    #   4. 3X 11x14 Frames on Wall 
+    # Inputs:
+    # - image file
+    # - print 11x14 config file --> all details for 11x14 mockups; so could change out for other product types
+    # Logic:
+    # - create mockups 
+    # Output:
+    # - png file in new folder (mockups)
+    # - add links to mockup files back into product data "mockup_links" = {}
+
+    #figure out 2 - 4 and then circle back to #1 baecause that mockup has a different creation process.
 
     
     #TO DOS:
-    # grade story text
-    # product descriptin
-    # product metafields
+    # product metafields --> this might actually be better as a story
     # mockups
     # create line png, char svg, line svg, 
 
