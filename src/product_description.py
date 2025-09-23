@@ -220,11 +220,10 @@ RESPONSE RULES
         “{title} print”, “{author} wall art”, “bookish décor”, “literary gift”, “reading nook”.
         Keep it fluent—do not comma-stack keywords or repeat them.</p>
     <ul>
-       <li><strong>Title:</strong> {title} ({year})</li>
+       <li><strong>Title:</strong> {title} <em>({year})</em></li>
        <li><strong>Author:</strong> {author}</li>
        <li><strong>Protagonist:</strong> {protagonist}</li>
-       <li><strong>Shape:</strong> {symbolic}</li>
-{"     <li><strong>Archetype:</strong> " + archetype + "</li>" if (archetype and archetype.lower() != "other") else ""}
+       <li><strong>Shape:</strong> {symbolic}{" <em>(" + archetype + ")</em>" if (archetype and archetype.strip().lower() not in {'other','n/a','na','none'}) else ""}</li>
      </ul>
         
   2) <h2>The Story Behind the Shape</h2>
@@ -240,7 +239,7 @@ RESPONSE RULES
        <li>The shape maps key moments in {protagonist}’s journey.</li>
        <li>Features {font_style} typography in {font_color_name} on {article} {background_color_name} background</li>
        <li>Fits into standard {size}&quot; frame (or a {matt_frame_size[size]}&quot; frame matted to {size}&quot;)</li>
-       <li>Museum-quality inks ensure lasting vibrancy and clarity</li>
+       <li>Ships unframed (print only)</li>
      </ul>
 
   4) <p>Write 1–2 sentences inviting the buyer to picture the piece in their space or as a gift.
