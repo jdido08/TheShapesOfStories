@@ -332,7 +332,10 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     #description and save to product path
     create_product_description(
         image_path=product_design_path,
-        story_json_or_path=product_data_path
+        story_json_or_path=product_data_path,
+        config_path=PATHS['config'],
+        llm_provider = 'google',
+        llm_model = 'gemini-2.5-pro'
     )
     print("✅ Product Description Created")
 

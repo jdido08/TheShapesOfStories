@@ -32,10 +32,10 @@ from typing import Optional, Union, Dict, Any
 
 
 
-# --- your existing config knobs (unchanged) ---
-config_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml'
-llm_provider = 'google'
-llm_model = 'gemini-2.5-pro'
+# # --- your existing config knobs (unchanged) ---
+# config_path = '/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml'
+# llm_provider = 'google'
+# llm_model = 'gemini-2.5-pro'
 
 matt_frame_size = {
     "8x10": "11x14",
@@ -151,7 +151,10 @@ def _indef_article(phrase: str) -> str:
 
 def create_description(
     image_path: Optional[str] = None,
-    story_json_or_path: Union[str, Dict[str, Any], None] = None
+    story_json_or_path: Union[str, Dict[str, Any], None] = None,
+    config_path: Optional[str] = None,
+    llm_provider: Optional[str] = None,
+    llm_model: Optional[str] = None 
 ) -> str:
     """
     Generate a Shopify-ready product description for a Shape of Story artwork.
@@ -304,11 +307,17 @@ def write_product_description_to_json(
 
 def create_product_description(
     image_path: Optional[str] = None,
-    story_json_or_path: Union[str, Dict[str, Any], None] = None
+    story_json_or_path: Union[str, Dict[str, Any], None] = None,
+    config_path: Optional[str] = None,
+    llm_provider: Optional[str] = None,
+    llm_model: Optional[str] = None 
 ) -> str:
     product_description = create_description(
         image_path=image_path,
-        story_json_or_path=story_json_or_path
+        story_json_or_path=story_json_or_path,
+        config_path=config_path,
+        llm_provider=llm_provider,
+        llm_model=llm_model
     )
 
     # Strip for cleanliness
