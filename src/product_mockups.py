@@ -2,6 +2,8 @@
 from PIL import Image, ImageDraw, ImageFilter
 import os
 import itertools
+import json, os, tempfile
+
 
 # ---------------------- geometry & transforms ----------------------
 
@@ -354,20 +356,67 @@ def place_artworks(
 # three_slots = [{"quad": q, "mode": "fill"} for q in three_quads]
 
 
-{
+MOCKUPS = {
     "11x14_table":{
-        "mockup_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
-        "slots":[{"quad": [(714, 666), (2166, 666), (2166, 2559), (714, 2559)], "mode": "fill"}]
+        "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
+        "slots":[{"quad": [(714, 666), (2166, 666), (2166, 2559), (714, 2559)], "mode": "fill"}],
+        "name": "table"
     },
      "11x14_wall":{
-        "mockup_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
+        "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
         "slots":[{"quad": [(1316, 900), (2772, 900), (2772, 2792), (1316, 2792)], "mode": "fill"}],
+        "name": "wall"
     },
     "3x_11x14_wall":{
-        "mockup_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.png",
-        "slots":[{'quad': [(750, 2040), (2118, 2040), (2118, 3822), (750, 3822)], 'mode': 'fill'}, {'quad': [(2388, 2040), (3756, 2040), (3756, 3822), (2388, 3822)], 'mode': 'fill'}, {'quad': [(4032, 2040), (5400, 2040), (5400, 3822), (4032, 3822)], 'mode': 'fill'}]
+        "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.png",
+        "slots":[{'quad': [(750, 2040), (2118, 2040), (2118, 3822), (750, 3822)], 'mode': 'fill'}, {'quad': [(2388, 2040), (3756, 2040), (3756, 3822), (2388, 3822)], 'mode': 'fill'}, {'quad': [(4032, 2040), (5400, 2040), (5400, 3822), (4032, 3822)], 'mode': 'fill'}],
+        "name": "3x_wall"
     }
 }
+
+def create_mockups(product_data_path, product_design_path, mockup_list, output_dir="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/product_mockups"):
+    
+    with open(product_data_path, 'r') as f:  #open product json data that was just created
+        product_data = json.load(f)
+    product_slug = product_data.get("product_slug")
+
+    mockups_paths_added = []
+
+    for mockup in mockup_list:
+
+        mockup_details = MOCKUPS.get(mockup, "")
+        if mockup_details == "":
+            print("❌ Mockup: ", mockup, " does not exist. Skipping.")
+            continue 
+
+        mockup_output_path = f"{output_dir}/{product_slug}-{mockup_details.get('name')}.png"
+
+        place_artworks(
+            mockup_path=mockup_details.get("mockup_template_path"),
+            output_path=mockup_output_path,
+            slots=mockup_details.get("slots"),
+            artwork_paths=[product_design_path],
+            supersample=1,
+            sharpen=True,
+            unsharp=(0.7, 200, 0),
+            lip_width_px=5,
+            lip_feather=0.8,
+        )
+
+        #added mockup path added 
+        mockups_paths_added.append(mockup_output_path)
+
+    
+    #save mockup_paths_added back to product_data and save
+    product_data["mockup_paths"] = mockups_paths_added
+
+    # Atomic write to avoid partial/corrupt files
+    dir_name = os.path.dirname(product_data_path) or "."
+    with tempfile.NamedTemporaryFile("w", delete=False, dir=dir_name, encoding="utf-8") as tmp:
+        json.dump(product_data, tmp, ensure_ascii=False, indent=2)
+        tmp_path = tmp.name
+    os.replace(tmp_path, product_data_path)
+
 
 # ---------------------- example configs ----------------------
 if __name__ == "__main__":

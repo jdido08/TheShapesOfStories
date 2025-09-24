@@ -130,9 +130,11 @@ def create_shape(
         if 'story_plot_data' in story_data:
             story_data = story_data['story_plot_data']
 
-    
+    background_color_name = map_hex_to_simple_color(background_value_hex)['name']
+    font_color_name = map_hex_to_simple_color(font_color_hex)['name']
+
     #get title 
-    path_name = story_data['title'].lower().replace(' ', '-') + "-" + story_data['protagonist'].lower().replace(' ', '-') + "-" + product.lower().replace(' ', '-') + "-" + str(width_in_inches) + "x" + str(height_in_inches)
+    path_name = story_data['title'].lower().replace(' ', '-') + "-" + story_data['protagonist'].lower().replace(' ', '-') + "-" + product.lower().replace(' ', '-') + "-" + str(width_in_inches) + "x" + str(height_in_inches) + "-" + background_color_name.lower().replace(' ', '-') + "-" + font_color_name.lower().replace(' ', '-')
     path_name = path_name.replace("’", "'")   # Normalize the path to replace curly apostrophes with straight ones
     path_name = path_name.replace(",", "")    # Normalize the path to replace commas
 
@@ -147,38 +149,10 @@ def create_shape(
             story_data = json.load(file)
             if 'story_plot_data' in story_data:
                 story_data = story_data['story_plot_data']
-    #print("CHECK PATH: ", check_path)
 
-    #create story_shape_path
-
-    # story_shape_product = "product-" + product
-    # story_shape_line_type = "line-type-" + line_type
-    # story_shape_title = "title-" + story_data['title'].lower().replace(' ', '-')
-    # story_shape_size = "size-" + f'{width_in_inches}x{height_in_inches}'
-    # story_shape_protagonist = "protagonist-"+story_data['protagonist'].lower().replace(' ', '-')
-    # story_shape_background_color = "background-color-" + background_value_hex
-    # story_shape_font_color = "font-color-" + font_color_hex
-    # story_shape_border_color = "border-color-" + border_color_hex
-    # story_shape_font = "font-"+font_style
-    # print(font_style)
-
-    # if title_text == "":
-    #     story_shape_title_display = "title-display-yes"
-    # else:
-    #     story_shape_title_display = "title-display-no"
-
-    # unique_filename = (
-    #     f"{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_"
-    #     f"{story_shape_size}_{story_shape_line_type}_{story_shape_background_color}_"
-    #     f"{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_"
-    #     f"{story_shape_title_display}.{output_format}"
-    # )
-
-    background_color_name = map_hex_to_simple_color(background_value_hex)['name']
-    font_color_name = map_hex_to_simple_color(font_color_hex)['name']
 
     #COME BACK TO
-    unique_filename = f"{path_name}-{background_color_name.lower().replace(' ', '-')}-{font_color_name.lower().replace(' ', '-')}.{output_format}"
+    unique_filename = f"{path_name}.{output_format}"
     
 
     story_data['font_color_details'] = map_hex_to_simple_color(font_color_hex)
@@ -187,6 +161,7 @@ def create_shape(
     story_data['font_color_name'] = story_data['font_color_details']['name']
     story_data['background_color_name'] = story_data['background_color_details']['name']
     story_data['border_color_name'] = story_data['border_color_details']['name']
+    story_data['product_slug'] = path_name
 
 
     #story_shape_path = f'/Users/johnmikedidonato/Projects/TheShapesOfStories/data/story_shapes/{story_shape_title}_{story_shape_protagonist}_{story_shape_product}_{story_shape_size}_{story_shape_line_type}_{line_type}_{story_shape_background_color}_{story_shape_font_color}_{story_shape_border_color}_{story_shape_font}_{story_shape_title_display}.{output_format}'

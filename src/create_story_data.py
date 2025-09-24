@@ -259,6 +259,7 @@ from product_color import map_hex_to_simple_color
 from story_shape_category import get_story_symbolic_and_archetype
 from product_description import create_product_description
 from product_text_accuracy import assess_arc_text
+from product_mockups import create_mockups
 
 test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json"
 def create_product_data(story_data_path, product_type="", product_size="", product_style=""):
@@ -330,31 +331,40 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
 
 
     #description and save to product path
-    create_product_description(
-        image_path=product_design_path,
-        story_json_or_path=product_data_path,
-        config_path=PATHS['config'],
-        llm_provider = 'google',
-        llm_model = 'gemini-2.5-pro'
-    )
-    print("✅ Product Description Created")
+    # create_product_description(
+    #     image_path=product_design_path,
+    #     story_json_or_path=product_data_path,
+    #     config_path=PATHS['config'],
+    #     llm_provider = 'google',
+    #     llm_model = 'gemini-2.5-pro'
+    # )
+    # print("✅ Product Description Created")
 
     
     #grad story text
-    assess_arc_text(
-        generated_analysis_path=product_data_path,
-        config_path=PATHS['config'],
-        llm_provider="anthropic",
-        llm_model="claude-sonnet-4-20250514",
+    # assess_arc_text(
+    #     generated_analysis_path=product_data_path,
+    #     config_path=PATHS['config'],
+    #     llm_provider="anthropic",
+    #     llm_model="claude-sonnet-4-20250514",
+    # )
+    # #need to reopen product data to assess whether grade passing or not
+    # with open(product_data_path, 'r') as f:  #open product json data that was just created
+    #     product_data = json.load(f)
+    # final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
+    # if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
+    #     print("✅ Product Text Passed; Grade: ", final_grade)
+    # else:
+    #     print("❌ Product Text Failed; Grade: ", final_grade)
+
+
+    create_mockups(
+        product_data_path=product_data_path,
+        product_design_path=product_design_path,
+        mockup_list=["11x14_table", "11x14_wall", "11x14_hat"],
+        output_dir="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/product_mockups"
     )
-    #need to reopen product data to assess whether grade passing or not
-    with open(product_data_path, 'r') as f:  #open product json data that was just created
-        product_data = json.load(f)
-    final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
-    if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
-        print("✅ Product Text Passed; Grade: ", final_grade)
-    else:
-        print("❌ Product Text Failed; Grade: ", final_grade)
+    print("✅ Product Mockups Created")
 
     
 
