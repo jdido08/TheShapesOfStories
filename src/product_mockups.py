@@ -3,6 +3,156 @@ from PIL import Image, ImageDraw, ImageFilter
 import os
 import itertools
 import json, os, tempfile
+from PIL import Image, ImageDraw, ImageFilter
+import os
+import itertools
+
+from dataclasses import dataclass
+from typing import Optional, Tuple, List
+from PIL import Image, ImageFilter
+from PIL.Image import Resampling  # Pillow 10+
+
+
+### CLIPS FUNCTIONS #####
+# ---------- CONFIG DATACLASS ----------
+
+@dataclass
+class ClipSpec:
+    path: str                       # path to the clip PNG
+    pos: Tuple[int, int]            # target position (in base-image pixels)
+    size_px: Optional[Tuple[Optional[int], Optional[int]]] = (220, None)
+    #   - (width, height), either can be None to preserve aspect ratio.
+    rotation_deg: float = 0.0       # rotate overlay before placing
+    anchor: str = "center"          # 'center','top_left','top_center','top_right',
+                                    # 'center_left','center_right','bottom_left',
+                                    # 'bottom_center','bottom_right'
+    add_shadow: bool = True
+    shadow_offset: Tuple[int, int] = (3, 6)
+    shadow_blur: int = 6
+    shadow_opacity: int = 110       # 0–255
+    trim_transparent_edges: bool = True  # remove extra transparent padding around the clip
+
+# ---------- CORE CLIP HELPERS ----------
+
+def _unsharp_rgb(img: Image.Image, params=(0.5, 180, 0)) -> Image.Image:
+    """UnsharpMask on RGB only (keeps alpha edges clean; no light halo)."""
+    if img.mode != "RGBA":
+        return img.filter(ImageFilter.UnsharpMask(*params))
+    r, g, b, a = img.split()
+    rgb = Image.merge("RGB", (r, g, b)).filter(ImageFilter.UnsharpMask(*params))
+    return Image.merge("RGBA", (*rgb.split(), a))
+
+
+_ANCHOR_OFFSETS = {
+    "top_left":       lambda w,h: (0, 0),
+    "top_center":     lambda w,h: (w//2, 0),
+    "top_right":      lambda w,h: (w, 0),
+    "center_left":    lambda w,h: (0, h//2),
+    "center":         lambda w,h: (w//2, h//2),
+    "center_right":   lambda w,h: (w, h//2),
+    "bottom_left":    lambda w,h: (0, h),
+    "bottom_center":  lambda w,h: (w//2, h),
+    "bottom_right":   lambda w,h: (w, h),
+}
+
+def _trim_transparent_edges(img: Image.Image) -> Image.Image:
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    bbox = img.getchannel("A").getbbox()
+    return img.crop(bbox) if bbox else img
+
+def _resize_keep_aspect(img: Image.Image, size_px: Tuple[Optional[int], Optional[int]]) -> Image.Image:
+    w, h = img.size
+    tw, th = size_px
+    if tw is None and th is None:
+        return img
+    if tw is None:
+        tw = int(w * (th / h))
+    elif th is None:
+        th = int(h * (tw / w))
+    return img.resize((int(tw), int(th)), Resampling.LANCZOS)
+
+def _make_shadow(img: Image.Image, offset=(3,6), blur=6, opacity=110) -> Tuple[Image.Image, Tuple[int,int]]:
+    # Build a blurred alpha-based shadow
+    a = img.getchannel("A")
+    shadow = Image.new("RGBA", img.size, (0,0,0,0))
+    solid = Image.new("RGBA", img.size, (0,0,0,opacity))
+    shadow.paste(solid, mask=a)
+    shadow = shadow.filter(ImageFilter.GaussianBlur(blur))
+    canvas = Image.new("RGBA", (img.width + abs(offset[0]), img.height + abs(offset[1])), (0,0,0,0))
+    ox, oy = max(offset[0], 0), max(offset[1], 0)
+    canvas.alpha_composite(shadow, (ox, oy))
+    return canvas, (-ox, -oy)  # how much to shift overlay to align with its shadow
+
+
+def clip_positions_from_poster_quad(poster_quad, inset_pct=0.06, raise_px=18):
+    """
+    Returns ((x_left,y_top), (x_right,y_top)) for ClipSpec(anchor='top_center').
+    - inset_pct: horizontal inset from the poster edges (as % of poster width)
+    - raise_px: how far ABOVE the poster top the clip's TOP should sit.
+                This creates a small 'bite' below the top edge like the reference.
+    """
+    (xL, yT), (xR, _), *_ = poster_quad
+    poster_w = xR - xL
+    inset = int(round(poster_w * inset_pct))
+    x_left  = xL + inset
+    x_right = xR - inset
+    y_top   = yT - int(round(raise_px))
+    return (x_left, y_top), (x_right, y_top)
+
+def overlay_clips_exact(
+    base_path: str,
+    clips: List[ClipSpec],
+    output_path: str,
+    supersample: int = 1,                 # 2 gives extra crisp edges; 1 = off
+    post_unsharp: tuple = (0.5, 180, 0),  # after rotate/resize (per clip)
+    final_unsharp: tuple = (0.4, 120, 1), # gentle pass after downsample
+):
+    base = Image.open(base_path).convert("RGBA")
+    W0, H0 = base.size
+    ss = max(1, int(supersample))
+
+    # render larger, then shrink once (optional but recommended)
+    if ss > 1:
+        base = base.resize((W0 * ss, H0 * ss), Resampling.LANCZOS)
+
+    for spec in clips:
+        overlay = Image.open(spec.path).convert("RGBA")
+        if spec.trim_transparent_edges:
+            overlay = _trim_transparent_edges(overlay)
+
+        # scale to requested size (honor aspect) — scale the target by supersample
+        tw, th = spec.size_px
+        if tw is not None: tw = int(round(tw * ss))
+        if th is not None: th = int(round(th * ss))
+        overlay = _resize_keep_aspect(overlay, (tw, th))
+
+        # rotate, then sharpen RGB a touch to recover edge contrast
+        if abs(spec.rotation_deg) > 1e-6:
+            overlay = overlay.rotate(spec.rotation_deg, expand=True, resample=Resampling.BICUBIC)
+        overlay = _unsharp_rgb(overlay, post_unsharp)
+
+        # anchor math (positions scaled by supersample)
+        cx, cy = spec.pos
+        cx, cy = int(round(cx * ss)), int(round(cy * ss))
+        ax, ay = _ANCHOR_OFFSETS[spec.anchor](overlay.width, overlay.height)
+        x = int(cx - ax)
+        y = int(cy - ay)
+
+        # shadow (optional)
+        if spec.add_shadow:
+            sh, shift = _make_shadow(overlay, spec.shadow_offset, spec.shadow_blur, spec.shadow_opacity)
+            base.alpha_composite(sh, (x + shift[0], y + shift[1]))
+
+        base.alpha_composite(overlay, (x, y))
+
+    # one high-quality downscale + light global sharpen
+    if ss > 1:
+        base = base.resize((W0, H0), Resampling.LANCZOS)
+        base = _unsharp_rgb(base, final_unsharp)
+
+    base.save(output_path, "PNG", optimize=True)
+    return output_path
 
 
 # ---------------------- geometry & transforms ----------------------
@@ -125,7 +275,6 @@ def warp_art_into_quad(base_size, art_rgba, quad):
     warped = art_rgba.transform((W,H), Image.PERSPECTIVE, coeffs, resample=Image.BICUBIC)
     return warped
 
-
 def polygon_mask(size, poly, feather=0.5):
     W, H = size
     poly_int = _sanitize_poly(poly, W, H)
@@ -152,72 +301,6 @@ def overlay_inner_lip(base_rgba, quad, width_px=5, feather=1.0):
 
 # ---------------------- main placement function ----------------------
 
-# def place_artworks(
-#     mockup_path,
-#     output_path,
-#     slots,
-#     artwork_paths,
-#     default_mode="fill",       # "fill" | "fit" | "stretch"
-#     lip_width_px=5,            # overlay line width
-#     lip_feather=0.8            # slight softness
-# ):
-#     """
-#     slots: list of dicts, each:
-#       - either {"rect": (x,y,w,h)} or {"quad": [(tl),(tr),(br),(bl)]}
-#       - optional "mode": "fill"|"fit"|"stretch"
-#       - optional "art_idx": index into artwork_paths
-#     artwork_paths: list of file paths (can be length 1 to reuse same art for all)
-#     """
-#     base = Image.open(mockup_path).convert("RGBA")
-#     W,H = base.size
-
-#     # Preload all arts once
-#     arts = [Image.open(p).convert("RGBA") for p in artwork_paths]
-#     if not arts:
-#         raise ValueError("No artwork_paths provided.")
-
-#     comp = base.copy()
-
-#     for i, slot in enumerate(slots):
-#         quad = slot.get("quad")
-#         rect = slot.get("rect")
-#         if rect and not quad:
-#             quad = rect_to_quad(*rect)
-
-#         if not quad or len(quad) != 4:
-#             raise ValueError(f"Slot {i}: must provide 'rect' or 4-pt 'quad'.")
-
-#         mode = slot.get("mode", default_mode)
-#         art = arts[slot.get("art_idx", i if i < len(arts) else len(arts)-1)]
-
-#         # Aspect handling
-#         opening_aspect = avg_aspect_from_quad(quad)
-#         if mode == "fill":
-#             art_prepped = crop_to_aspect(art, opening_aspect)
-#         elif mode == "fit":
-#             art_prepped = fit_to_aspect_canvas(art, opening_aspect)
-#         elif mode == "stretch":
-#             art_prepped = art
-#         else:
-#             raise ValueError(f"Slot {i}: unknown mode '{mode}'")
-
-#         # Warp to quad on a base-sized canvas
-#         warped = warp_art_into_quad((W,H), art_prepped, quad)
-
-#         # Mask to the quad and composite
-#         mask = polygon_mask((W,H), quad, feather=0.7)
-#         comp = Image.alpha_composite(comp, Image.composite(warped, Image.new("RGBA", (W,H), (0,0,0,0)), mask))
-
-#         # Inner-lip overlay to hide seams
-#         comp = overlay_inner_lip(comp, quad, width_px=lip_width_px, feather=lip_feather)
-
-#     # Save
-#     out_ext = os.path.splitext(output_path)[1].lower()
-#     if out_ext in (".jpg", ".jpeg"):
-#         comp.convert("RGB").save(output_path, "JPEG", quality=95, optimize=True)
-#     else:
-#         comp.save(output_path, "PNG", optimize=True)
-#     return output_path
 
 def place_artworks(
     mockup_path,
@@ -339,24 +422,12 @@ def place_artworks(
         comp.save(output_path, "PNG", optimize=True)
     return output_path
 
-
-
-
-
-
-# three_quads = [
-#     # left
-#     [(750, 2040), (2118, 2040), (2118, 3822), (750, 3822)],
-#     # center
-#     [(2388, 2040), (3756, 2040), (3756, 3822), (2388, 3822)],
-#     # right
-#     [(4032, 2040), (5400, 2040), (5400, 3822), (4032, 3822)]
-# ]
-# #[{"quad": [[750, 2040], [2118, 2040], [2118, 3822], [750, 3822]]}, {"quad": [[2388, 2040], [3756, 2040], [3756, 3822], [2388, 3822]]}, {"quad": [[4032, 2040], [5400, 2040], [5400, 3822], [4032, 3822]]}]
-# three_slots = [{"quad": q, "mode": "fill"} for q in three_quads]
-
-
 MOCKUPS = {
+    "11x14_poster":{
+        "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
+        "slots":[{"quad": [(60, 110), (1706, 110), (1706, 2204), (60, 2204)], "mode": "fill"}],
+        "name": "poster"
+    },
     "11x14_table":{
         "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
         "slots":[{"quad": [(714, 666), (2166, 666), (2166, 2559), (714, 2559)], "mode": "fill"}],
@@ -382,14 +453,20 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
 
     mockups_paths_added = []
 
-    for mockup in mockup_list:
+    for mockup_type in mockup_list:
 
-        mockup_details = MOCKUPS.get(mockup, "")
+        mockup_details = MOCKUPS.get(mockup_type, "")
         if mockup_details == "":
-            print("❌ Mockup: ", mockup, " does not exist. Skipping.")
+            print("❌ Mockup: ", mockup_type, " does not exist. Skipping.")
             continue 
 
         mockup_output_path = f"{output_dir}/{product_slug}-{mockup_details.get('name')}.png"
+
+        if mockup_type == "3x_11x14_wall":
+            print("HOLD")
+            ## HERE is where I'm going to:
+            #1. look at the color of the main design
+            #2. deterministically pick two other designs from set pool that have (a) complementary color 
 
         place_artworks(
             mockup_path=mockup_details.get("mockup_template_path"),
@@ -402,6 +479,39 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
             lip_width_px=5,
             lip_feather=0.8,
         )
+
+        #need to create poster only mockup after initial artworks place
+        if mockup_type == "11x14_poster":
+            out = overlay_clips_exact(
+                base_path=mockup_output_path,
+                clips=[
+                    ClipSpec(
+                        path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip@BIG.png",
+                        pos=(230, 30),  
+                        size_px=(65, None),
+                        rotation_deg=-0.2,
+                        anchor="top_center",
+                        shadow_offset=(1, 2),
+                        shadow_blur=2,
+                        shadow_opacity=105
+                    ),
+                    ClipSpec(
+                        path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip@BIG.png",
+                        pos=(1560, 30),
+                        size_px=(65, None),
+                        rotation_deg=0.2,
+                        anchor="top_center",
+                        shadow_offset=(1, 2),
+                        shadow_blur=2,
+                        shadow_opacity=105
+                    ),
+                ],
+                output_path=mockup_output_path,
+                supersample=3,                   # key for tiny overlays
+                post_unsharp=(0.6, 240, 0),      # per-clip after rotate
+                final_unsharp=(0.35, 110, 1),    # gentle overall after downscale
+            )
+
 
         #added mockup path added 
         mockups_paths_added.append(mockup_output_path)
@@ -416,122 +526,4 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
         json.dump(product_data, tmp, ensure_ascii=False, indent=2)
         tmp_path = tmp.name
     os.replace(tmp_path, product_data_path)
-
-
-# ---------------------- example configs ----------------------
-if __name__ == "__main__":
-    # 1) Single frame on table (rect example; straight-on)
-    single_slots = [
-        {"rect": (238, 222, 722-238, 853-222), "mode": "fill"}  # your chosen crop that slightly overlaps under the lip
-    ]
-
-    ## 11x14 WALL
-    # place_artworks(
-    #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall@BIG.png",
-    #     output_path="fina_mockup_11x14_wall.png",
-    #     slots=[{"quad": [(1316, 900), (2772, 900), (2772, 2792), (1316, 2792)], "mode": "fill"}],
-    #     artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
-    #     supersample=1,
-    #     sharpen=True,
-    #     unsharp=(0.7, 200, 0),
-    #     lip_width_px=5,
-    #     lip_feather=0.8,
-    # )
-
-
-    ## 11x14 TABLE
-    place_artworks(
-        #mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2@BIG.png",
-        mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2_wood@BIG.png",
-        output_path="fina_mockup_11x14_table_wood.png",
-        slots=[{"quad": [(714, 666), (2166, 666), (2166, 2559), (714, 2559)], "mode": "fill"}],
-        artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
-        supersample=1,
-        sharpen=True,
-        unsharp=(0.7, 200, 0),
-        lip_width_px=5,
-        lip_feather=0.8,
-    )
-
-
-    # ## POSTER ONLY
-    # place_artworks(
-    #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
-    #     output_path="fina_mockup_poster_only.png",
-    #     slots=[{"quad": [(60, 110), (1706, 110), (1706, 2204), (60, 2204)], "mode": "fill"}],
-    #     artwork_paths=["/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"],
-    #     supersample=1,
-    #     sharpen=True,
-    #     unsharp=(0.7, 200, 0),
-    #     lip_width_px=5,
-    #     lip_feather=0.8,
-    # )
-    # mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base.jpeg"
-    # dest_corners = [(30, 55), (853, 55), (853, 1102), (30, 1102)] #cutting into borders
-
-
-
-    # 2) Three frames on wall (quad example)
-    # three_quads = [
-    #     # left
-    #     [(750, 2040), (2118, 2040), (2118, 3822), (750, 3822)],
-    #     # center
-    #     [(2388, 2040), (3756, 2040), (3756, 3822), (2388, 3822)],
-    #     # right
-    #     [(4032, 2040), (5400, 2040), (5400, 3822), (4032, 3822)]
-    # ]
-    # #[{"quad": [[750, 2040], [2118, 2040], [2118, 3822], [750, 3822]]}, {"quad": [[2388, 2040], [3756, 2040], [3756, 3822], [2388, 3822]]}, {"quad": [[4032, 2040], [5400, 2040], [5400, 3822], [4032, 3822]]}]
-    # three_slots = [{"quad": q, "mode": "fill"} for q in three_quads]
-
-    # place_artworks(
-    #     mockup_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.png",
-    #     output_path="fina_mockup_11x14_3x_wall.png",
-    #     slots=three_slots,
-    #     # Use one art for all frames OR pass three different files
-    #     artwork_paths=[
-    #         "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png",
-    #         "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png",
-    #         "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/version-4-0.6-border.png"
-    #     ],
-    #     default_mode="fill", #fill --> default
-    #     supersample=1,
-    #     sharpen=True,
-    #     unsharp=(0.7, 200, 0),
-    #     lip_width_px=5,
-    #     lip_feather=0.8,
-    # )
-
-    print("Done.")
-
-
-
-#ORIGNAL DATA
-
-    # #11x14 wall 
-    # mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_1_frame_on_wall.jpeg"
-    # output_path = "fina_mockup_11x14_wall.png"
-    # dest_corners = [(329, 225), (693, 225), (693, 698), (329, 698)] 
-
-
-    # #11x14 table
-    # mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_on_table_v2.jpeg"
-    # output_path = "fina_mockup_11x14_table.png"
-    # dest_corners = [(238, 222), (722, 222), (722, 853), (238, 853)] #cutting into borders --> this one 
-    # #dest_corners = [(237, 222), (722, 222), (722, 853), (237, 853)] #cutting into borders
-    # #dest_corners = [(239, 222), (722, 222), (722, 853), (239, 853)] #cutting into borders
-
-    # #11x14 3x wall
-    # mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg"
-    # output_path = "fina_mockup_11x14_3x_wall.png"
-
-    # dest_corners = [
-    #     (125, 340), (353, 340), (353, 637), (125, 637), #--> frame on left
-    #     (398, 340), (626, 340), (626, 637), (398, 637), #--> frame in center
-    #     (672, 340), (900, 340), (900, 637), (672, 637 ) #--> frame on right 
-    # ]
-
-    #POSTER
-    # mockup_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base.jpeg"
-    # dest_corners = [(31, 55), (853, 55), (853, 1102), (31, 1102)] #cutting into borders
-
 

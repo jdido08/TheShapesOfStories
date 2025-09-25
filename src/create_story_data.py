@@ -361,7 +361,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     create_mockups(
         product_data_path=product_data_path,
         product_design_path=product_design_path,
-        mockup_list=["11x14_table", "11x14_wall", "11x14_hat"],
+        mockup_list=["11x14_poster","11x14_table", "11x14_wall"],
         output_dir="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/product_mockups"
     )
     print("✅ Product Mockups Created")

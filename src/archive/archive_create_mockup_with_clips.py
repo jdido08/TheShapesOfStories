@@ -91,7 +91,6 @@ def overlay_clips_exact(
     return output_path
 
 
-
 _ANCHOR_OFFSETS = {
     "top_left":       lambda w,h: (0, 0),
     "top_center":     lambda w,h: (w//2, 0),
@@ -148,7 +147,6 @@ def clip_positions_from_poster_quad(poster_quad, inset_pct=0.06, raise_px=18):
     x_right = xR - inset
     y_top   = yT - int(round(raise_px))
     return (x_left, y_top), (x_right, y_top)
-
 
 def overlay_clips_exact(
     base_path: str,
@@ -632,8 +630,6 @@ if __name__ == "__main__":
         inset_pct=0.06,   # ~6% inset feels like the reference
         raise_px=18       # small bite; bump to 20–22 if you want more bite
     )
-
-
 
     out = overlay_clips_exact(
     base_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/fina_mockup_poster_only.png",
