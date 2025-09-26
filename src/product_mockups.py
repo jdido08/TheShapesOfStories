@@ -305,7 +305,7 @@ def overlay_inner_lip(base_rgba, quad, width_px=5, feather=1.0):
 
 # ---------------------3x Wall Mockups Product Pool --------------------------
 
-mockup_pool = [
+mockup_pool_11x14 = [
     {
         "story_title": "Frankenstein",
         "story_author": "Mary Shelley",
@@ -637,7 +637,7 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
                 background_hex=design_background_color,
                 title=design_title,
                 author=design_author,
-                mockup_pool=mockup_pool
+                mockup_pool=mockup_pool_11x14
             )
 
             # slots order is: LEFT, CENTER, RIGHT
