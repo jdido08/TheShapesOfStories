@@ -302,6 +302,170 @@ def overlay_inner_lip(base_rgba, quad, width_px=5, feather=1.0):
 # ---------------------- main placement function ----------------------
 
 
+
+# ---------------------3x Wall Mockups Product Pool --------------------------
+
+mockup_pool = [
+    {
+        "story_title": "Frankenstein",
+        "story_author": "Mary Shelley",
+        "bg_hex": "#0A192F",  # navy
+        "product_slug": "frankenstein-victor-frankenstein-print-11x14-navy-sky-blue",
+        "design_image_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/prop_left_and_right_posters/frankenstein-victor-frankenstein-print-11x14-navy-sky-blue.png"
+    },
+    {
+        "story_title": "Romeo and Juliet",
+        "story_author": "William Shakespeare",
+        "bg_hex": "#4A235A",  # purple (approx)
+        "product_slug": "romeo-and-juliet-juliet-print-11x14-purple-gold",
+        "design_image_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/prop_left_and_right_posters/romeo-and-juliet-juliet-print-11x14-purple-gold.png"
+    },
+    {
+        "story_title": "Dracula",
+        "story_author": "Bram Stoker",
+        "bg_hex": "#2B090A",  # black
+        "product_slug": "dracula-jonathan-harker-print-11x14-black-beige",
+        "design_image_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/prop_left_and_right_posters/dracula-jonathan-harker-print-11x14-black-beige.png"
+    },
+    {
+        "story_title": "Little Women",
+        "story_author": "Louisa May Alcott",
+        "bg_hex": "#2D4F3C",  # charcoal
+        "product_slug": "little-women-jo-march-print-11x14-charcoal-ivory",
+        "design_image_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/prop_left_and_right_posters/little-women-jo-march-print-11x14-charcoal-ivory.png"
+    },
+    {
+        "story_title": "The Catcher in the Rye",
+        "story_author": "J.D. Salinger",
+        "bg_hex": "#2B4C5C",  # charcoal (same as Little Women variant)
+        "product_slug": "the-catcher-in-the-rye-holden-caulfield-print-11x14-charcoal-ivory",
+        "design_image_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/prop_left_and_right_posters/the-catcher-in-the-rye-holden-caulfield-print-11x14-charcoal-ivory.png"
+    },
+    {
+        "story_title": "Dune",
+        "story_author": "Frank Herbert",
+        "bg_hex": "#D68227",  # orange
+        "product_slug": "dune-paul-atreides-print-11x14-orange-charcoal",
+        "design_image_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/prop_left_and_right_posters/dune-paul-atreides-print-11x14-orange-charcoal.png"
+    },
+    {
+        "story_title": "To Kill a Mockingbird",
+        "story_author": "Harper Lee",
+        "bg_hex": "#E8DCC4",  # beige
+        "product_slug": "to-kill-a-mockingbird-scout-finch-print-11x14-beige-navy",
+        "design_image_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/prop_left_and_right_posters/to-kill-a-mockingbird-scout-finch-print-11x14-beige-navy.png"
+    }
+]
+
+
+import random, colorsys
+from typing import List, Dict, Tuple
+
+# --- helpers ---
+def hex_to_hsl(hex_str: str) -> Tuple[float, float, float]:
+    h = hex_str.lstrip("#")
+    r,g,b = (int(h[i:i+2], 16)/255.0 for i in (0,2,4))
+    H,L,S = colorsys.rgb_to_hls(r,g,b)  # colorsys is HLS
+    return (H*360.0, S*100.0, L*100.0)  # return as H,S,L
+
+def ang_diff(a: float, b: float) -> float:
+    d = abs(a-b) % 360.0
+    return d if d <= 180.0 else 360.0 - d
+
+def color_complement_score(center_hex: str, cand_hex: str) -> float:
+    """0..1 score favoring hue + lightness contrast."""
+    Hc, Sc, Lc = hex_to_hsl(center_hex)
+    Hd, Sd, Ld = hex_to_hsl(cand_hex)
+    dH = ang_diff(Hc, Hd)         # 0..180
+    dL = abs(Lc - Ld)             # 0..100
+    hue_term   = max(0.0, min(1.0, (dH - 20.0) / 130.0))  # reward >~20°
+    light_term = max(0.0, min(1.0, dL / 30.0))            # 30 ≈ full credit
+    return 0.65*hue_term + 0.35*light_term
+
+def pair_diversity_penalty(a_hex: str, b_hex: str) -> float:
+    """Penalty 0..1 if two flankers are too similar to each other."""
+    Ha, Sa, La = hex_to_hsl(a_hex)
+    Hb, Sb, Lb = hex_to_hsl(b_hex)
+    hue_sim   = max(0.0, min(1.0, (20.0 - ang_diff(Ha, Hb)) / 20.0))   # ≤20° similar
+    light_sim = max(0.0, min(1.0, (10.0 - abs(La - Lb)) / 10.0))       # ≤10 L* similar
+    return 0.6*hue_sim + 0.4*light_sim
+
+# --- main API ---
+def choose_flanker_paths(
+    product_slug: str,
+    background_hex: str,
+    title: str,
+    author: str,
+    mockup_pool: List[Dict],
+    *,
+    min_color_score: float = 0.35,
+    top_k: int = 8
+) -> Tuple[str, str]:
+    """
+    Returns (left_path, right_path) for two designs from mockup_pool that:
+      - best complement the center color,
+      - are different from each other,
+      - are not the same story as the center.
+    Deterministic by product_slug.
+    """
+    rng = random.Random(hash(product_slug) & 0xFFFFFFFF)
+
+    # candidates = everything except the same story title
+    cands = [d for d in mockup_pool if d.get("story_title") != title and "bg_hex" in d and "design_image_path" in d]
+
+    # score by color complement vs center
+    scored = []
+    for d in cands:
+        s = color_complement_score(background_hex, d["bg_hex"])
+        if s >= min_color_score:
+            scored.append((s, d))
+
+    # relax threshold if too few
+    if len(scored) < 4:
+        scored = [(color_complement_score(background_hex, d["bg_hex"]), d) for d in cands]
+
+    # deterministic shuffle then sort by score desc
+    rng.shuffle(scored)
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    # pick best diverse pair from top_k
+    best_pair, best_score = None, -1.0
+    K = min(top_k, len(scored))
+    for i in range(K):
+        for j in range(i+1, K):
+            d1, d2 = scored[i][1], scored[j][1]
+            pen = pair_diversity_penalty(d1["bg_hex"], d2["bg_hex"])
+            pair_score = (scored[i][0] + scored[j][0]) / 2.0 - 0.25*pen
+            if pair_score > best_score:
+                best_score, best_pair = pair_score, (d1, d2)
+
+    # absolute fallback
+    if not best_pair:
+        if len(cands) >= 2:
+            best_pair = tuple(rng.sample(cands, k=2))
+        else:
+            # degenerate case: duplicate the only candidate (shouldn't happen with your pool)
+            best_pair = (cands[0], cands[0])
+
+    a, b = best_pair
+
+    # order left/right to balance around center lightness (optional, looks nicer)
+    _, _, Lc = hex_to_hsl(background_hex)
+    La = hex_to_hsl(a["bg_hex"])[2]
+    Lb = hex_to_hsl(b["bg_hex"])[2]
+    if Lc < 40:       # center dark → lighter on left
+        left, right = (a, b) if La > Lb else (b, a)
+    elif Lc > 60:     # center light → darker on left
+        left, right = (a, b) if La < Lb else (b, a)
+    else:             # mid → deterministic by title
+        left, right = (a, b) if a["story_title"] < b["story_title"] else (b, a)
+
+    return left["design_image_path"], right["design_image_path"]
+
+
+
+# --------------------- MAIN FUNCTIONS -----------------------
+# MAIN FUNCTIONS 
 def place_artworks(
     mockup_path,
     output_path,
@@ -450,9 +614,11 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
     with open(product_data_path, 'r') as f:  #open product json data that was just created
         product_data = json.load(f)
     product_slug = product_data.get("product_slug")
+    design_background_color = product_data.get("background_color_hex")
+    design_title = product_data.get("title")
+    design_author = product_data.get("author")
 
     mockups_paths_added = []
-
     for mockup_type in mockup_list:
 
         mockup_details = MOCKUPS.get(mockup_type, "")
@@ -463,16 +629,30 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
         mockup_output_path = f"{output_dir}/{product_slug}-{mockup_details.get('name')}.png"
 
         if mockup_type == "3x_11x14_wall":
-            print("HOLD")
-            ## HERE is where I'm going to:
-            #1. look at the color of the main design
-            #2. deterministically pick two other designs from set pool that have (a) complementary color 
+            
+            #get paths for left and right
+            # deterministically pick two other designs from set pool that have (a) complementary color 
+            left_path, right_path = choose_flanker_paths(
+                product_slug=product_slug,
+                background_hex=design_background_color,
+                title=design_title,
+                author=design_author,
+                mockup_pool=mockup_pool
+            )
+
+            # slots order is: LEFT, CENTER, RIGHT
+            center_path = product_design_path  # keep the original arg value
+            product_design_path_list = [left_path, center_path, right_path]
+        else:
+            # for non-3x mockups, just use the center art
+            product_design_path_list = [product_design_path]
+
 
         place_artworks(
             mockup_path=mockup_details.get("mockup_template_path"),
             output_path=mockup_output_path,
             slots=mockup_details.get("slots"),
-            artwork_paths=[product_design_path],
+            artwork_paths=product_design_path_list,
             supersample=1,
             sharpen=True,
             unsharp=(0.7, 200, 0),
@@ -527,3 +707,168 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
         tmp_path = tmp.name
     os.replace(tmp_path, product_data_path)
 
+
+
+
+
+## CREATE STORIES + PRODUCTS TO HAVE FOR 3x WALL MOCKUP 
+
+# example_stories = [
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Great Gatsby",
+#         "story_author": "F. Scott Fitzgerald",
+#         "story_protagonist": "Jay Gatsby",
+#         "story_year": "1925",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Pride and Prejudice",
+#         "story_author": "Jane Austen",
+#         "story_protagonist": "Elizabeth Bennet",
+#         "story_year": "1813",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/pride_and_prejudice_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Moby-Dick",
+#         "story_author": "Herman Melville",
+#         "story_protagonist": "Ishmael",
+#         "story_year": "1851",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/moby_dick_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "To Kill a Mockingbird",
+#         "story_author": "Harper Lee",
+#         "story_protagonist": "Scout Finch",
+#         "story_year": "1960",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "1984",
+#         "story_author": "George Orwell",
+#         "story_protagonist": "Winston Smith",
+#         "story_year": "1949",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/1984_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Alice Adventures in Wonderland",
+#         "story_author": "Lewis Carroll",
+#         "story_protagonist": "Alice",
+#         "story_year": "1865",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/alice_in_wonderland_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Catcher in the Rye",
+#         "story_author": "J.D. Salinger",
+#         "story_protagonist": "Holden Caulfield",
+#         "story_year": "1951",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_catcher_in_the_rye_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Dune",
+#         "story_author": "Frank Herbert",
+#         "story_protagonist": "Paul Atreides",
+#         "story_year": "1965",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/dune_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Alchemist",
+#         "story_author": "Paulo Coelho",
+#         "story_protagonist": "Santiago",
+#         "story_year": "1988",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_alchemist_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Frankenstein",
+#         "story_author": "Mary Shelley",
+#         "story_protagonist": "Victor Frankenstein",
+#         "story_year": "1818",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/frankenstein_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Romeo and Juliet",
+#         "story_author": "William Shakespeare",
+#         "story_protagonist": "Juliet",
+#         "story_year": "1597",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/romeo_and_juliet_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Dracula",
+#         "story_author": "Bram Stoker",
+#         "story_protagonist": "Jonathan Harker",
+#         "story_year": "1897",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/dracula_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Adventures of Huckleberry Finn",
+#         "story_author": "Mark Twain",
+#         "story_protagonist": "Huckleberry Finn",
+#         "story_year": "1884",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_adventures_of_huckleberry_finn_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Little Women",
+#         "story_author": "Louisa May Alcott",
+#         "story_protagonist": "Jo March",
+#         "story_year": "1868",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/little_women_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Old Man and the Sea",
+#         "story_author": "Ernest Hemingway",
+#         "story_protagonist": "Santiago",
+#         "story_year": "1952",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_old_man_and_the_sea_composite_data.json"
+#     }
+# ]
+
+# from create_story_and_product_data import create_story_data
+# from create_story_and_product_data import create_product_data
+
+# for story in example_stories:
+#     create_story_data(story_type=story['story_type'], 
+#                   story_title=story['story_title'], 
+#                   story_author=story['story_author'], 
+#                   story_protagonist=story['story_protagonist'], 
+#                   story_year=story['story_year'], 
+#                   story_summary_path=story['story_summary_path'])
+
+
+# example_story_data = [
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-old-man-and-the-sea-santiago.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/little-women-jo-march.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-adventures-of-huckleberry-finn-huckleberry-finn.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/dracula-jonathan-harker.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/romeo-and-juliet-juliet.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/frankenstein-victor-frankenstein.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-alchemist-santiago.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/dune-paul-atreides.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-catcher-in-the-rye-holden-caulfield.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/alice-adventures-in-wonderland-alice.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/1984-winston-smith.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/moby-dick-ishmael.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/pride-and-prejudice-elizabeth-bennet.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby-jay-gatsby.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json"
+# ]
+
+
+# for story_data_path in example_story_data:
+#     create_product_data(story_data_path=story_data_path,
+#                         product_type="print", 
+#                         product_size="11x14", 
+#                         product_style="")

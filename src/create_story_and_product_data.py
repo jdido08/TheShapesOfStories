@@ -132,7 +132,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # don't proceed forward if story data exists --> ask user to delete it first
     # this will prevent accidential rewrites of story data
     if os.path.exists(story_data_file_path):
-        raise ValueError("Story Data Already Exists. Please Delete Existing Story Data First!")
+        print("Story Data Already Exists. Please Delete Existing Story Data First!. Skipping.")
+        return 
     
 
     # get story summary from story summary path 
@@ -226,6 +227,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     with open(story_data_file_path, 'w') as f:
         json.dump(story_data, f, indent=4)
     
+
 
 
 
@@ -331,37 +333,37 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
 
 
     #description and save to product path
-    # create_product_description(
-    #     image_path=product_design_path,
-    #     story_json_or_path=product_data_path,
-    #     config_path=PATHS['config'],
-    #     llm_provider = 'google',
-    #     llm_model = 'gemini-2.5-pro'
-    # )
-    # print("✅ Product Description Created")
+    create_product_description(
+        image_path=product_design_path,
+        story_json_or_path=product_data_path,
+        config_path=PATHS['config'],
+        llm_provider = 'google',
+        llm_model = 'gemini-2.5-pro'
+    )
+    print("✅ Product Description Created")
 
     
     #grad story text
-    # assess_arc_text(
-    #     generated_analysis_path=product_data_path,
-    #     config_path=PATHS['config'],
-    #     llm_provider="anthropic",
-    #     llm_model="claude-sonnet-4-20250514",
-    # )
-    # #need to reopen product data to assess whether grade passing or not
-    # with open(product_data_path, 'r') as f:  #open product json data that was just created
-    #     product_data = json.load(f)
-    # final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
-    # if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
-    #     print("✅ Product Text Passed; Grade: ", final_grade)
-    # else:
-    #     print("❌ Product Text Failed; Grade: ", final_grade)
+    assess_arc_text(
+        generated_analysis_path=product_data_path,
+        config_path=PATHS['config'],
+        llm_provider="anthropic",
+        llm_model="claude-sonnet-4-20250514",
+    )
+    #need to reopen product data to assess whether grade passing or not
+    with open(product_data_path, 'r') as f:  #open product json data that was just created
+        product_data = json.load(f)
+    final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
+    if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
+        print("✅ Product Text Passed; Grade: ", final_grade)
+    else:
+        print("❌ Product Text Failed; Grade: ", final_grade)
 
 
     create_mockups(
         product_data_path=product_data_path,
         product_design_path=product_design_path,
-        mockup_list=["11x14_poster","11x14_table", "11x14_wall"],
+        mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
         output_dir="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/product_mockups"
     )
     print("✅ Product Mockups Created")
@@ -526,3 +528,171 @@ create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorag
                     product_type="print", 
                     product_size="11x14", 
                     product_style="")
+
+
+
+
+
+
+
+
+# example_stories = [
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Great Gatsby",
+#         "story_author": "F. Scott Fitzgerald",
+#         "story_protagonist": "Jay Gatsby",
+#         "story_year": "1925",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Pride and Prejudice",
+#         "story_author": "Jane Austen",
+#         "story_protagonist": "Elizabeth Bennet",
+#         "story_year": "1813",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/pride_and_prejudice_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Moby-Dick",
+#         "story_author": "Herman Melville",
+#         "story_protagonist": "Ishmael",
+#         "story_year": "1851",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/moby_dick_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "To Kill a Mockingbird",
+#         "story_author": "Harper Lee",
+#         "story_protagonist": "Scout Finch",
+#         "story_year": "1960",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "1984",
+#         "story_author": "George Orwell",
+#         "story_protagonist": "Winston Smith",
+#         "story_year": "1949",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/1984_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Alice Adventures in Wonderland",
+#         "story_author": "Lewis Carroll",
+#         "story_protagonist": "Alice",
+#         "story_year": "1865",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/alice_in_wonderland_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Catcher in the Rye",
+#         "story_author": "J.D. Salinger",
+#         "story_protagonist": "Holden Caulfield",
+#         "story_year": "1951",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_catcher_in_the_rye_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Dune",
+#         "story_author": "Frank Herbert",
+#         "story_protagonist": "Paul Atreides",
+#         "story_year": "1965",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/dune_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Alchemist",
+#         "story_author": "Paulo Coelho",
+#         "story_protagonist": "Santiago",
+#         "story_year": "1988",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_alchemist_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Frankenstein",
+#         "story_author": "Mary Shelley",
+#         "story_protagonist": "Victor Frankenstein",
+#         "story_year": "1818",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/frankenstein_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Romeo and Juliet",
+#         "story_author": "William Shakespeare",
+#         "story_protagonist": "Juliet",
+#         "story_year": "1597",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/romeo_and_juliet_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Dracula",
+#         "story_author": "Bram Stoker",
+#         "story_protagonist": "Jonathan Harker",
+#         "story_year": "1897",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/dracula_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Adventures of Huckleberry Finn",
+#         "story_author": "Mark Twain",
+#         "story_protagonist": "Huckleberry Finn",
+#         "story_year": "1884",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_adventures_of_huckleberry_finn_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "Little Women",
+#         "story_author": "Louisa May Alcott",
+#         "story_protagonist": "Jo March",
+#         "story_year": "1868",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/little_women_composite_data.json"
+#     },
+#     {
+#         "story_type": "Literature",
+#         "story_title": "The Old Man and the Sea",
+#         "story_author": "Ernest Hemingway",
+#         "story_protagonist": "Santiago",
+#         "story_year": "1952",
+#         "story_summary_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_old_man_and_the_sea_composite_data.json"
+#     }
+# ]
+
+
+# for story in example_stories:
+#     create_story_data(story_type=story['story_type'], 
+#                   story_title=story['story_title'], 
+#                   story_author=story['story_author'], 
+#                   story_protagonist=story['story_protagonist'], 
+#                   story_year=story['story_year'], 
+#                   story_summary_path=story['story_summary_path'])
+
+
+# example_story_data = [
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/little-women-jo-march.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/dracula-jonathan-harker.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/romeo-and-juliet-juliet.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/frankenstein-victor-frankenstein.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-alchemist-santiago.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/dune-paul-atreides.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-catcher-in-the-rye-holden-caulfield.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/alice-adventures-in-wonderland-alice.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/1984-winston-smith.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/moby-dick-ishmael.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/pride-and-prejudice-elizabeth-bennet.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-great-gatsby-jay-gatsby.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-old-man-and-the-sea-santiago.json",
+#     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/the-adventures-of-huckleberry-finn-huckleberry-finn.json"
+
+# ]
+
+
+
+
+# for story_data_path in example_story_data:
+#     create_product_data(story_data_path=story_data_path,
+#                         product_type="print", 
+#                         product_size="11x14", 
+#                         product_style="")
