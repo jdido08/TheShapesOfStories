@@ -51,7 +51,7 @@
 
 from pathlib import Path
 import json
-from extract_story_metadata import StoryInput, extract_story_metadata_all
+from archive.archive_extract_story_metadata import StoryInput, extract_story_metadata_all
 
 CONFIG, PROVIDER, MODEL = "config.yaml", "openai", "gpt-5"
 path = Path("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/moby-dick_ishmael.json")

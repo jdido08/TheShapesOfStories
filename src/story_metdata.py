@@ -463,48 +463,82 @@ def validate_heritage(h: Optional[str]) -> Optional[str]:
 # Prompt A — Setting Extractor
 # ----------------------------
 
-GENRE_PROMPT_TEMPLATE = """SYSTEM
-You classify books using a strict taxonomy. If a label isn’t in TAXONOMY, return null.
+SETTING_PROMPT_TEMPLATE = """SYSTEM
+You are a meticulous bibliographic cataloger. Your job is to extract SETTING facets using a strict, controlled vocabulary.
+If a candidate value is not in the supplied taxonomy, you must return null for that field (or exclude the value).
+When in doubt, be conservative and return fewer labels.
 
-TAXONOMY
-{{taxonomy_json}}
+TAXONOMY (for controlled facets only)
+{{ setting_taxonomy_json }}
 
 CONTEXT
-<title>{{title}}</title>
-<author>{{author}}</author>
-<publication_year>{{publication_year}}</publication_year>
-<summary>{{summary}}</summary>
+<title>{{ title }}</title>
+<author>{{ author }}</author>
+<publication_year>{{ publication_year }}</publication_year>
+<summary>{{ summary }}</summary>
 
-RULES
-- Normalize candidate labels using normalization_map, then select.
-- ≤2 genres total; ≤3 subgenres per selected genre.
-- Heritage is NOT a genre; assign one heritage label independently (do not count toward genre limits).
-- Use publication year + enduring reputation to guide heritage:
-  Classic (pre-1970 + canonical), Modern Classic (≈1970–1999 with canonical status), Contemporary (≈2000+ or current-market), Cult Classic (significant subcultural following).
-- Mystery vs Thriller: puzzle/investigation → Mystery; imminent danger/clock → Thriller.
-- Dystopian/Post-Apocalyptic → Science Fiction.
-- Magical Realism → Fantasy. If marketed as “literary,” note that in `notes` (do not add as a genre).
+GUIDING PRINCIPLES
+- Focus on what is explicitly stated or canonically uncontested about setting (place/time), not themes or vibes.
+- Prefer canonical/modern toponyms (e.g., "Mumbai" not "Bombay") unless the historical name is essential; if both are salient, include both with modern first.
+- Choose specific and *salient* facets. Do not over-list.
+- City/Region/Country are free-text lists (later normalized). All other facets MUST come from the taxonomy.
 
-OUTPUT (JSON only)
+OUTPUT REQUIREMENTS
+Return ONLY JSON with these fields:
+
 {
-  "genre":    ["Top-level genre", "Optional second genre"] | null,
-  "subgenre": ["Subgenre 1","Subgenre 2","Subgenre 3"] | null,
-  "heritage": "Classic" | "Modern Classic" | "Contemporary" | "Cult Classic" | null,
+  "setting_city":    ["New York City", "Long Island"] | null,         // free-text list, deduped, ≤5 items total
+  "setting_region":  ["New York State", "Northeast"] | null,          // free-text list, deduped, ≤5 items total
+  "setting_country": ["United States"] | null,                         // free-text list, deduped, ≤3 items total
+
+  "macroregion": ["Western Europe", "North America"] | null,          // from taxonomy; ≤2
+  "place_types": ["City", "Bar/Tavern", "Apartment"] | null,          // from taxonomy; ≤3; pick the *most* characteristic
+  "environment": ["Urban", "Coastal"] | null,                         // from taxonomy; ≤3
+  "mobility": ["Road Trip", "Stationary/Local"] | null,               // from taxonomy; ≤2 or null if not salient
+
+  "setting_time": "One summer in the 1920s" | null,                   // short human phrase (≤70 chars). Do NOT invent plot.
+  "time_window": "One year" | "Multiple years" | null,                // from taxonomy time_window_labels OR null
+  "setting_era": "Early 20th (1900–1945)" | "Victorian" | "1990s" | null, // prefer taxonomy era labels; otherwise a specific decade/century string
+
   "evidence": {
-    "genre":    { "from": "summary|normalization|world", "note": "…" } | null,
-    "subgenre": { "from": "summary|normalization|world", "note": "…" } | null,
-    "heritage": { "from": "summary|world", "note": "…" } | null
+    "place":   { "from": "summary|world", "note": "Quoted or paraphrased details that justify city/region/country." } | null,
+    "facet":   { "from": "summary|world", "note": "Why chosen place_types/environment/mobility/macroregion." } | null,
+    "time":    { "from": "summary|world", "note": "Why chosen time_window/era/setting_time." } | null
   },
+
   "confidence": {
-    "genre": 0.0-1.0 | null,
-    "subgenre": 0.0-1.0 | null,
-    "heritage": 0.0-1.0 | null,
+    "place": 0.0-1.0 | null,
+    "facet": 0.0-1.0 | null,
+    "time":  0.0-1.0 | null,
     "_overall": 0.0-1.0
   },
-  "notes": "Brief edge-case comment if needed; else \"\""
-}
-"""
 
+  "notes": "Brief edge-case comment (≤140 chars) or empty string"
+}
+
+SELECTION RULES (STRICT)
+1) Counts:
+   - setting_city + setting_region + setting_country combined ≤ 8 items (drop the least salient if over).
+   - macroregion ≤ 2; place_types ≤ 3; environment ≤ 3; mobility ≤ 2.
+
+2) Place picking:
+   - Include specific named locales only if they are central (scenes occur there), not mere mentions.
+   - If the story spans many locales, choose the 2–4 most narratively significant.
+
+3) Time selection:
+   - If the time span is explicit, map to one value of time_window; otherwise null.
+   - For setting_era, prefer a taxonomy label that matches the geography; otherwise a precise decade (e.g., "1990s") or century.
+   - setting_time is a short natural-language phrase summarizing timeframe (optional).
+
+4) Normalization:
+   - Use modern canonical toponyms when possible. If a historical name is crucial, include both: "Mumbai (Bombay)".
+
+VALIDATION
+- If any controlled facet contains a label not in the taxonomy, return null for that facet.
+- If evidence is weak, lower confidence. If absent, prefer nulls.
+
+OUTPUT
+Return ONLY the JSON object above. No prose, no explanations."""
 
 
 def extract_setting_metadata(
@@ -515,7 +549,7 @@ def extract_setting_metadata(
     summary: str,
     llm_provider: str,
     llm_model: str,
-    max_tokens: int = 10000
+    max_tokens: int = 8192
 ) -> Dict[str, Any]:
     prompt = PromptTemplate(
         input_variables=["title","author","publication_year","summary","setting_taxonomy_json"],
@@ -598,7 +632,7 @@ def classify_genre_subgenre(
     summary: str,
     llm_provider: str,
     llm_model: str,
-    max_tokens: int = 10000
+    max_tokens: int = 8192
 ) -> Dict[str, Any]:
     taxonomy_json = json.dumps(TAXONOMY, ensure_ascii=False)
 
@@ -667,7 +701,7 @@ def extract_publication_facts(
     summary: str,
     llm_provider: str,
     llm_model: str,
-    max_tokens: int = 10000
+    max_tokens: int = 8192
 ) -> Dict[str, Any]:
     # template = PUBLICATION_PROMPT_TEMPLATE.format(
     #     title=title,
@@ -748,7 +782,7 @@ def extract_series_universe(
     summary: str,
     llm_provider: str,
     llm_model: str,
-    max_tokens: int = 10000
+    max_tokens: int = 8192
 ) -> Dict[str, Any]:
     prompt = PromptTemplate(
         input_variables=["title", "author", "publication_year", "summary"],
@@ -883,3 +917,88 @@ def extract_story_metadata_all(
         "notes": B.get("notes") or ""
     }
     return result
+
+
+
+### FUNCTIONS TO CALL EXTRACTING STORY METADATA ##
+
+
+# # Fields I know
+# - Printify Product ID
+# - Shape Archetype
+# - Shape Symbols
+# - Font Family
+# - Medium
+# - Line Type
+# - Author
+# - Character / Protagonist
+# - Story Title
+
+# # Fields I can derive
+# - Font Color Name
+# - Background Color Name
+# - Font Color (Hex)
+# - Background Color (Hex)
+# - Color (Background/Front Color Combo) ---> NEED TO ADD 
+# - Story Slug
+
+## TAGS
+# # Field I need LLM 
+# - Setting Region
+# - Setting Country
+# - Language
+# - Awards
+# - Setting Era
+# - Setting Time
+# - Setting City
+# - Subgenre
+# - Publication Year (I might have this )
+# - Publication Country
+# - Genre
+# - Series
+# - Universe
+
+# Why have tags?
+# to create things like:
+# The Shapes of [City/Region/Country] e.g. The Shapes of Pittsburgh
+# The Shapes of [Genre]               e.g. The Shapes of Sci-Fi, Fantasy
+# The Shapes of [Theme]               e.g. The Shapes of Love 
+# The Shapes of [Setting]             e.g. The Shapes of WWII
+# The Shapes of [Country]             e.g. The Shapes of Russian Literature
+
+
+#Maybe
+# openlib
+#   - publishing
+#       - first_publish_year
+#   - physical_dimensions
+#        - number_of_pages_median
+#   - subjects_and_characters
+#       - subjects
+#       - subject_places
+#       - subject_times
+#   - excerpts
+#   - covers
+#   - ratings_and_reviews
+#   - first_sentence
+
+
+from pathlib import Path
+import json
+
+def get_story_metdata(config_path, story_data_path, llm_provider, llm_model):
+    path = Path(story_data_path)
+    story_data = json.loads(path.read_text(encoding="utf-8"))
+    story_input = StoryInput(
+        title=story_data["title"],
+        author=story_data["author"],
+        publication_year=int(story_data["year"]),
+        summary=story_data["summary"]
+    )
+    story_metadata = extract_story_metadata_all(config_path, story_input, llm_provider, llm_model)
+
+    story_data["story_metadata"] = story_metadata["metadata"]
+    story_data["story_metadata_evidence"] = story_metadata["evidence"]
+    story_data["story_metadata_confidence"] = story_metadata["confidence"]
+
+    path.write_text(json.dumps(story_data, ensure_ascii=False, indent=2), encoding="utf-8")

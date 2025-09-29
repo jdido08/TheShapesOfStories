@@ -3,13 +3,15 @@ import os
 import time 
 import sys
 import json
+from datetime import datetime
 
 # imports from my code
 from story_style import get_story_style, pango_font_exists #move to this sheet
 from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
-from datetime import datetime
+from story_metdata import get_story_metdata
+
 
 
 #WHAT DOES CRAETE STORY DATA DO???
@@ -132,7 +134,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # don't proceed forward if story data exists --> ask user to delete it first
     # this will prevent accidential rewrites of story data
     if os.path.exists(story_data_file_path):
-        print("Story Data Already Exists. Please Delete Existing Story Data First!. Skipping.")
+        print("❌ Story Data Already Exists. Please Delete Existing Story Data First!. Skipping.")
         return 
     
 
@@ -193,8 +195,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     #check if font supported in local environment
     if design_font and not pango_font_exists(design_font):
         raise ValueError(f"'{design_font}' not found on this system.")
-
-
+    
+    # save story data back as json 
     story_data = {
         "title": story_title,
         "author": story_author,
@@ -227,17 +229,38 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     with open(story_data_file_path, 'w') as f:
         json.dump(story_data, f, indent=4)
     
+    #wait a few seconds 
+    time.sleep(3)
+
+    #GET STORY DATA AND WRITE TO JSON  
+    story_metadata_llm_provider = "anthropic"
+    story_metadata_llm_model = "claude-3-5-sonnet-latest"
+    get_story_metdata(
+        config_path=PATHS['config'],
+        story_data_path=story_data_file_path,
+        llm_provider=story_metadata_llm_provider,
+        llm_model=story_metadata_llm_model)
+    print("✅ Story MetaData Determined")
+    
+
+
+
+    
+
+    #after saving basic story data to json -- reopen and then get metadata for it
+
+    
 
 
 
 
-# Examle Call 
-# create_story_data(story_type="Literature", 
-#                   story_title="To Kill a Mockingbird", 
-#                   story_author="Harper Lee",
-#                   story_protagonist="Scout Finch", 
-#                   story_year="1960", 
-#                   story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/to_kill_a_mockingbird_composite_data.json")
+# Examle Call 		
+create_story_data(story_type="Literature", 
+                  story_title="Crime and Punishment", 
+                  story_author="Fyodor Dostoevsky",
+                  story_protagonist="Rodion Raskolnikov", 
+                  story_year="1866", 
+                  story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/crime_and_punishment_composite_data.json")
 
 
 # CREATE PRODUCT DATA
@@ -263,7 +286,6 @@ from product_description import create_product_description
 from product_text_accuracy import assess_arc_text
 from product_mockups import create_mockups
 
-test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json"
 def create_product_data(story_data_path, product_type="", product_size="", product_style=""):
 
     #check if story_data path exists and if so then open data 
@@ -524,10 +546,10 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 
     
 # Example 
-create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json",
-                    product_type="print", 
-                    product_size="11x14", 
-                    product_style="")
+# create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json",
+#                     product_type="print", 
+#                     product_size="11x14", 
+#                     product_style="")
 
 
 
