@@ -280,6 +280,10 @@ Product Data Model
     - Inputs: [title]-[protagonist].json
     - Logic: Get story colors + font 
     - Outputs: [title]-[protagonist].json --> add fields to base story data file 
+5. Create Story Metafields
+    - Inputs: [title]-[protagonist].json
+    - Logic: turns story data to product metafields
+    - Output: updated [title]-[protagonist]-[product]-[size]-[style].json
 
 # --- Content Specific -- # 
 ## Create Story Product --> 
@@ -303,11 +307,7 @@ Product Data Model
         - [title]-[protagonist]-[product]-[size]-[style].png
     - Logic: turns story data + data into description
     - Output: updated [title]-[protagonist]-[product]-[size]-[style].json
-9. Create Product Metafields
-    - Inputs: [title]-[protagonist]-[product]-[size]-[style].json
-    - Logic: turns story data to product metafields
-    - Output: updated [title]-[protagonist]-[product]-[size]-[style].json
-10. Create Mockups:
+9. Create Mockups:
     - Inputs: Product Type is probably an input
         - [title]-[protagonist]-[product]-[size]-[style].json
         - [title]-[protagonist]-[product]-[size]-[style].png
@@ -315,9 +315,10 @@ Product Data Model
     - Outputs: (for prints)
         - png files for 11x14-wall, 11x14-table, 11x14-poster, 11x14-3-wall
         - updated[title]-[protagonist]-[product]-[size]-[style].json for local links
-11. Create SVG
-12. Create Line PNG Version
-13. Create Line SVG Version
+10. Create SVG
+11. Create Line PNG Version
+12. Create Line SVG Version
+13. Create Links betweeen Story Data <--> Product Data <--> Designs <---> Mockups <---> Extra Designs 
 
 ___
 
