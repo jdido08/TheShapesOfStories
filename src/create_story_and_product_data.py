@@ -10,7 +10,7 @@ from story_style import get_story_style, pango_font_exists #move to this sheet
 from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
-from story_metdata import get_story_metdata
+from archive.archive_story_metdata_old_llm_approach import get_story_metdata
 
 
 
