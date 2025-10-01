@@ -1,5 +1,7 @@
 import json
 
+# use LLM to combine all summaries into one master summary focused on a particular character 
+
 # need to revise --> want to combine all summaries in one master summary
 def get_story_summary(story_summary_path):
 
