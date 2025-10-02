@@ -10,7 +10,7 @@ from story_style import get_story_style, pango_font_exists #move to this sheet
 from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
-from archive.archive_story_metdata_old_llm_approach import get_story_metdata
+from story_metadata import get_story_metadata
 
 
 
@@ -235,14 +235,17 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     #GET STORY DATA AND WRITE TO JSON  
     story_metadata_llm_provider = "anthropic"
     story_metadata_llm_model = "claude-3-5-sonnet-latest"
-    get_story_metdata(
-        config_path=PATHS['config'],
-        story_data_path=story_data_file_path,
-        llm_provider=story_metadata_llm_provider,
-        llm_model=story_metadata_llm_model)
-    print("✅ Story MetaData Determined")
-    
 
+    get_story_metadata(
+        story_json_path=story_data_file_path,
+        use_llm="on",
+        config_path=PATHS['config'],
+        llm_provider=story_metadata_llm_provider,
+        llm_model=story_metadata_llm_model
+    )
+    print("✅ Story MetaData Determined")
+
+    
 
 
     
@@ -255,12 +258,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
 # Examle Call 		
-create_story_data(story_type="Literature", 
-                  story_title="Crime and Punishment", 
-                  story_author="Fyodor Dostoevsky",
-                  story_protagonist="Rodion Raskolnikov", 
-                  story_year="1866", 
-                  story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/crime_and_punishment_composite_data.json")
+# create_story_data(story_type="Literature", 
+#                   story_title="Crime and Punishment", 
+#                   story_author="Fyodor Dostoevsky",
+#                   story_protagonist="Rodion Raskolnikov", 
+#                   story_year="1866", 
+#                   story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/crime_and_punishment_composite_data.json")
 
 
 # CREATE PRODUCT DATA

@@ -127,50 +127,60 @@ def _digits_isbn(s: str) -> str:
 # Source fetchers
 # -----------------------
 def fetch_openlibrary(title: str, author: Optional[str], year: Optional[int]) -> Dict[str, Any]:
-    """
-    OpenLibrary: use query params; return search doc + some fields. We'll enrich with Work JSON separately.
-    """
     ses = _session()
     url = "https://openlibrary.org/search.json"
-    params = {"title": title, "limit": 3}
+    params = {"title": title, "limit": 10}  # was 3
     if author: params["author"] = author
     if year:   params["publish_year"] = year
     r = ses.get(url, params=params, timeout=HTTP_TIMEOUT)
     r.raise_for_status()
     data = r.json()
-    if not data.get("docs"):
-        return {}
+    docs = data.get("docs", []) or []
+    if not docs: return {}
 
-    docs = data["docs"]
+    def _norm(s): return re.sub(r"[^a-z0-9]+", " ", (_clean(s) or "").lower()).strip()
+    tnorm = _norm(title); anorm = _norm(author) if author else None
+
     def score(d):
         s = 0
-        if _clean(d.get("title")) and _clean(d["title"]).lower() == _clean(title).lower():
-            s += 3
-        if author and any(a for a in d.get("author_name", []) if _clean(a).lower() == _clean(author).lower()):
-            s += 2
-        if year and (year in (d.get("publish_year") or []) or d.get("first_publish_year") == year):
-            s += 1
+        if _norm(d.get("title")) == tnorm: s += 3
+        if anorm and any(_norm(a) == anorm for a in d.get("author_name", []) or []): s += 2
+        if year and (year in (d.get("publish_year") or []) or d.get("first_publish_year") == year): s += 1
+        # soft penalties for study guides/abridgements
+        if re.search(r"(study guide|summary|cliffsnotes|sparknotes)", (_clean(d.get("title")) or "").lower()):
+            s -= 2
         return s
 
     docs.sort(key=score, reverse=True)
-    d0 = docs[0]
+    top = docs[:5]  # harvest top-5
 
-    subjects = d0.get("subject", []) or []
-    places = d0.get("place", []) or []
-    times = d0.get("time", []) or []
+    # Harvest fields across top hits
+    subjects, places, times, series, isbns = [], [], [], [], []
+    first_publish_year = None
+    openlibrary_key = None
+    for i, d in enumerate(top):
+        subjects += d.get("subject", []) or []
+        places   += d.get("place", []) or []
+        times    += d.get("time", []) or []
+        series   += d.get("series", []) or []
+        isbns    += d.get("isbn", []) or []
+        if i == 0:
+            first_publish_year = d.get("first_publish_year") or first_publish_year
+            openlibrary_key = d.get("key") or openlibrary_key
 
     return {
         "source": "openlibrary",
-        "openlibrary_key": d0.get("key"),  # e.g., "/works/OL12345W"
-        "title": d0.get("title"),
-        "authors": d0.get("author_name", []) or [],
-        "first_publish_year": d0.get("first_publish_year"),
-        "subjects": subjects,
-        "subject_places": places,
-        "subject_times": times,
-        "series": d0.get("series", []) or [],
-        "isbns": d0.get("isbn", []) or []
+        "openlibrary_key": openlibrary_key,
+        "title": top[0].get("title") if top else None,
+        "authors": top[0].get("author_name", []) if top else [],
+        "first_publish_year": first_publish_year,
+        "subjects": _dedupe_keep_order(subjects),
+        "subject_places": _dedupe_keep_order(places),
+        "subject_times": _dedupe_keep_order(times),
+        "series": _dedupe_keep_order(series),
+        "isbns": _dedupe_keep_order(isbns)
     }
+
 
 def fetch_openlibrary_work(openlibrary_key: Optional[str]) -> Dict[str, Any]:
     """Enrich using the Work endpoint if we have a /works/OL... key."""
@@ -194,43 +204,66 @@ def fetch_openlibrary_work(openlibrary_key: Optional[str]) -> Dict[str, Any]:
 
 def fetch_googlebooks(title: str, author: Optional[str]) -> Dict[str, Any]:
     ses = _session()
-    q = f'intitle:"{title}"'
-    if author: q += f' inauthor:"{author}"'
-    url = "https://www.googleapis.com/books/v1/volumes"
-    r = ses.get(url, params={"q": q, "maxResults": 5}, timeout=HTTP_TIMEOUT)
-    r.raise_for_status()
-    data = r.json()
-    items = data.get("items", [])
+    base = {"maxResults": 15, "printType": "books", "orderBy": "relevance"}
+    def call(q):
+        r = ses.get("https://www.googleapis.com/books/v1/volumes", params=dict(base, q=q), timeout=HTTP_TIMEOUT)
+        r.raise_for_status(); return r.json().get("items", []) or []
+
+    queries = [f'intitle:"{title}"' + (f' inauthor:"{author}"' if author else "")]
+    # fallback looser query
+    queries.append(f'"{title}"' + (f' {author}' if author else ""))
+
+    items = []
+    for q in queries:
+        items = call(q)
+        if items: break
     if not items: return {}
+
+    def _norm(s): return re.sub(r"[^a-z0-9]+", " ", (_clean(s) or "").lower()).strip()
+    tnorm = _norm(title); anorm = _norm(author) if author else None
+
     def score(it):
-        v = it.get("volumeInfo", {})
-        t = _clean(v.get("title", ""))
+        v = it.get("volumeInfo", {}) or {}
+        t = _norm(v.get("title"))
         s = 0
-        if t and t.lower() == _clean(title).lower(): s += 2
-        if author and any(a for a in v.get("authors", []) if _clean(a).lower() == _clean(author).lower()):
-            s += 1
+        if t == tnorm: s += 2
+        if anorm and any(_norm(a) == anorm for a in v.get("authors", []) or []): s += 1
+        # punish study guides/summaries
+        if re.search(r"(study guide|summary|bright notes|cliffsnotes|sparknotes)", (_clean(v.get("title")) or "").lower()):
+            s -= 3
         return s
+
     items.sort(key=score, reverse=True)
-    v = items[0].get("volumeInfo", {})
-    cats = v.get("categories", []) or []
-    desc = v.get("description")
-    ids = v.get("industryIdentifiers", []) or []
-    isbns = []
-    for ident in ids:
-        if (ident.get("type", "") or "").upper().startswith("ISBN"):
-            isbns.append(ident.get("identifier"))
-    pub_date = v.get("publishedDate")
-    year = _maybe_int_year(pub_date)
+    top = items[:8]  # harvest top-8
+
+    cats, descs, isbns, pub_years = [], [], [], []
+    for it in top:
+        v = it.get("volumeInfo", {}) or {}
+        # categories
+        cats += v.get("categories", []) or []
+        # description (keep longest)
+        d = v.get("description")
+        if d: descs.append(d)
+        # isbns
+        for ident in v.get("industryIdentifiers", []) or []:
+            if (ident.get("type", "") or "").upper().startswith("ISBN"):
+                isbns.append(ident.get("identifier"))
+        # year
+        y = _maybe_int_year(v.get("publishedDate"))
+        if y: pub_years.append(y)
+
+    # choose best description by length
+    desc = max(descs, key=len) if descs else None
+    year = min(pub_years) if pub_years else None  # earliest publication among top-8
+
     return {
         "source": "googlebooks",
-        "categories": cats,
+        "categories": _dedupe_keep_order(cats),
         "description": desc,
         "published_year": year,
-        "publisher": v.get("publisher"),
-        "language": v.get("language"),
-        "page_count": v.get("pageCount"),
-        "isbns": isbns
+        "isbns": _dedupe_keep_order(isbns)
     }
+
 
 # -----------------------
 # Wikipedia → Wikidata (REST-only; no SPARQL)
@@ -497,40 +530,104 @@ from langchain.prompts import PromptTemplate
 from llm import load_config, get_llm, extract_json
 
 # Controlled vocab (seed; expand as you grow)
+# ---- Canon lists (compact but broad coverage) ----
 CANON_GENRES = [
-    "Literary Fiction","Historical Fiction","Science Fiction","Fantasy","Horror","Mystery",
-    "Thriller","Romance","Young Adult","Children's","Nonfiction","Biography","Memoir",
-    "Classics","Short Stories","Poetry","Drama","Dystopian","Coming-of-Age","Adventure"
+    "Literary Fiction","Historical Fiction","Science Fiction","Fantasy","Magical Realism",
+    "Dystopian","Horror","Mystery","Crime & Detective","Thriller","Romance",
+    "Young Adult","Middle Grade","Children's","Classics","Short Stories","Poetry","Drama",
+    "Tragedy","Comedy","Satire","Gothic","Western","Adventure","Coming-of-Age",
+    "Graphic Novel/Comics","Myth & Folklore","Fairy Tale & Retellings",
+    "Narrative Nonfiction","Biography","Memoir","True Crime", "Humor"
 ]
+
 CANON_THEMES = [
-    "Love","Friendship","Identity","Redemption","Justice","Prejudice","Power","Corruption",
-    "War","Survival","Courage","Freedom","Family","Grief","Revenge","Morality","Coming of Age",
-    "Alienation","Fate vs Free Will","Good vs Evil","Guilt","Redemption","Isolation","Poverty"
+    "Love","Forbidden Love","Friendship","Family","Identity","Self-Discovery","Coming of Age",
+    "Ambition","Power","Corruption","Justice","Prejudice","Inequality","Class & Society",
+    "Freedom","Rebellion/Resistance","War","Violence","Survival","Courage","Sacrifice",
+    "Revenge","Forgiveness","Redemption","Guilt","Grief","Loss & Mourning","Hope","Fear",
+    "Morality","Good vs Evil","Fate vs Free Will","Destiny/Prophecy","Honor","Love vs Duty",
+    "Tradition vs Change","Deception/Secrets","Miscommunication","Loyalty","Betrayal",
+    "Memory","Truth","Isolation","Alienation","Poverty","Wealth & Greed",
+    "Colonialism & Empire","Environment/Nature","Technology & Ethics","AI & Consciousness",
+    "Religion & Faith"
 ]
 GENRE_SYNONYMS = {
     "bildungsroman": "Coming-of-Age",
     "coming of age": "Coming-of-Age",
-    "classic": "Classics",
-    "classics": "Classics",
     "ya": "Young Adult",
+    "new adult": "Young Adult",
     "sci fi": "Science Fiction",
     "science-fiction": "Science Fiction",
-    "speculative fiction": "Science Fiction",
-    "detective": "Mystery",
-    "crime": "Mystery",
-    "romantic fiction": "Romance",
+    "speculative fiction": "Science Fiction",   # you can keep this separate if you prefer
+    "magical-realism": "Magical Realism",
+    "urban fantasy": "Fantasy",
+    "paranormal": "Fantasy",
+    "detective": "Crime & Detective",
+    "crime": "Crime & Detective",
+    "police procedural": "Crime & Detective",
+    "noir": "Crime & Detective",
     "psychological thriller": "Thriller",
+    "gothic fiction": "Gothic",
+    "fairy tale": "Fairy Tale & Retellings",
+    "fairy tales": "Fairy Tale & Retellings",
+    "folklore": "Myth & Folklore",
+    "mythology": "Myth & Folklore",
+    "graphic novel": "Graphic Novel/Comics",
+    "comics": "Graphic Novel/Comics",
+    "true-crime": "True Crime",
+    "narrative nonfiction": "Narrative Nonfiction",
+    "creative nonfiction": "Narrative Nonfiction",
+    "classic": "Classics",
+    "classics": "Classics",
+    "humour": "Humor",
+    "humorous": "Humor",
+    "humorous fiction": "Humor",
+    "comic": "Humor",
+    "comic fiction": "Humor",
+    "sci-fi": "Science Fiction",        # hyphenated variant
+    "ya": "Young Adult", "YA": "Young Adult",
+    "children": "Children's", "childrens": "Children's", "children’s": "Children's",
+    "cozy mystery": "Mystery", "whodunit": "Mystery",
+    "satirical": "Satire",              # descriptive → genre
+    "romcom": "Comedy", "rom-com": "Comedy",
+    "coming-of-age": "Coming-of-Age"   # hyphenated variant
 }
+
 THEME_SYNONYMS = {
+    "self discovery": "Self-Discovery",
+    "prejudice": "Prejudice",
     "racism": "Prejudice",
-    "racial injustice": "Justice",
-    "morality": "Morality",
+    "bigotry": "Prejudice",
+    "discrimination": "Inequality",
+    "social class": "Class & Society",
+    "class": "Class & Society",
+    "wealth": "Wealth & Greed",
+    "greed": "Wealth & Greed",
+    "poverty": "Poverty",
+    "lies": "Deception/Secrets",
+    "secrets": "Deception/Secrets",
+    "deceit": "Deception/Secrets",
+    "prophecy": "Destiny/Prophecy",
+    "free will vs fate": "Fate vs Free Will",
     "good and evil": "Good vs Evil",
-    "loss": "Grief",
-    "self-discovery": "Identity",
-    "guilt": "Guilt",
+    "faith": "Religion & Faith",
+    "environment": "Environment/Nature",
+    "nature": "Environment/Nature",
+    "technology": "Technology & Ethics",
+    "artificial intelligence": "AI & Consciousness",
     "isolation": "Isolation",
+    "loneliness": "Isolation",
+    "exile": "Alienation",
+    "colonialism": "Colonialism & Empire",
+    "imperialism": "Colonialism & Empire",
+    "betrayal": "Betrayal",
+    "honour": "Honor",
+    "jealousy": "Betrayal",
+    "envy": "Betrayal"
 }
+
+
+
 
 def _canon_map(values, canon_list, synonym_map):
     out = []
@@ -582,7 +679,6 @@ def normalize_with_llm(consolidated: Dict[str,Any],
 
     # Pull out facts we do NOT let the LLM touch
     factual = {
-        "published_year": consolidated.get("published_year"),
         "primary_isbns": consolidated.get("primary_isbns", [])
     }
 
@@ -674,7 +770,6 @@ You are a metadata librarian. Normalize the input to a strict JSON schema.
         normalized[k] = normalized.get(k) or []
 
     # Merge back facts
-    normalized["published_year"] = factual["published_year"]
     normalized["primary_isbns"] = factual["primary_isbns"]
 
     # Remove the temporary description if present in caller's structure after we return
@@ -775,11 +870,11 @@ def get_story_metadata(story_json_path: str,
 #     main()
 
 
-meta = get_story_metadata(
-        story_json_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/crime-and-punishment-rodion-raskolnikov.json",
-        use_llm="on",
-        config_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml",
-        llm_provider="anthropic",
-        llm_model="claude-3-5-sonnet-latest"
-    )
-print(meta)
+# get_story_metadata(
+#         story_json_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/1984-winston-smith.json",
+#         use_llm="on",
+#         config_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml",
+#         llm_provider="anthropic",
+#         llm_model="claude-3-5-sonnet-latest"
+#     )
+
