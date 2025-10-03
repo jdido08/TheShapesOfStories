@@ -336,6 +336,13 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         return
     
 
+    #open product data to save story data path 
+    with open(product_data_path, 'r') as f:  #open product json data that was just created
+        product_data = json.load(f)
+    product_data['story_data_path'] = story_data_path
+    with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+        json.dump(product_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")  # optional newline at EOF
 
     # Compare product shape to make sure it's the same as the story -- product shapes can change slightly during product creations
     with open(product_data_path, 'r') as f:  #open product json data that was just created
@@ -392,6 +399,11 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         output_dir="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/product_mockups"
     )
     print("✅ Product Mockups Created")
+
+
+
+
+
 
     
 
@@ -549,10 +561,10 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 
     
 # Example 
-# create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json",
-#                     product_type="print", 
-#                     product_size="11x14", 
-#                     product_style="")
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json",
+                    product_type="print", 
+                    product_size="11x14", 
+                    product_style="")
 
 
 
