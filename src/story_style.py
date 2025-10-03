@@ -6,6 +6,12 @@ import yaml
 import tiktoken
 import json 
 import os 
+import sys
+import gi
+gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
+
+from gi.repository import Pango, PangoCairo
 
 #HELP FUNCTIONS -- CHECK IF FONT EXISTS
 
@@ -168,7 +174,7 @@ Output:
 
     #attempt to extact json (if needed)
     story_style = extract_json(output_text)
-    print(story_style)
+    #print(story_style)
     return story_style
 
 

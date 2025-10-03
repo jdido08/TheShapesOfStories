@@ -327,6 +327,13 @@ ___
 16. Edit Shopify Product
 
 
+# STILL TODOS:
+1. finish wiring up story and product create process
+2. printify scripts
+3. shopify scripts
+4. summary process
+5. make product design creation faster: https://chatgpt.com/share/68dfc540-a1bc-8011-9408-7357fe64931b 
+
 Mockups
 
 

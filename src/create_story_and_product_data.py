@@ -12,6 +12,12 @@ from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
 
+import gi
+gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
+
+from gi.repository import Pango, PangoCairo
+
 
 
 #WHAT DOES CRAETE STORY DATA DO???
@@ -97,11 +103,12 @@ BASE_DIR = local_drive_path
 
 # --- Define all other paths relative to the base directory ---
 PATHS['src'] = os.path.join(BASE_DIR, 'src')
-PATHS['summaries'] = os.path.join(BASE_DIR, 'data', 'summaries')
-PATHS['story_data'] = os.path.join(BASE_DIR, 'data', 'story_data')
-PATHS['product_data'] = os.path.join(BASE_DIR, 'data', 'product_data')
-PATHS['product_designs'] = os.path.join(BASE_DIR, 'data', 'product_designs')
-PATHS['shapes_output'] = os.path.join(BASE_DIR, 'data', 'story_shapes')
+PATHS['summaries'] = os.path.join(BASE_DIR, 'summaries')
+PATHS['story_data'] = os.path.join(BASE_DIR, 'story_data')
+PATHS['product_data'] = os.path.join(BASE_DIR, 'product_data')
+PATHS['product_designs'] = os.path.join(BASE_DIR, 'product_designs')
+PATHS['shapes_output'] = os.path.join(BASE_DIR, 'story_shapes')
+PATHS['supporting_designs'] = os.path.join(BASE_DIR, 'supporting_designs')
 PATHS['config'] = os.path.join(BASE_DIR, 'config.yaml')
 
 # --- Automatically create output directories if they don't exist ---
@@ -122,6 +129,7 @@ print("All paths configured successfully.")
 
 
 def create_story_data(story_type, story_title, story_author,story_protagonist, story_year, story_summary_path):
+    print("Story: ", story_title, " - ", story_protagonist)
 
     # create story data file name --> [story_title]-[story_protagonist].json
     story_data_file_name = story_title.lower().replace(' ', '-') + "-" + story_protagonist.lower().replace(' ', '-')
@@ -172,7 +180,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     
     # get category of shape
     story_symbolic_rep,  story_archetype = get_story_symbolic_and_archetype(story_components)
-    print("✅ Story Shape Category Determined")
+    print("✅ Story Shape Category")
     
     # get stort style
     story_style_llm_model = "claude-3-5-sonnet-latest"
@@ -190,12 +198,13 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     design_font_color       = story_style.get('font_color')
     design_border_color     = story_style.get('border_color')
     design_font             = story_style.get('font')
-    print("✅ Story Style Determined")
+    print("✅ Story Style")
     
     #check if font supported in local environment
     if design_font and not pango_font_exists(design_font):
         raise ValueError(f"'{design_font}' not found on this system.")
     
+
     # save story data back as json 
     story_data = {
         "title": story_title,
@@ -231,11 +240,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     
     #wait a few seconds 
     time.sleep(3)
+    print("✅ Story Data Saved")
 
-    #GET STORY DATA AND WRITE TO JSON  
+
+    #get story metadata
     story_metadata_llm_provider = "anthropic"
     story_metadata_llm_model = "claude-3-5-sonnet-latest"
-
     get_story_metadata(
         story_json_path=story_data_file_path,
         use_llm="on",
@@ -243,14 +253,9 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         llm_provider=story_metadata_llm_provider,
         llm_model=story_metadata_llm_model
     )
-    print("✅ Story MetaData Determined")
-
+    print("✅ Story MetaData")
+    print("")
     
-
-
-    
-
-    #after saving basic story data to json -- reopen and then get metadata for it
 
     
 
@@ -258,12 +263,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
 # Examle Call 		
-# create_story_data(story_type="Literature", 
-#                   story_title="Crime and Punishment", 
-#                   story_author="Fyodor Dostoevsky",
-#                   story_protagonist="Rodion Raskolnikov", 
-#                   story_year="1866", 
-#                   story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/crime_and_punishment_composite_data.json")
+create_story_data(story_type="Literature", 
+                  story_title="The Hobbit", 
+                  story_author="J. R. R. Tolkien",
+                  story_protagonist="Bilbo Baggins", 
+                  story_year="1937", 
+                  story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/the_hobbit_composite_data.json")
 
 
 # CREATE PRODUCT DATA
@@ -297,6 +302,10 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         return
     with open(story_data_path, 'r') as f:
         story_data = json.load(f)
+
+    #annoucen which product you're creating 
+    print("Product: ", story_data.get("title"), " - ", story_data.get("protagonist"), " - ", product_type, " - ", product_size)
+    
     
     #determine product style
     if product_style == "": #if product_style left empty that use default
@@ -329,7 +338,8 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
             font_color_hex=font_color_hex,
             font=font,
             line_type = "char",
-            output_format="png"
+            output_format="png",
+            output_dir=PATHS['product_designs']
         )
     else:
         print("ERROR: Only print 11x14 supported today")
@@ -343,6 +353,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
         json.dump(product_data, f, ensure_ascii=False, indent=2)
         f.write("\n")  # optional newline at EOF
+    time.sleep(2)
 
     # Compare product shape to make sure it's the same as the story -- product shapes can change slightly during product creations
     with open(product_data_path, 'r') as f:  #open product json data that was just created
@@ -372,7 +383,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         llm_provider = 'google',
         llm_model = 'gemini-2.5-pro'
     )
-    print("✅ Product Description Created")
+    print("✅ Product Description")
 
     
     #grad story text
@@ -396,12 +407,57 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         product_data_path=product_data_path,
         product_design_path=product_design_path,
         mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
-        output_dir="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/product_mockups"
+        output_dir=PATHS['product_designs']
     )
-    print("✅ Product Mockups Created")
+    print("✅ Product Mockups")
 
 
 
+    #create supporting product designs -- line and svg versions: line - png, line - svg, char - svg
+    supporting_designs = {
+        {
+            "line_type":"line",
+            "output_format":"png"
+        },
+        {
+            "line_type":"line",
+            "output_format":"svg"
+        },
+        {
+            "line_type":"char",
+            "output_format":"svg"
+        }
+    }
+    supporting_design_file_paths = []
+
+    with open(product_data_path, 'r') as f:  #open product json data that was just created
+        product_data = json.load(f)
+    if product_type == "print" and product_size == "11x14":
+        for supporting_design in supporting_designs:
+            product_data_path, product_design_path = create_print_11x14_product_data(
+                story_data_path=story_data_path,
+                title=title,
+                protagonist=protagonist,
+                author=author,
+                year=year,
+                background_color_hex=background_color_hex,
+                font_color_hex=font_color_hex,
+                font=font,
+                line_type = supporting_design['line_type'],
+                output_format=supporting_design['output_type'],
+                output_dir=PATHS['supporting_designs']
+            )
+            supporting_design_file_paths.append(product_design_path)
+            print("✅ ", supporting_design['line_type'], " - ", supporting_design['output_format'])
+    else:
+        print("ERROR: Only print 11x14 supported today")
+        return
+    
+    product_data['supporting_design_file_paths'] = supporting_design_file_paths
+    with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+        json.dump(product_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")  # optional newline at EOF
+    time.sleep(2)
 
 
 
@@ -433,7 +489,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
 
 
 
-def create_print_11x14_product_data(story_data_path, title, protagonist, author, year, background_color_hex, font_color_hex,font, line_type, output_format):       
+def create_print_11x14_product_data(story_data_path, title, protagonist, author, year, background_color_hex, font_color_hex,font, line_type, output_format, output_dir):       
 
     total_chars_line1 = len(title) + len(protagonist)
     if total_chars_line1 <= 38:
@@ -491,7 +547,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
     print("creating story shape")
     product_data_path, product_design_path = create_shape(
                     config_path = PATHS['config'],
-                    output_dir = PATHS['product_designs'],        # where to save designs
+                    output_dir = output_dir,        # where to save designs
                     story_data_dir=PATHS['product_data'],      # For reading/writing data files
                     story_data_path = story_data_path,
                     product = "print",
@@ -561,7 +617,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 
     
 # Example 
-create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json",
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-hobbit-bilbo-baggins.json",
                     product_type="print", 
                     product_size="11x14", 
                     product_style="")

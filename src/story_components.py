@@ -221,8 +221,8 @@ The descriptions in the example output demonstrate the minimum expected level of
             "story_summary": story_summary,
         })
         # If output is a AIMessage, its `response_metadata` might have info
-        if hasattr(output, "response_metadata"):
-            print("LLM Response Metadata:", output.response_metadata)
+        # if hasattr(output, "response_metadata"):
+        #     print("LLM Response Metadata:", output.response_metadata)
 
     except Exception as e:
         print(f"Error during LLM call: {e}")
