@@ -31,15 +31,6 @@ import yaml
 CURRENT_DPI = 300
 MAX_SPACING_ADJUSTMENT_ATTEMPTS = 1000
 
-
-def maybe_save(surface, path, output_format, save: bool):
-    if not save:
-        return
-    if output_format == "svg":
-        surface.flush()
-    else:
-        surface.write_to_png(path)
-
 def create_shape(
                 config_path,
                 output_dir, # <-- NEW ARGUMENT
@@ -115,9 +106,6 @@ def create_shape(
     #     if font and not pango_font_exists(font):
     #         raise ValueError(f"{desc} '{font}' not found on this system.")
     
-
-    #CONVERT BORDER THICKENSS IN INCHES TO PIXELS
-    border_thickness = (border_thickness * 2) * CURRENT_DPI
 
     #save hex values 
     font_color_hex = font_color
@@ -262,7 +250,7 @@ def create_shape(
 
 
 
-    #clean up story_data for saving 10/5/2025 -- testing out commenting out 
+    #clean up story_data for saving
     del story_data['x_values']
     del story_data['y_values']
     for component in story_data['story_components']:
@@ -373,8 +361,7 @@ def create_shape_single_pass(
                 recursive_mode = True,
                 llm_provider = "anthropic",
                 llm_model = "claude-3-5-sonnet-latest",
-                output_format = "png",
-                save_intermediate=False):
+                output_format = "png"):
     
     """
     Creates the shape with story data and optionally sets the background 
@@ -960,7 +947,7 @@ def create_shape_single_pass(
                     return story_data, "error"
                 
                 if component['arc_text_attempts'] > 10:
-                    print("❌ Max attempts to create descriptors exceeded")
+                    print("Max attempts to create descriptors exceeded")
                     if story_data is None:
                         print("STORY DATA NONE -- 10")
                     return story_data, "error"
@@ -1070,8 +1057,10 @@ def create_shape_single_pass(
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
                     
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
                     if story_data is None:
                         print("STORY DATA NONE -- 12")
 
@@ -1086,8 +1075,10 @@ def create_shape_single_pass(
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
 
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
                     if story_data is None:
                         print("STORY DATA NONE -- 13")
 
@@ -1101,7 +1092,10 @@ def create_shape_single_pass(
                     component['modified_end_time'] = new_x
                     component['modified_end_emotional_score'] = new_y
 
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
 
                     if story_data is None:
                         print("STORY DATA NONE -- 1")
@@ -1135,7 +1129,10 @@ def create_shape_single_pass(
                     component['status'] = "reducing spacing"
                     
 
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
 
                     if story_data is None:
                         print("STORY DATA NONE -- 2")
@@ -1143,8 +1140,10 @@ def create_shape_single_pass(
             
                 else: #this means: "curve too short but can't change due to constraints"
                     #so we actually want less chars than we initially thought
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
 
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
@@ -1191,7 +1190,10 @@ def create_shape_single_pass(
                     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
                     
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
 
                     if story_data is None:
                         print("STORY DATA NONE -- 4")
@@ -1210,7 +1212,10 @@ def create_shape_single_pass(
                     component['modified_end_time'] = original_arc_end_time_values[-1]
                     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
                     
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
 
                     if story_data is None:
                         print("STORY DATA NONE -- 5")
@@ -1260,7 +1265,10 @@ def create_shape_single_pass(
                     
                     component['status'] = "expanding spacing"
 
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
 
                     if story_data is None:
                         print("STORY DATA NONE -- 6")
@@ -1270,7 +1278,10 @@ def create_shape_single_pass(
                 else: # this means: curve too long but can't change due to constraints
                     # so we want more chars than we initially thought so let's up the number of chars
                     # so we need recalc descriptors and ask for longer 
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    if output_format == "svg":
+                        surface.flush()   # flush the partial drawing, but do *not* finalize!
+                    else:
+                        surface.write_to_png(story_shape_path)
 
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
@@ -1291,8 +1302,10 @@ def create_shape_single_pass(
                         return story_data, "processing"
 
             elif curve_length_status == "curve_correct_length":
-                maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
+                if output_format == "svg":
+                    surface.flush()   # flush the partial drawing, but do *not* finalize!
+                else:
+                    surface.write_to_png(story_shape_path)
                 status = 'All phrases fit exactly on the curve.'
 
             component['status'] = status

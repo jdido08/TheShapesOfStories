@@ -109,6 +109,7 @@ PATHS['product_data'] = os.path.join(BASE_DIR, 'product_data')
 PATHS['product_designs'] = os.path.join(BASE_DIR, 'product_designs')
 PATHS['shapes_output'] = os.path.join(BASE_DIR, 'story_shapes')
 PATHS['supporting_designs'] = os.path.join(BASE_DIR, 'supporting_designs')
+PATHS['product_mockups'] = os.path.join(BASE_DIR, 'product_mockups')
 PATHS['config'] = os.path.join(BASE_DIR, 'config.yaml')
 
 # --- Automatically create output directories if they don't exist ---
@@ -263,12 +264,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
 # Examle Call 		
-create_story_data(story_type="Literature", 
-                  story_title="The Hobbit", 
-                  story_author="J. R. R. Tolkien",
-                  story_protagonist="Bilbo Baggins", 
-                  story_year="1937", 
-                  story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/the_hobbit_composite_data.json")
+# create_story_data(story_type="Literature", 
+#                   story_title="The Tell-Tale Heart", 
+#                   story_author="Edgar Allan Poe",
+#                   story_protagonist="The Narrator", 
+#                   story_year="1843", 
+#                   story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/the_tell-tale_heart_composite_data.json")
 
 
 # CREATE PRODUCT DATA
@@ -407,14 +408,14 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         product_data_path=product_data_path,
         product_design_path=product_design_path,
         mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
-        output_dir=PATHS['product_designs']
+        output_dir=PATHS['product_mockups'] 
     )
     print("✅ Product Mockups")
 
 
 
     #create supporting product designs -- line and svg versions: line - png, line - svg, char - svg
-    supporting_designs = {
+    supporting_designs = [
         {
             "line_type":"line",
             "output_format":"png"
@@ -427,7 +428,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
             "line_type":"char",
             "output_format":"svg"
         }
-    }
+    ]
     supporting_design_file_paths = []
 
     with open(product_data_path, 'r') as f:  #open product json data that was just created
@@ -444,7 +445,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
                 font_color_hex=font_color_hex,
                 font=font,
                 line_type = supporting_design['line_type'],
-                output_format=supporting_design['output_type'],
+                output_format=supporting_design['output_format'],
                 output_dir=PATHS['supporting_designs']
             )
             supporting_design_file_paths.append(product_design_path)
@@ -517,7 +518,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
     top_text_font_size = 12
     bottom_text_font_size = 12
     top_and_bottom_text_band = 1
-    border_thickness = 360 #600 #300 #360 ## --> (360/300)/2 DPI --> 0.6 inches OR (300/300 DPI)/2 --> 0.5 in 
+    border_thickness = 0.5 # this is in inces 360 #600 #300 #360 ## --> (360/300)/2 DPI --> 0.6 inches OR (300/300 DPI)/2 --> 0.5 in 
     width_in_inches = 11
     height_in_inches = 14
     wrap_in_inches = 0
@@ -604,7 +605,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
                     wrap_background_color = border_color, #wrapped in inches part color only relevant when wrap_in_inches > 0 inc
                     fixed_margin_in_inches = fixed_margin_in_inches, #fixed margins for output
                     recursive_mode = True, #if you want to recurisvely generate story
-                    recursive_loops = 1000, #the number of iterations 
+                    recursive_loops = 10000, #the number of iterations 
                     llm_provider = "anthropic",#"groq",#"openai", #anthropic",#"google" #for generating descriptors
                     llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     #llm_provider = "google", #"anthropic", #google", 
