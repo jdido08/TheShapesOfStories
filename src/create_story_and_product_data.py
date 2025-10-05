@@ -380,42 +380,42 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     #description and save to product path
     llm_provider_product_description = "google"
     llm_model_product_description = "gemini-2.5-pro"
-    create_product_description(
-        image_path=product_design_path,
-        story_json_or_path=product_data_path,
-        config_path=PATHS['config'],
-        llm_provider = llm_provider_product_description,
-        llm_model = llm_model_product_description
-    )
-    print("✅ Product Description")
+    # create_product_description(
+    #     image_path=product_design_path,
+    #     story_json_or_path=product_data_path,
+    #     config_path=PATHS['config'],
+    #     llm_provider = llm_provider_product_description,
+    #     llm_model = llm_model_product_description
+    # )
+    # print("✅ Product Description")
 
     
     #grad story text
     llm_provider_assess_arc_text = "anthropic"
     llm_model_assess_arc_text = "claude-sonnet-4-20250514"
-    assess_arc_text(
-        generated_analysis_path=product_data_path,
-        config_path=PATHS['config'],
-        llm_provider=llm_provider_assess_arc_text,
-        llm_model=llm_model_assess_arc_text,
-    )
-    #need to reopen product data to assess whether grade passing or not
-    with open(product_data_path, 'r') as f:  #open product json data that was just created
-        product_data = json.load(f)
-    final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
-    if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
-        print("✅ Product Text Passed; Grade: ", final_grade)
-    else:
-        print("❌ Product Text Failed; Grade: ", final_grade)
+    # assess_arc_text(
+    #     generated_analysis_path=product_data_path,
+    #     config_path=PATHS['config'],
+    #     llm_provider=llm_provider_assess_arc_text,
+    #     llm_model=llm_model_assess_arc_text,
+    # )
+    # #need to reopen product data to assess whether grade passing or not
+    # with open(product_data_path, 'r') as f:  #open product json data that was just created
+    #     product_data = json.load(f)
+    # final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
+    # if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
+    #     print("✅ Product Text Passed; Grade: ", final_grade)
+    # else:
+    #     print("❌ Product Text Failed; Grade: ", final_grade)
 
 
-    create_mockups(
-        product_data_path=product_data_path,
-        product_design_path=product_design_path,
-        mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
-        output_dir=PATHS['product_mockups'] 
-    )
-    print("✅ Product Mockups")
+    # create_mockups(
+    #     product_data_path=product_data_path,
+    #     product_design_path=product_design_path,
+    #     mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
+    #     output_dir=PATHS['product_mockups'] 
+    # )
+    # print("✅ Product Mockups")
 
 
 
@@ -473,6 +473,18 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         f.write("\n")  # optional newline at EOF
     time.sleep(2)
 
+
+    #FINAL THING SAVE LINK TO PRODUCT DATA IN STORY DATA
+    with open(story_data_path, 'r') as f:
+        story_data = json.load(f)
+    story_data_products = story_data.get('products', {})
+    story_data_products[product_data['product_slug']] = product_data_path
+    story_data['products'] = story_data_products
+    with open(story_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+        json.dump(story_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")  # optional newline at EOF
+    time.sleep(1)
+    print("✅ story data updated w/ product data path")
 
 
     
@@ -631,7 +643,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 
     
 # Example 
-create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/romeo-and-juliet-juliet-print-11x14-purple-gold.json",
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/romeo-and-juliet-juliet.json",
                     product_type="print", 
                     product_size="11x14", 
                     product_style="")
