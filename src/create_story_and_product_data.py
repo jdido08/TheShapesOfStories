@@ -351,6 +351,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     with open(product_data_path, 'r') as f:  #open product json data that was just created
         product_data = json.load(f)
     product_data['story_data_path'] = story_data_path
+    product_data['story_design_path'] = product_design_path
     with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
         json.dump(product_data, f, ensure_ascii=False, indent=2)
         f.write("\n")  # optional newline at EOF
@@ -377,22 +378,26 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
 
 
     #description and save to product path
+    llm_provider_product_description = "google"
+    llm_model_product_description = "gemini-2.5-pro"
     create_product_description(
         image_path=product_design_path,
         story_json_or_path=product_data_path,
         config_path=PATHS['config'],
-        llm_provider = 'google',
-        llm_model = 'gemini-2.5-pro'
+        llm_provider = llm_provider_product_description,
+        llm_model = llm_model_product_description
     )
     print("✅ Product Description")
 
     
     #grad story text
+    llm_provider_assess_arc_text = "anthropic"
+    llm_model_assess_arc_text = "claude-sonnet-4-20250514"
     assess_arc_text(
         generated_analysis_path=product_data_path,
         config_path=PATHS['config'],
-        llm_provider="anthropic",
-        llm_model="claude-sonnet-4-20250514",
+        llm_provider=llm_provider_assess_arc_text,
+        llm_model=llm_model_assess_arc_text,
     )
     #need to reopen product data to assess whether grade passing or not
     with open(product_data_path, 'r') as f:  #open product json data that was just created
@@ -416,6 +421,10 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
 
     #create supporting product designs -- line and svg versions: line - png, line - svg, char - svg
     supporting_designs = [
+         {
+            "line_type":"char",
+            "output_format":"png"
+        },
         {
             "line_type":"line",
             "output_format":"png"
@@ -454,7 +463,11 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         print("ERROR: Only print 11x14 supported today")
         return
     
-    product_data['supporting_design_file_paths'] = supporting_design_file_paths
+    #make final saves to product_data josn
+    product_data['all_design_file_paths'] = supporting_design_file_paths
+    product_data['llm_models']['product_description'] = llm_model_product_description
+    product_data['llm_models']['assess_arc_text'] = llm_model_assess_arc_text
+    product_data['product_create_timestamp'] = datetime.now().isoformat()
     with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
         json.dump(product_data, f, ensure_ascii=False, indent=2)
         f.write("\n")  # optional newline at EOF
@@ -618,7 +631,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 
     
 # Example 
-create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-hobbit-bilbo-baggins.json",
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/romeo-and-juliet-juliet-print-11x14-purple-gold.json",
                     product_type="print", 
                     product_size="11x14", 
                     product_style="")
