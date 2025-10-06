@@ -343,7 +343,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
             output_dir=PATHS['product_designs']
         )
     else:
-        print("ERROR: Only print 11x14 supported today")
+        print("❌ ERROR: Only print 11x14 supported today")
         return
     
 
@@ -351,7 +351,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     with open(product_data_path, 'r') as f:  #open product json data that was just created
         product_data = json.load(f)
     product_data['story_data_path'] = story_data_path
-    product_data['story_design_path'] = product_design_path
+    product_data['product_design_path'] = product_design_path
     with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
         json.dump(product_data, f, ensure_ascii=False, indent=2)
         f.write("\n")  # optional newline at EOF
@@ -467,6 +467,7 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     product_data['all_design_file_paths'] = supporting_design_file_paths
     product_data['llm_models']['product_description'] = llm_model_product_description
     product_data['llm_models']['assess_arc_text'] = llm_model_assess_arc_text
+    product_data['product_type'] = product_type
     product_data['product_create_timestamp'] = datetime.now().isoformat()
     with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
         json.dump(product_data, f, ensure_ascii=False, indent=2)
