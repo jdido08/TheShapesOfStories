@@ -13,7 +13,13 @@ import time
 import os
 import base64
 
-
+## FROM printify_print_details.py ##
+# ✅ Blueprint: Matte Vertical Posters -> 282
+# - Provider option: Printify Choice (id 99)
+# - Provider option: Sensaria (id 2)
+# ✅ Provider: Printify Choice -> 99
+# ✅ Variant: id=43135 title=11″ x 14″ / Matte size=11″ x 14″ paper=Matte
+#    Placeholder: 3300x4200 (position front)
 printify_print_details = {
     "print-11x14":{
         "blueprint_id":282,
@@ -23,7 +29,7 @@ printify_print_details = {
         "width_dimensions":3300,
         "height_dimensions":4200
     }
- }               
+}               
 
 SHOP_ID = 23014386
 SHOP_TITLE = "The Shapes of Stories"
