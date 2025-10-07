@@ -43,7 +43,7 @@ def ensure_dimensions(image_path, w=3300, h=4200):
 
 def upload_image(api_token, image_path):
     """Uploads an image to Printify using Base64 encoding and returns its ID."""
-    print("Uploading image using Base64 method...")
+    #print("Uploading image using Base64 method...")
     url = "https://api.printify.com/v1/uploads/images.json"
     
     headers = {
@@ -69,7 +69,7 @@ def upload_image(api_token, image_path):
             image_data = response.json()
             image_id = image_data.get("id")
             print("✅ Success! Image uploaded.")
-            print(json.dumps(image_data, indent=4))
+            #print(json.dumps(image_data, indent=4))
             return image_id
         else:
             print(f"❌ Error uploading image: {response.status_code}")
@@ -90,7 +90,7 @@ def get_printify_creds_from_yaml(file_path):
 
 def create_product(api_token, shop_id, product_data):
     """Builds the JSON payload and creates the final product."""
-    print("FINAL STEP: Creating product...")
+    #print("FINAL STEP: Creating product...")
     url = f"https://api.printify.com/v1/shops/{shop_id}/products.json"
     headers = {"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"}
     
@@ -120,12 +120,12 @@ def create_product(api_token, shop_id, product_data):
     response = requests.post(url, headers=headers, json=payload)
 
     if 200 <= response.status_code < 300:
-        print("\n🎉 PRODUCT CREATED SUCCESSFULLY! 🎉")
+        print("✅ PRODUCT CREATED ON PRINTIFY")
         created_product_data = response.json()
-        print(json.dumps(created_product_data, indent=2))
+        #print(json.dumps(created_product_data, indent=2))
         return created_product_data  # <-- The essential fix is here
     else:
-        print("\n❌ FINAL ERROR: Failed to create product.")
+        print("❌ FINAL ERROR: Failed to create product.")
         print(f"Status Code: {response.status_code}")
         print(f"Response: {response.text}")
         return None # <-- Return None on failure
@@ -138,7 +138,7 @@ def get_product_details(api_token, shop_id, product_id):
     This function is used to retrieve the final product information, including the
     Shopify ID and variant SKUs, after the publishing process is complete.
     """
-    print(f"Fetching final details for product ID: {product_id}...")
+    #print(f"Fetching final details for product ID: {product_id}...")
     
     # The API endpoint for getting a specific product's details
     url = f"https://api.printify.com/v1/shops/{shop_id}/products/{product_id}.json"
@@ -154,7 +154,7 @@ def get_product_details(api_token, shop_id, product_id):
     # Check for a successful response
     if response.status_code == 200:
         product_data = response.json()
-        print("✅ Success! Retrieved final product data.")
+        #print("✅ Success! Retrieved final product data.")
         return product_data
     else:
         print(f"❌ Error fetching product details: {response.status_code}")
@@ -164,7 +164,7 @@ def get_product_details(api_token, shop_id, product_id):
 
 def publish_product(api_token, shop_id, product_id):
     """Publishes a product and controls which mockups are visible."""
-    print("STEP 6: Publishing product with selected mockups...")
+    #print("STEP 6: Publishing product with selected mockups...")
     url = f"https://api.printify.com/v1/shops/{shop_id}/products/{product_id}/publish.json"
     headers = {"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"}
 
@@ -181,15 +181,15 @@ def publish_product(api_token, shop_id, product_id):
     response = requests.post(url, headers=headers, json=payload)
 
     if 200 <= response.status_code < 300:
-        print("\n🎉 PRODUCT CREATED SUCCESSFULLY! 🎉")
+        print("✅ PRODUCT PUBLISHED ON PRINTIFY")
         created_product_data = response.json()
-        print(json.dumps(created_product_data, indent=2))
-        return created_product_data  # <-- This returns the data
+        #print(json.dumps(created_product_data, indent=2))
+        return True  # <-- This returns the data
     else:
-        print("\n❌ FINAL ERROR: Failed to create product.")
+        print("❌ FINAL ERROR: Failed to create product.")
         print(f"Status Code: {response.status_code}")
         print(f"Response: {response.text}")
-        return None # <-- This handles the failure case
+        return False # <-- This handles the failure case
 
 
 def publish_product_on_printify(product_data_path, config_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml"):
@@ -207,6 +207,9 @@ def publish_product_on_printify(product_data_path, config_path="/Users/johnmiked
     product_type = product_data['product_type']
     product_size = product_data['product_size']
     product_design_path = product_data['product_design_path']
+
+    #print
+    print("Publishing ", title, "-", protagonist, "-", product_type, "-", product_size, " on PRINTIFY")
 
     #set printify product type details --> see printify_print_details.py
     if product_type == "print" and product_size == "11x14":
@@ -260,8 +263,12 @@ def publish_product_on_printify(product_data_path, config_path="/Users/johnmiked
         data = get_product_details(PRINTIFY_API_KEY, SHOP_ID, printify_product_id)
         shopify_product_id = data.get("external", {}).get("id")
         if shopify_product_id:
+            print("✅ Success! Retrieved shopify_product_id.")
             break
         time.sleep(5)
+    if shopify_product_id == None:
+        print("\n❌ Failed to Retrieve shopify_product_id")
+    
 
     # pick an enabled SKU for your sheet
     sku = ""
