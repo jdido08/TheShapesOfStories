@@ -327,6 +327,9 @@ ___
 16. Edit Shopify Product
 
 
+
+
+
 # STILL TODOS:
 1. finish wiring up story and product create process
 2. printify scripts
@@ -345,3 +348,10 @@ Mockups
 - shopify production 
 
 - need to revisit logic for summaries as having these accurate with facts will help product 
+
+
+
+#10/9/2025:
+--> Create Product Variant in Printify --> Get SKU 
+--> Create Product in Shopify w/ Variants 
+--> Map Printify Variants to Shopify Variants using SKU

@@ -258,22 +258,22 @@ def publish_product_on_printify(product_data_path, config_path="/Users/johnmiked
 
 
     # publish without images (no mockups to Shopify)
-    published = publish_product(PRINTIFY_API_KEY, SHOP_ID, printify_product_id)  # make sure images=False inside
-    if not published:
-        raise RuntimeError("Publish failed")
+    # published = publish_product(PRINTIFY_API_KEY, SHOP_ID, printify_product_id)  # make sure images=False inside
+    # if not published:
+    #     raise RuntimeError("Publish failed")
     
 
     # light poll for Shopify id
     shopify_product_id = None
-    for _ in range(6):
-        data = get_product_details(PRINTIFY_API_KEY, SHOP_ID, printify_product_id)
-        shopify_product_id = data.get("external", {}).get("id")
-        if shopify_product_id:
-            print("✅ Success! Retrieved shopify_product_id.")
-            break
-        time.sleep(5)
-    if shopify_product_id == None:
-        print("\n❌ Failed to Retrieve shopify_product_id")
+    # for _ in range(6):
+    #     data = get_product_details(PRINTIFY_API_KEY, SHOP_ID, printify_product_id)
+    #     shopify_product_id = data.get("external", {}).get("id")
+    #     if shopify_product_id:
+    #         print("✅ Success! Retrieved shopify_product_id.")
+    #         break
+    #     time.sleep(5)
+    # if shopify_product_id == None:
+    #     print("\n❌ Failed to Retrieve shopify_product_id")
     
 
     # pick an enabled SKU for your sheet
