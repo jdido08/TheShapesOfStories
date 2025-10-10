@@ -17,6 +17,9 @@ def slugify(s: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", s.lower())
     return re.sub(r"-+", "-", s).strip("-")
 
+
+
+## Create SHOPIFY product -- note that variant information will differe pased on product type e.g. print, tshirt, canvas, etc..
 def create_shopify_product_with_variants(
     title: str,
     handle: str,
