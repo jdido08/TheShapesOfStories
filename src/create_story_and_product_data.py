@@ -265,11 +265,11 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 # Examle Call 		
 # create_story_data(story_type="Literature", 
-#                   story_title="The Tell-Tale Heart", 
-#                   story_author="Edgar Allan Poe",
+#                   story_title="Boy Meets Madi", 
+#                   story_author="Anonymous",
 #                   story_protagonist="The Narrator", 
-#                   story_year="1843", 
-#                   story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/the_tell-tale_heart_composite_data.json")
+#                   story_year="2024", 
+#                   story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/boy_meets_madi_summary.json")
 
 
 # CREATE PRODUCT DATA
@@ -314,8 +314,11 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         font_color_hex = story_data.get("default_style", {}).get("font_color_hex")
         font = story_data.get("default_style", {}).get("font")
     else: #else set product style but not supporting that for the moment 
-        print(f"Error: Product (currently) only supports using default story styles")
-        return
+        background_color_hex = product_style.get("background_color_hex")
+        font_color_hex = product_style.get("font_color_hex")
+        font = product_style.get("font")
+        # print(f"Error: Product (currently) only supports using default story styles")
+        # return
 
     # right now only print 11x14 is support for product types
     if product_type != "print" and product_type != "11x14":
@@ -393,20 +396,20 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     #grad story text
     llm_provider_assess_arc_text = "anthropic"
     llm_model_assess_arc_text = "claude-sonnet-4-20250514"
-    # assess_arc_text(
-    #     generated_analysis_path=product_data_path,
-    #     config_path=PATHS['config'],
-    #     llm_provider=llm_provider_assess_arc_text,
-    #     llm_model=llm_model_assess_arc_text,
-    # )
-    # #need to reopen product data to assess whether grade passing or not
-    # with open(product_data_path, 'r') as f:  #open product json data that was just created
-    #     product_data = json.load(f)
-    # final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
-    # if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
-    #     print("✅ Product Text Passed; Grade: ", final_grade)
-    # else:
-    #     print("❌ Product Text Failed; Grade: ", final_grade)
+    assess_arc_text(
+        generated_analysis_path=product_data_path,
+        config_path=PATHS['config'],
+        llm_provider=llm_provider_assess_arc_text,
+        llm_model=llm_model_assess_arc_text,
+    )
+    #need to reopen product data to assess whether grade passing or not
+    with open(product_data_path, 'r') as f:  #open product json data that was just created
+        product_data = json.load(f)
+    final_grade = product_data["text_quality_assessment"]["text_accuracy_assessment"].get("final_grade")
+    if final_grade in ["A", "B"]: #need to think about whether I want to accept any Bs
+        print("✅ Product Text Passed; Grade: ", final_grade)
+    else:
+        print("❌ Product Text Failed; Grade: ", final_grade)
 
 
     # create_mockups(
@@ -644,10 +647,16 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 
     
 # Example 
-create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/romeo-and-juliet-juliet.json",
+product_style = {
+    "background_color_hex":"#1B1B3A",
+    "font_color_hex":"#FF8C7C",
+    "font":"Lora"
+
+}
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/boy-meets-madi-june-22-2024-print-11x14-charcoal-beige.json",
                     product_type="print", 
                     product_size="11x14", 
-                    product_style="")
+                    product_style=product_style)
 
 
 

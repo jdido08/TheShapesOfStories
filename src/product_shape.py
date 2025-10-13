@@ -298,6 +298,7 @@ def create_shape(
     story_data['arc_text_llm'] = llm_model
     story_data['fixed_margin_in_inches'] = fixed_margin_in_inches
     story_data['product_size'] = f'{width_in_inches}x{height_in_inches}'
+    story_data['line_style'] = line_style_name
     new_title = story_data['title'].lower().replace(' ', '-')
     new_size = f'{width_in_inches}x{height_in_inches}'
     new_protagonist = story_data['protagonist'].lower().replace(' ', '-')
