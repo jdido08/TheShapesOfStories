@@ -1,48 +1,18 @@
-# imports 
 import os
-import time 
 import sys
 import json
+import time
 from datetime import datetime
 
-# imports from my code
-from story_style import get_story_style, pango_font_exists #move to this sheet
-from story_components import get_story_components, grade_story_components
-from story_summary import get_story_summary
+
+from product_shape import create_shape
+from product_color import map_hex_to_simple_color
 from story_shape_category import get_story_symbolic_and_archetype
-from story_metadata import get_story_metadata
-
-import gi
-gi.require_version("Pango", "1.0")
-gi.require_version("PangoCairo", "1.0")
-
-from gi.repository import Pango, PangoCairo
+from product_description import create_product_description
+from product_text_accuracy import assess_arc_text
+from product_mockups import create_mockups
 
 
-
-#WHAT DOES CRAETE STORY DATA DO???
-# INPUTS:
-#   - story_type: Literature | Film | Sports | Biographies
-#   - story_title: 
-#   - story_author (for Literature)
-#   - story_protagonist
-#   - story_year
-#   - story_summary
-# LOGIC: Transforms inputs into TSOS Story Data including:
-#   - story components --> from story_components.py
-#   - validation of story components --> from story_components.py
-#   - default style (color + font) --> from story_style.py
-#   - story shape
-# OUTPUTS: [title]-[protagonist].json
-#   - title
-#   - author
-#   - protagonist
-#   - year
-#   - summary
-#   - story components
-#   - grade of story components
-#   - default colors + font
-#   - story shape category
 
 # This is the helper function that will find our files in Google Drive
 def get_google_drive_link(drive_service, file_name, retries=5, delay=10):
@@ -89,8 +59,6 @@ def get_google_drive_link(drive_service, file_name, retries=5, delay=10):
 # ==============================================================================
 #           UNIFIED PATH CONFIGURATION (for Local & Colab)
 # ==============================================================================
-import os
-import sys
 
 # This dictionary will hold all our configured paths
 PATHS = {}
@@ -129,149 +97,6 @@ print(f"\nProject Base Directory: {BASE_DIR}")
 print("All paths configured successfully.")
 
 
-def create_story_data(story_type, story_title, story_author,story_protagonist, story_year, story_summary_path):
-    print("Story: ", story_title, " - ", story_protagonist)
-
-    # create story data file name --> [story_title]-[story_protagonist].json
-    story_data_file_name = story_title.lower().replace(' ', '-') + "-" + story_protagonist.lower().replace(' ', '-')
-    story_data_file_name = story_data_file_name.replace("’", "'")   # Normalize the path to replace curly apostrophes with straight ones
-    story_data_file_name = story_data_file_name.replace(",", "")    # Normalize the path to replace commas
-
-    # check if story data already exits
-    story_data_file_path = os.path.join(PATHS['story_data'], story_data_file_name + ".json")     # Use the configured path
-    
-    # don't proceed forward if story data exists --> ask user to delete it first
-    # this will prevent accidential rewrites of story data
-    if os.path.exists(story_data_file_path):
-        print("❌ Story Data Already Exists. Please Delete Existing Story Data First!. Skipping.")
-        return 
-    
-
-    # get story summary from story summary path 
-    story_summary = get_story_summary(story_summary_path)
-
-    # get story components --> don't use google you often get blocked
-    story_components_llm_model = "claude-3-5-sonnet-latest"
-    story_components = get_story_components(
-        config_path=PATHS['config'],
-        story_title=story_title,
-        story_summary = story_summary,
-        author=story_author,
-        year=story_year,
-        protagonist=story_protagonist,
-        llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-        llm_model = story_components_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-    )
-    print("✅ Story Components Created")
-
-    #grade story components
-    story_components_grader_llm_model = "gemini-2.5-pro"
-    story_component_grades = grade_story_components(
-        config_path = PATHS['config'], 
-        story_components=story_components, 
-        canonical_summary=story_summary, 
-        title=story_title, 
-        author=story_author, 
-        protagonist=story_protagonist, 
-        llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-        llm_model = story_components_grader_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-    )
-    print("✅ Story Components Graded")
-
-    
-    # get category of shape
-    story_symbolic_rep,  story_archetype = get_story_symbolic_and_archetype(story_components)
-    print("✅ Story Shape Category")
-    
-    # get stort style
-    story_style_llm_model = "claude-3-5-sonnet-latest"
-    story_style = get_story_style(
-        config_path = PATHS['config'],
-        story_title = story_title, 
-        author = story_author,
-        protagonist = story_protagonist, 
-        llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-        llm_model = story_style_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-    )
-    story_style = json.loads(story_style)
-    design_rationale        = story_style.get('design_rationale')
-    design_background_color = story_style.get('background_color')
-    design_font_color       = story_style.get('font_color')
-    design_border_color     = story_style.get('border_color')
-    design_font             = story_style.get('font')
-    print("✅ Story Style")
-    
-    #check if font supported in local environment
-    if design_font and not pango_font_exists(design_font):
-        raise ValueError(f"'{design_font}' not found on this system.")
-    
-
-    # save story data back as json 
-    story_data = {
-        "title": story_title,
-        "author": story_author,
-        "protagonist": story_protagonist, 
-        "year": story_year,
-        "shape_symbolic_representation": story_symbolic_rep,
-        "shape_archetype": story_archetype,
-        "story_components": story_components,
-        "default_style": {
-            "background_color_hex": design_background_color,
-            "font_color_hex": design_font_color,
-            "border_color_hex": design_border_color,
-            "font": design_font,
-            "design_rationale":design_rationale
-        },
-        "story_type": story_type,
-        "summary": story_summary,
-        "story_component_grades":story_component_grades,
-        "llm_models": {
-            "story_components": story_components_llm_model,
-            "story_components_grade": story_components_grader_llm_model,
-            "story_default_style": story_style_llm_model
-        },
-        "story_slug":story_data_file_name,
-        "story_data_create_timestamp":datetime.now().isoformat()
-        
-    }
-
-    # Write story data to JSON
-    with open(story_data_file_path, 'w') as f:
-        json.dump(story_data, f, indent=4)
-    
-    #wait a few seconds 
-    time.sleep(3)
-    print("✅ Story Data Saved")
-
-
-    #get story metadata
-    story_metadata_llm_provider = "anthropic"
-    story_metadata_llm_model = "claude-3-5-sonnet-latest"
-    get_story_metadata(
-        story_json_path=story_data_file_path,
-        use_llm="on",
-        config_path=PATHS['config'],
-        llm_provider=story_metadata_llm_provider,
-        llm_model=story_metadata_llm_model
-    )
-    print("✅ Story MetaData")
-    print("")
-    
-
-    
-
-
-
-
-# Examle Call 		
-# create_story_data(story_type="Literature", 
-#                   story_title="Boy Meets Madi", 
-#                   story_author="Anonymous",
-#                   story_protagonist="The Narrator", 
-#                   story_year="2024", 
-#                   story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/boy_meets_madi_summary.json")
-
-
 # CREATE PRODUCT DATA
 # INPUTS:
 # - story data json 
@@ -288,14 +113,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 # - create product mockups 
 # - create line and svg variants
 
-from product_shape import create_shape
-from product_color import map_hex_to_simple_color
-from story_shape_category import get_story_symbolic_and_archetype
-from product_description import create_product_description
-from product_text_accuracy import assess_arc_text
-from product_mockups import create_mockups
 
-def create_product_data(story_data_path, product_type="", product_size="", product_style=""):
+def create_product_data(story_data_path, product_type="", product_details=""):
 
     #check if story_data path exists and if so then open data 
     if not os.path.exists(story_data_path):
@@ -304,49 +123,46 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     with open(story_data_path, 'r') as f:
         story_data = json.load(f)
 
-    #annoucen which product you're creating 
-    print("Product: ", story_data.get("title"), " - ", story_data.get("protagonist"), " - ", product_type, " - ", product_size)
-    
-    
-    #determine product style
-    if product_style == "": #if product_style left empty that use default
-        background_color_hex = story_data.get("default_style", {}).get("background_color_hex")
-        font_color_hex = story_data.get("default_style", {}).get("font_color_hex")
-        font = story_data.get("default_style", {}).get("font")
-    else: #else set product style but not supporting that for the moment 
-        background_color_hex = product_style.get("background_color_hex")
-        font_color_hex = product_style.get("font_color_hex")
-        font = product_style.get("font")
-        # print(f"Error: Product (currently) only supports using default story styles")
-        # return
 
-    # right now only print 11x14 is support for product types
-    if product_type != "print" and product_type != "11x14":
-        print(f"Error: only print 11x14 products are supported at this time but you requested {product_type} {product_size}")
-        return
-    
 
     title = story_data.get("title")
     protagonist = story_data.get("protagonist")
     author = story_data.get("author")
     year = story_data.get("year")
 
-    if product_type == "print" and product_size == "11x14":
-        product_data_path, product_design_path = create_print_11x14_product_data(
-            story_data_path=story_data_path,
-            title=title,
-            protagonist=protagonist,
-            author=author,
-            year=year,
-            background_color_hex=background_color_hex,
-            font_color_hex=font_color_hex,
-            font=font,
-            line_type = "char",
-            output_format="png",
-            output_dir=PATHS['product_designs']
-        )
+    if product_type == "print":
+
+        #open print_product_details --> we know product details for print items includes print_size, line_style, background_color_hex, font_color_hex, font
+        print_size = (product_details.get("print_size") or "11x14") #default is 11x14 print 
+        line_style = (product_details.get("line_style") or "storybeats") #default is storybeats
+        background_color_hex = (product_details.get("background_color_hex") or story_data.get("default_style", {}).get("background_color_hex"))
+        font_color_hex = (product_details.get("font_color_hex") or story_data.get("default_style", {}).get("font_color_hex"))
+        font = (product_details.get("font") or story_data.get("default_style", {}).get("font"))
+        
+
+        #annoucen which product you're creating 
+        print("Product: ", story_data.get("title"), " - ", story_data.get("protagonist"), " - ", product_type, " - ", print_size)
+
+        if print_size == "11x14":
+            product_data_path, product_design_path = create_print_11x14_product_data(
+                story_data_path=story_data_path,
+                title=title,
+                protagonist=protagonist,
+                author=author,
+                year=year,
+                background_color_hex=background_color_hex,
+                font_color_hex=font_color_hex,
+                font=font,
+                line_type = "char",
+                output_format="png",
+                output_dir=PATHS['product_designs']
+            )
+        else:
+            print("❌ ERROR: Only 11x14 prints supported today. you requested {print_size}")
+            return
+
     else:
-        print("❌ ERROR: Only print 11x14 supported today")
+        print("❌ ERROR: Only print products supported today. you requested {product_type}")
         return
     
 
@@ -383,14 +199,14 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
     #description and save to product path
     llm_provider_product_description = "google"
     llm_model_product_description = "gemini-2.5-pro"
-    # create_product_description(
-    #     image_path=product_design_path,
-    #     story_json_or_path=product_data_path,
-    #     config_path=PATHS['config'],
-    #     llm_provider = llm_provider_product_description,
-    #     llm_model = llm_model_product_description
-    # )
-    # print("✅ Product Description")
+    create_product_description(
+        image_path=product_design_path,
+        story_json_or_path=product_data_path,
+        config_path=PATHS['config'],
+        llm_provider = llm_provider_product_description,
+        llm_model = llm_model_product_description
+    )
+    print("✅ Product Description")
 
     
     #grad story text
@@ -412,13 +228,13 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
         print("❌ Product Text Failed; Grade: ", final_grade)
 
 
-    # create_mockups(
-    #     product_data_path=product_data_path,
-    #     product_design_path=product_design_path,
-    #     mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
-    #     output_dir=PATHS['product_mockups'] 
-    # )
-    # print("✅ Product Mockups")
+    create_mockups(
+        product_data_path=product_data_path,
+        product_design_path=product_design_path,
+        mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
+        output_dir=PATHS['product_mockups'] 
+    )
+    print("✅ Product Mockups")
 
 
 
@@ -445,25 +261,29 @@ def create_product_data(story_data_path, product_type="", product_size="", produ
 
     with open(product_data_path, 'r') as f:  #open product json data that was just created
         product_data = json.load(f)
-    if product_type == "print" and product_size == "11x14":
-        for supporting_design in supporting_designs:
-            product_data_path, product_design_path = create_print_11x14_product_data(
-                story_data_path=story_data_path,
-                title=title,
-                protagonist=protagonist,
-                author=author,
-                year=year,
-                background_color_hex=background_color_hex,
-                font_color_hex=font_color_hex,
-                font=font,
-                line_type = supporting_design['line_type'],
-                output_format=supporting_design['output_format'],
-                output_dir=PATHS['supporting_designs']
-            )
-            supporting_design_file_paths.append(product_design_path)
-            print("✅ ", supporting_design['line_type'], " - ", supporting_design['output_format'])
+    if product_type == "print":
+        if print_size == "11x14":
+            for supporting_design in supporting_designs:
+                product_data_path, product_design_path = create_print_11x14_product_data(
+                    story_data_path=story_data_path,
+                    title=title,
+                    protagonist=protagonist,
+                    author=author,
+                    year=year,
+                    background_color_hex=background_color_hex,
+                    font_color_hex=font_color_hex,
+                    font=font,
+                    line_type = supporting_design['line_type'],
+                    output_format=supporting_design['output_format'],
+                    output_dir=PATHS['supporting_designs']
+                )
+                supporting_design_file_paths.append(product_design_path)
+                print("✅ ", supporting_design['line_type'], " - ", supporting_design['output_format'])
+        else:
+            print("ERROR: Only 11x14 print supported today")
+            return
     else:
-        print("ERROR: Only print 11x14 supported today")
+        print("ERROR: Only print supported today")
         return
     
     #make final saves to product_data josn
@@ -645,18 +465,20 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 
 
 
+
+#each product_type should have it's own product_details
     
 # Example 
-product_style = {
-    "background_color_hex":"#1B1B3A",
-    "font_color_hex":"#FF8C7C",
-    "font":"Lora"
-
-}
-create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/boy-meets-madi-june-22-2024-print-11x14-charcoal-beige.json",
+# print_product_details = {
+#     "print_size":"11x14",
+#     "line_type":"storybeats", # storybeats | classic | etc.. 
+#     "background_color_hex":"#1B1B3A",
+#     "font_color_hex":"#FF8C7C",
+#     "font":"Lora",
+# }
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json",
                     product_type="print", 
-                    product_size="11x14", 
-                    product_style=product_style)
+                    product_details={})
 
 
 

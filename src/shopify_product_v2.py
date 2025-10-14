@@ -31,11 +31,13 @@
 #.  - story_manual_colletion ---> something I can manuall edit 
 
 # PRODUCT 
-#   - product_type | print, tshirt, canvas, etc..
+#   - product_type | print, tshirt, canvas, mugs, etc..
 #.  - product_description
 
 # PRODUCT VAIRANT ATTRIBUTES ARE SPECIFIC TO PRODUCT TYPE
 # PRINT 
+#.  - product_slug --> {story_title}-{story_protagonist}-{product_type}-{print_size}-{background_color}-{font_color}-{line_style}
+#           -- when line_style = storybeats then {story_title}-{story_protagonist}-{product_type}-{print_size}-{background_color}-{font_color}-{line_style}-{font_style}
 #.  - product_variant_color --> need to make this {background_color}/{font_color} --> need to think about
 #.  - product_variant_size  e.g. 11x14
 #.  - product_variant_line e.g. storybeats, classic 

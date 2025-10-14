@@ -146,12 +146,12 @@ def create_shape(
     font_color_name = map_hex_to_simple_color(font_color_hex)['name']
 
     #get title 
-    if line_type == "char" or line_type == "text" or line_type == "text":
+    if line_type == "char" or line_type == "text" or line_type == "text" or line_type == "storybeats":
         line_style_name = "storybeats"
     else:
         line_style_name = "classic"
     
-    path_name = story_data['title'].lower().replace(' ', '-') + "-" + story_data['protagonist'].lower().replace(' ', '-') + "-" + product.lower().replace(' ', '-') + "-" + str(width_in_inches) + "x" + str(height_in_inches) + "-" + background_color_name.lower().replace(' ', '-') + "-" + font_color_name.lower().replace(' ', '-')
+    path_name = story_data['title'].lower().replace(' ', '-') + "-" + story_data['protagonist'].lower().replace(' ', '-') + "-" + product.lower().replace(' ', '-') + "-" + str(width_in_inches) + "x" + str(height_in_inches) + "-" + font_style.lower().replace(' ', '-') + "-" + background_color_name.lower().replace(' ', '-') + "-" + font_color_name.lower().replace(' ', '-')
     path_name = path_name.replace("’", "'")   # Normalize the path to replace curly apostrophes with straight ones
     path_name = path_name.replace(",", "")    # Normalize the path to replace commas
     product_data_path_name = path_name
