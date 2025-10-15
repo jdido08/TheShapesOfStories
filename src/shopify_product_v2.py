@@ -30,15 +30,15 @@
 #product metafields 
 """
 ## CORE FIELDS ###
-title --> product name
-handle --> urls
-descriptionHtml --> 
-productType --> (category)
-vendor         --> "The Shapes of Stories"
-tags           -->
-status
-options         
-images
+title --> product name --> "The Shape of {story.title} - {story.protagonist}'s Journey"
+handle --> urls.       --> {product_slug} --> {story_title}-{story_protagonist}-{product_type}
+descriptionHtml -->    -->  
+productType            --> ["print"]
+vendor                 --> "The Shapes of Stories"
+tags                   -->
+status                 -->
+options                --> for prints: [Color, Style, Size]
+images                 --> mockups?
 
 
 ### PRODUCT METAFIELDS ####
@@ -48,14 +48,13 @@ story.protagonist
 story.slug --> {story.title}-{story.protagonist}
 story.year (optional)
 story.type --> Literature, Film, Sports, Biographies, etc.. 
+story.manual_collection
 story.ref
 
 shape.symbolic_representation
 shape.archetype
 
 literature.author
-literature.protagonist
-literature.year
 literature.genres
 literature.themes
 literature.settings
@@ -64,30 +63,21 @@ literature.series_or_universe
 literature.awards
 literature.primary_isbns
 
-product.type | print, tshirt, canvas, mugs, etc..
-product.slug --> {story_title}-{story_protagonist}-{product_type}
-product.description_html
-product.manual_collection
-
-
 ## VARIANT CORE FIELDS ###
-id
-sku
-barcode
+id                      --> slug 
+sku                     --> from printify 
+barcode                 --> 
 price
 compareAtPrice
 inventoryItem
-selectedOptions
-title
+selectedOptions         --> Size: 11x14, Style: Storybeats, Color: {background_color}/{font_color}
+title                   --> ?
 requiresShipping
 
 
 ### VARIANTS METAFIELDS ### 
 
-variant.slug --> different per product type 
-variant.description_html
-variant.mockups 
-variant.manual_collection
+
 
 print.size  --> 11x14
 print.height_in
@@ -104,6 +94,7 @@ print.font_color_hex
 print.font_color_family
 print.font_color_shade
 print.font
+print.details_html
 
 printify.blueprint_id
 printify.provider_id
