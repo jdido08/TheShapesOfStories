@@ -45,8 +45,8 @@ def create_shopify_product_with_variants(
             "status": status,
             "body_html": body_html,
             "options": [
-                {"name": "Colorway"},
-                {"name": "Line type"},
+                {"name": "Color"},
+                {"name": "Style"},
                 {"name": "Size"}
             ],
             "variants": [
