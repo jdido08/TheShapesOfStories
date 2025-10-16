@@ -1,0 +1,204 @@
+import os, json, requests, yaml
+
+# ---------- boilerplate (same style you’re using) ----------
+def normalize_myshopify_domain(raw: str) -> str:
+    s = (raw or "").strip()
+    s = s.replace("https://", "").replace("http://", "").split("/")[0]
+    if s.endswith(".myshopify.com"):
+        s = s[: -len(".myshopify.com")]
+    return f"{s}.myshopify.com"
+
+def load_credentials_from_yaml(item):
+    with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/config.yaml", "r") as yaml_file:
+        config = yaml.safe_load(yaml_file)
+    return config[item]
+
+SHOP_DOMAIN = normalize_myshopify_domain(load_credentials_from_yaml('shopify_url'))
+TOKEN = load_credentials_from_yaml('shopify_key')
+API_VERSION = "2025-10"
+GQL_URL = f"https://{SHOP_DOMAIN}/admin/api/{API_VERSION}/graphql.json"
+HEADERS = {"X-Shopify-Access-Token": TOKEN, "Content-Type": "application/json"}
+
+def gql(query: str, variables: dict = None):
+    r = requests.post(GQL_URL, headers=HEADERS, json={"query": query, "variables": variables or {}})
+    r.raise_for_status()
+    data = r.json()
+    if "errors" in data:
+        raise RuntimeError(json.dumps(data["errors"], indent=2))
+    return data["data"]
+
+# ---------- mutations ----------
+MUT_PRODUCT_CREATE = """
+mutation($input: ProductInput!) {
+  productCreate(input: $input) {
+    product { id handle title status }
+    userErrors { field message }
+  }
+}
+"""
+
+
+MUT_METAFIELDS_SET = """
+mutation($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields { id namespace key type value }  # removed ownerId
+    userErrors { field message }
+  }
+}
+"""
+
+
+# ---------- type map for YOUR product metafields ----------
+PRODUCT_TYPE_MAP = {
+  # story.*
+  "story.title": "single_line_text_field",
+  "story.protagonist": "single_line_text_field",
+  "story.slug": "single_line_text_field",
+  "story.year": "number_integer",
+  "story.type": "single_line_text_field",
+  "story.manual_collections": "list.single_line_text_field",
+
+  # shape.*
+  "shape.symbolic_representation": "single_line_text_field",
+  "shape.archetype": "single_line_text_field",
+
+  # literature.*
+  "literature.author": "single_line_text_field",
+  "literature.genres": "list.single_line_text_field",
+  "literature.themes": "list.single_line_text_field",
+  "literature.settings": "list.single_line_text_field",
+  "literature.countries": "list.single_line_text_field",
+  "literature.series_or_universe": "list.single_line_text_field",
+  "literature.awards": "list.single_line_text_field",
+  "literature.primary_isbns": "list.single_line_text_field",
+}
+
+def _coerce_value(dotted_key: str, value):
+    """Return the correct string payload for metafieldsSet.value based on type."""
+    mtype = PRODUCT_TYPE_MAP[dotted_key]
+    if mtype.startswith("list."):
+        # value must be a JSON array string
+        return json.dumps(value if isinstance(value, list) else [value])
+    # numbers still get passed as strings to GraphQL metafieldsSet
+    return str(value)
+
+def set_product_metafields(product_id: str, values: dict):
+    """values = {'ns.key': python_value, ...}"""
+    mf_inputs = []
+    for dotted_key, val in values.items():
+        if dotted_key not in PRODUCT_TYPE_MAP:
+            raise ValueError(f"Unknown metafield key (no definition or not in map): {dotted_key}")
+        ns, key = dotted_key.split(".", 1)
+        mf_inputs.append({
+            "ownerId": product_id,
+            "namespace": ns,
+            "key": key,
+            "type": PRODUCT_TYPE_MAP[dotted_key],
+            "value": _coerce_value(dotted_key, val),
+        })
+    # Chunk to 25 if you like; your set is under 25 so one call is fine.
+    res = gql(MUT_METAFIELDS_SET, {"metafields": mf_inputs})["metafieldsSet"]
+    if res["userErrors"]:
+        raise RuntimeError(res["userErrors"])
+    return res["metafields"]
+
+def create_product_and_set_metafields(product_input: dict, metafields: dict):
+    # 1) Create the product (keeps it DRAFT by default; change status if you want)
+    data = gql(MUT_PRODUCT_CREATE, {"input": product_input})["productCreate"]
+    if data["userErrors"]:
+        raise RuntimeError(data["userErrors"])
+    product = data["product"]
+    pid = product["id"]
+    print(f"✅ Created product: {pid}  handle={product['handle']}  status={product['status']}")
+
+    # 2) Set product metafields
+    if metafields:
+        set_product_metafields(pid, metafields)
+        print(f"✅ Set {len(metafields)} product metafields")
+
+    return pid
+
+
+def create_shopify_product(story_data_path, product_type):
+
+    #open story data
+    with open(story_data_path, 'r') as f:
+        story_data = json.load(f)
+    
+    #SET SHOPIFY CORE PRODUCT FIELDS
+    product_title = story_data['title'] + " — " + story_data['protagonist'] + "'s Journey"
+    #product_status = ?
+    #product_desccription =  --> this data doesn't live in story data now; maybe change (seperate out product description and print details)
+    product_ventor = "The Shapes of Stories"
+    #productType = 
+    #tags
+
+    #SET SHOPIFY PRODUCT METAFIELDS THAT APPLY TO ALL STORY TYPES
+    basic_product_metafields = {
+        "story.title": story_data['title'],
+        "story.protagonist": story_data['protagonist'],
+        "story.slug": story_data['story_slug'],
+        "story.year": story_data['year'],
+        "story.type": story_data['story_type'],
+        "story.manual_collections": [],
+
+        "shape.symbolic_representation": story_data['shape_symbolic_representation'],
+        "shape.archetype": story_data['shape_archetype']
+    }
+
+    #SET SHOPIFY PRODUCT METAFIELDS THAT ARE STORY SPECIFIC 
+    if story_data['story_type'] == "Literature":
+        story_specific_product_metafields = {
+            "literature.author": story_data['author'],
+            "literature.genres": story_data['metadata']['genres'],
+            "literature.themes": story_data['metadata']['themes'],
+            "literature.settings": story_data['metadata']['settings'],
+            "literature.countries":  story_data['metadata']['associated_countries'],
+            "literature.series_or_universe": story_data['metadata']['series_or_universe'],
+            "literature.awards": story_data['metadata']['awards'],
+            "literature.primary_isbns": story_data['metadata']['primary_isbns'],
+        }
+        
+    else:
+        print("❌ ERROR: Story Type: ", story_data['story_type'], " NOT supported!")
+        return 
+    
+    #combine basic and story specific metafields
+    product_metafields = basic_product_metafields | story_specific_product_metafields
+
+
+
+# ---------- example usage ----------
+# if __name__ == "__main__":
+#     product_input = {
+#         "title": "The Great Gatsby — 11x14 Poster",
+#         "status": "DRAFT",
+#         "descriptionHtml": "<p>Jay Gatsby’s emotional arc, visualized.</p>",
+#         "vendor": "The Shapes of Stories",
+#         "productType": "Art Print",
+#         "tags": ["storybeats", "11x14", "print"]
+#         # You can add collection publishing etc. later
+#     }
+
+#     product_metafields = {
+#         "story.title": "The Great Gatsby",
+#         "story.protagonist": "Jay Gatsby",
+#         "story.slug": "the-great-gatsby-jay-gatsby",
+#         "story.year": 1925,
+#         "story.type": "Literature",
+#         "story.manual_collections": ["Literature", "Gallery Walls"],
+
+#         "shape.symbolic_representation": "rise-fall-rise",
+#         "shape.archetype": "Tragic Hero",
+
+#         "literature.author": "F. Scott Fitzgerald",
+#         "literature.genres": ["Novel", "Modernist"],
+#         "literature.themes": ["American Dream", "Wealth", "Love"],
+#         "literature.settings": ["Long Island", "New York City"],
+#         "literature.countries": ["United States"],
+#         "literature.series_or_universe": [],
+#         "literature.awards": [],
+#         "literature.primary_isbns": ["9780743273565"],
+#     }
+
+#     create_product_and_set_metafields(product_input, product_metafields)

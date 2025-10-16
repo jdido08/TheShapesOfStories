@@ -301,8 +301,20 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     #FINAL THING SAVE LINK TO PRODUCT DATA IN STORY DATA
     with open(story_data_path, 'r') as f:
         story_data = json.load(f)
+
+    #get existing products associated with story
     story_data_products = story_data.get('products', {})
-    story_data_products[product_data['product_slug']] = product_data_path
+
+    #check if product_type in dictionary
+    if product_type in story_data_products:
+        #then add to dict
+        story_data_products[product_type[product_data['product_slug']]] = product_data_path
+    else: #if product type doesnt exist yet then create a dictionary yourself and set value
+        products_dict = {}
+        products_dict[product_data['product_slug']] = product_data_path
+        story_data_products[product_type] = products_dict
+
+    # story_data_products[product_data['product_slug']] = product_data_path
     story_data['products'] = story_data_products
     with open(story_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
         json.dump(story_data, f, ensure_ascii=False, indent=2)

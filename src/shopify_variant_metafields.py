@@ -1,5 +1,8 @@
 import os, requests, json, yaml
 
+### THIS IS FOR CREATING AND/OR UPDATING SHOPIFY (PRODUCT) VARIANT METAFIELDS ###
+
+
 def normalize_myshopify_domain(raw: str) -> str:
     s = (raw or "").strip()
     s = s.replace("https://", "").replace("http://", "").split("/")[0]
