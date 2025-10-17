@@ -305,14 +305,13 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     #get existing products associated with story
     story_data_products = story_data.get('products', {})
 
-    #check if product_type in dictionary
-    if product_type in story_data_products:
-        #then add to dict
-        story_data_products[product_type[product_data['product_slug']]] = product_data_path
-    else: #if product type doesnt exist yet then create a dictionary yourself and set value
-        products_dict = {}
-        products_dict[product_data['product_slug']] = product_data_path
-        story_data_products[product_type] = products_dict
+    #insert or update product data in story data
+    products_dict = {}
+    products_dict[product_data['product_slug']] = {
+        "file_path":product_data_path,
+        "sku":""
+    }
+    story_data_products[product_type] = products_dict
 
     # story_data_products[product_data['product_slug']] = product_data_path
     story_data['products'] = story_data_products
