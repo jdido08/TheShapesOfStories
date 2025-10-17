@@ -70,8 +70,11 @@ DEFS = [
   dict(ns="story", key="year",                 type="number_integer",              name="Story Year"),
   dict(ns="story", key="type",                 type="single_line_text_field",      name="Story Type"),
   dict(ns="story", key="manual_collections",   type="list.single_line_text_field",   name="Manual Collections"),
+  dict(ns="story", key="story_overview_html",  type="multi_line_text_field",        name="Story Overview (HTML)"),
+  dict(ns="story", key="story_end_hook_html",  type="multi_line_text_field",        name="Story End Hook (HTML)"),
   dict(ns="shape", key="symbolic_representation", type="single_line_text_field",   name="Shape: Symbolic Representation"),
   dict(ns="shape", key="archetype",               type="single_line_text_field",   name="Shape: Archetype"),
+  dict(ns="shape", key="about_shape_html",        type="multi_line_text_field",    name="About Shape (HTML)"),
   dict(ns="literature", key="author",             type="single_line_text_field",   name="Author"),
   dict(ns="literature", key="genres",             type="list.single_line_text_field", name="Genres"),
   dict(ns="literature", key="themes",             type="list.single_line_text_field", name="Themes"),
@@ -127,18 +130,18 @@ def ensure_definition(owner_type, ns, key, type_name, name, description="", pin=
 
 
 # --- main loop (no extra kwargs) ---
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     print(f"Seeding product metafield definitions to {SHOP_DOMAIN} ...")
-#     for d in DEFS:
-#         ensure_definition(
-#             owner_type="PRODUCT",
-#             ns=d["ns"],
-#             key=d["key"],
-#             type_name=d["type"],
-#             name=d["name"],
-#             description=d.get("description",""),
-#             pin=False,                      # set True if you want them pinned in Admin
-#             validations=d.get("validations")
-#         )
-#     print("Done.")
+    print(f"Seeding product metafield definitions to {SHOP_DOMAIN} ...")
+    for d in DEFS:
+        ensure_definition(
+            owner_type="PRODUCT",
+            ns=d["ns"],
+            key=d["key"],
+            type_name=d["type"],
+            name=d["name"],
+            description=d.get("description",""),
+            pin=False,                      # set True if you want them pinned in Admin
+            validations=d.get("validations")
+        )
+    print("Done.")
