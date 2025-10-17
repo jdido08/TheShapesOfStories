@@ -129,13 +129,32 @@ def create_shopify_product(story_data_path, product_type):
     product_title = story_data['title'] + " — " + story_data['protagonist'] + "'s Journey"
     product_handle = story_data['story_slug'] + "-" + product_type
     #product_status = ?
-    #product_desccription =  --> this data doesn't live in story data now; maybe change (seperate out product description and print details)
-    product_ventor = "The Shapes of Stories"
+    product_description = story_data['story_full_product_description_html']
     productType = product_type
     #tags
     if product_type == "print":
         product_options = ["Color", "Style", "Size"]
         product_tags = []
+        product_tags.append("Title: " + story_data['title']) 
+        product_tags.append(f"Author: {story_data['author']}")
+        product_tags.append(f"Protagonist: {story_data['protagonist']}")
+        product_tags.append(f"Year: {story_data['year']}")
+        product_tags.append(f"Story Type: {story_data['story_type']}")
+        product_tags.append(f"Shape: {story_data['shape_symbolic_representation']}")
+        product_tags.append(f"Shape Archetype: {story_data['shape_archetype']}")
+        product_tags.append(f"Type: {product_type}")             # e.g., Print
+        # product_tags.append(f"Style: {style}")                 # if you have it
+
+        md = story_data.get("metadata", {})
+        for g in md.get("genres", []):   product_tags.append(f"Genre: {g}")
+        for t in md.get("themes", []):   product_tags.append(f"Theme: {t}")
+        for s in md.get("settings", []): product_tags.append(f"Setting: {s}")
+        for c in md.get("associated_countries", []): product_tags.append(f"Country: {c}")
+        for sr in md.get("series_or_universe", []):  product_tags.append(f"Series: {sr}")
+        for aw in md.get("awards", []):  product_tags.append(f"Award: {aw}")
+
+        
+
     else:
         print("❌ ERROR: Product Type: ", product_type, " NOT supported!")
         return 
