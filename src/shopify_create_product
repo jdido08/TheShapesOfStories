@@ -127,11 +127,18 @@ def create_shopify_product(story_data_path, product_type):
     
     #SET SHOPIFY CORE PRODUCT FIELDS
     product_title = story_data['title'] + " — " + story_data['protagonist'] + "'s Journey"
+    product_handle = story_data['story_slug'] + "-" + product_type
     #product_status = ?
     #product_desccription =  --> this data doesn't live in story data now; maybe change (seperate out product description and print details)
     product_ventor = "The Shapes of Stories"
-    #productType = 
+    productType = product_type
     #tags
+    if product_type == "print":
+        product_options = ["Color", "Style", "Size"]
+        product_tags = []
+    else:
+        print("❌ ERROR: Product Type: ", product_type, " NOT supported!")
+        return 
 
     #SET SHOPIFY PRODUCT METAFIELDS THAT APPLY TO ALL STORY TYPES
     basic_product_metafields = {
