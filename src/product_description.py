@@ -280,7 +280,11 @@ STORY DATA (JSON):
 
 def write_product_description_to_json(
     json_path: Union[str, Path],
-    html: str
+    full_description: str,
+    title_block: str,
+    story_behind: str,
+    print_details: str,
+    ending_hook: str
 ) -> None:
     """
     Write the generated product description HTML back to the story JSON file.
@@ -297,7 +301,11 @@ def write_product_description_to_json(
         data: Dict[str, Any] = json.loads(p.read_text(encoding="utf-8"))
         ts = datetime.now().isoformat()
 
-        data["product_description_html"] = html
+        data["product_description_html"] = full_description,
+        data["product_description_title_block_html"] = title_block,
+        data["product_description_story_behind_html"] = story_behind,
+        data["product_description_print_details_html"] = print_details,
+        data["product_description_ending_hook_html"] = ending_hook,
         data["product_description_timestamp"] = ts
 
         p.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding="utf-8")
@@ -323,11 +331,23 @@ def create_product_description(
     # Strip for cleanliness
     product_description = (product_description or "").strip()
 
+    #extract parts of product description 
+    parsed_description = parse_description_sections(product_description)
+    product_description_title_block = parsed_description["title_block"]["html"]      # HTML fragment
+    product_description_story_behind = parsed_description["story_behind"]["html"]      # HTML fragment
+    product_description_print_details = parsed_description["print_details"]["html"]     # HTML fragment
+    product_description_ending_hook = parsed_description["ending_hook"]["html"]     # HTML fragment
+
+
     # Only write back when we truly have a FILE PATH (not dict/None)
     if product_description and isinstance(story_json_or_path, (str, Path)):
         write_product_description_to_json(
             json_path=story_json_or_path,
-            html=product_description,
+            full_description=product_description,
+            title_block=product_description_title_block,
+            story_behind=product_description_story_behind,
+            print_details=product_description_print_details,
+            ending_hook=product_description_ending_hook
         )
     return product_description
 
@@ -343,3 +363,193 @@ def create_product_description(
 # )
 # print(text)
 
+#### 10/17/2025 #### EXTRACT DESCRIPTION COMPONENTS
+
+from bs4 import BeautifulSoup
+from typing import Dict, List, Optional, Iterable, Tuple
+
+# Map canonical keys → matchers used to find the section heading(s).
+SECTION_MATCHERS = {
+    "title_block": ["the shape of", "—", " - ", "–"],  # tolerant to dash styles / separators
+    "story_behind": ["the story behind the shape"],
+    "print_details": ["print details"],
+    "ending_hook": ["ending hook"],  # optional; many descriptions just end with a paragraph (no <h2>)
+}
+
+HEADING_TAGS = {"h1", "h2", "h3"}
+
+def _collect_until_next_heading(start_tag) -> List:
+    """Collect element siblings after start_tag until the next heading (h1/h2/h3) or end."""
+    items = []
+    for sib in start_tag.next_siblings:
+        if getattr(sib, "name", None) in HEADING_TAGS:
+            break
+        if getattr(sib, "name", None):  # only keep element nodes
+            items.append(sib)
+    return items
+
+def _first_heading(soup, predicates: List[str]):
+    """Find the first h1/h2/h3 whose normalized text contains ALL tokens in predicates (case-insensitive)."""
+    preds = [t.lower() for t in predicates]
+    for h in soup.find_all(list(HEADING_TAGS)):
+        text = h.get_text(" ", strip=True).lower()
+        if all(p in text for p in preds):
+            return h
+    return None
+
+def _html_and_text(nodes: List) -> Tuple[str, str]:
+    frag_html = "".join(str(n) for n in nodes)
+    # Make a tiny soup to get text
+    frag_soup = BeautifulSoup(frag_html, "html.parser")
+    frag_text = frag_soup.get_text("\n", strip=True)
+    return frag_html, frag_text
+
+def parse_description_sections(
+    html: str,
+    include_heading: bool = True,
+) -> Dict[str, Dict[str, str]]:
+    """
+    Parse the full HTML product description into four canonical sections:
+    - title_block
+    - story_behind
+    - print_details
+    - ending_hook  (if present; else may be empty)
+
+    Returns: { section_key: { "html": ..., "text": ... }, ... }
+    """
+    soup = BeautifulSoup(html, "html.parser")
+
+    out = {k: {"html": "", "text": ""} for k in SECTION_MATCHERS.keys()}
+
+    # 1) Title block: assume the FIRST <h2> (or h1/h3) is the title block heading,
+    #    even if its text doesn’t literally match "the shape of", to be robust.
+    #    But if a heading matching SECTION_MATCHERS["title_block"] exists, prefer that.
+    title_h = _first_heading(soup, SECTION_MATCHERS["title_block"]) or \
+              soup.find(list(HEADING_TAGS))
+    if title_h:
+        nodes = [title_h] + _collect_until_next_heading(title_h)
+        if not include_heading:
+            nodes = nodes[1:]
+        out["title_block"]["html"], out["title_block"]["text"] = _html_and_text(nodes)
+
+    # 2) Story Behind the Shape
+    story_h = _first_heading(soup, SECTION_MATCHERS["story_behind"])
+    if story_h:
+        nodes = [story_h] + _collect_until_next_heading(story_h)
+        if not include_heading:
+            nodes = nodes[1:]
+        out["story_behind"]["html"], out["story_behind"]["text"] = _html_and_text(nodes)
+
+    # 3) Print Details
+    details_h = _first_heading(soup, SECTION_MATCHERS["print_details"])
+    if details_h:
+        nodes = [details_h] + _collect_until_next_heading(details_h)
+        if not include_heading:
+            nodes = nodes[1:]
+        out["print_details"]["html"], out["print_details"]["text"] = _html_and_text(nodes)
+
+        # Bonus: bullets array for convenience
+        ul = BeautifulSoup(out["print_details"]["html"], "html.parser").select("ul > li")
+        out["print_details"]["bullets"] = [li.get_text(" ", strip=True) for li in ul]
+
+    # 4) Ending hook (revised): start AFTER the first <ul> following "Print Details"
+    hook_h = _first_heading(soup, SECTION_MATCHERS["ending_hook"])
+    if hook_h:
+        nodes = [hook_h] + _collect_until_next_heading(hook_h)
+        if not include_heading:
+            nodes = nodes[1:]
+        out["ending_hook"]["html"], out["ending_hook"]["text"] = _html_and_text(nodes)
+    else:
+        if details_h:
+            # Find the first <ul> after the Print Details heading
+            first_ul_after_details = None
+            for sib in details_h.next_siblings:
+                if getattr(sib, "name", None) in HEADING_TAGS:
+                    break  # no ending hook content if another section starts
+                if getattr(sib, "name", None) == "ul":
+                    first_ul_after_details = sib
+                    break
+
+            # Collect nodes AFTER that UL (e.g., the final <p>)
+            tail_nodes = []
+            if first_ul_after_details:
+                for sib in first_ul_after_details.next_siblings:
+                    if getattr(sib, "name", None) in HEADING_TAGS:
+                        break
+                    if getattr(sib, "name", None):
+                        tail_nodes.append(sib)
+
+            if tail_nodes:
+                out["ending_hook"]["html"], out["ending_hook"]["text"] = _html_and_text(tail_nodes)
+            else:
+                # If there was no UL (edge case), fall back to "after heading" behavior but
+                # skip the first non-heading block if it's clearly the details content.
+                pass  # keep empty if nothing sensible is found
+
+
+    return out
+
+def extract_parts(
+    html: str,
+    parts: Optional[Iterable[str]] = None,
+    include_heading: bool = True,
+    as_text: bool = False,
+) -> Dict[str, str]:
+    """
+    Convenience wrapper to return only selected parts as HTML or plain text.
+    parts can be any subset of:
+        {"title_block", "story_behind", "print_details", "ending_hook"}
+    """
+    parsed = parse_description_sections(html, include_heading=include_heading)
+    if parts is None:
+        parts = ["title_block", "story_behind", "print_details", "ending_hook"]
+    parts = list(parts)
+
+    result = {}
+    for key in parts:
+        if key not in parsed:
+            continue
+        if as_text:
+            result[key] = parsed[key].get("text", "")
+        else:
+            result[key] = parsed[key].get("html", "")
+    return result
+
+
+## HOW TO USE EXTACT DESCRIPTION EXAMPLE
+# product_description_html = "SOME HTML EXAMPLE OF THE DESCRIPTION"
+# parts = extract_parts(
+#     product_description_html,
+#     parts=["print_details"],      # or any subset: ["story_behind","ending_hook"], etc.
+#     include_heading=True,         # keep or drop the <h2> heading
+#     as_text=False                 # return HTML (False) or plain text only (True)
+# )
+# print(parts["print_details"])     # HTML fragment for Print Details (+ ending paragraph if present)
+
+# # Need just the bullet list as Python strings?
+# parsed = parse_description_sections(product_description_html)
+# print(parsed["print_details"].get("bullets", []))
+# parsed = parse_description_sections(product_description_html, include_heading=True)
+# print(parsed["print_details"]["html"])      # HTML fragment
+# print(parsed["print_details"]["text"])      # plain text
+# print(parsed["print_details"]["bullets"])   # list of bullet strings
+
+
+## MY TESTING 
+# product_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/the-stranger-meursault-print-11x14-karla-white-black.json"
+# with open(product_data_path, 'r') as f:
+#     product_data = json.load(f)
+
+# product_description = product_data['product_description_html']
+# parsed = parse_description_sections(product_description)
+# print("TITLE BLOCK HTML")
+# print(parsed["title_block"]["html"])      # HTML fragment
+# print()
+# print("STORY BEHIND HTML")
+# print(parsed["story_behind"]["html"])      # HTML fragment
+# print()
+# print("PRINT DETAILS HTML")
+# print(parsed["print_details"]["html"])      # HTML fragment
+# print()
+# print("ENDING HOOK HTML")
+# print(parsed["ending_hook"]["html"])      # HTML fragment
