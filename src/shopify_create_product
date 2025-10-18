@@ -102,21 +102,57 @@ def set_product_metafields(product_id: str, values: dict):
         raise RuntimeError(res["userErrors"])
     return res["metafields"]
 
-def create_product_and_set_metafields(product_input: dict, metafields: dict):
-    # 1) Create the product (keeps it DRAFT by default; change status if you want)
+
+MUT_PRODUCT_OPTIONS_CREATE = """
+mutation($productId: ID!, $options: [OptionCreateInput!]!) {
+  productOptionsCreate(productId: $productId, options: $options) {
+    product {
+      id
+      options { name position values optionValues { id name hasVariants } }
+    }
+    userErrors { field message code }
+  }
+}
+"""
+
+def set_product_options(product_id: str, option_names):
+    # API requires at least one value per option. Seed with a placeholder;
+    # you can overwrite via productVariantsBulkCreate later.
+    opts = []
+    for idx, name in enumerate(option_names, start=1):
+        opts.append({
+            "name": name,
+            "position": idx,
+            "values": [{"name": "_"}],  # minimal seed value
+        })
+    res = gql(MUT_PRODUCT_OPTIONS_CREATE, {"productId": product_id, "options": opts})["productOptionsCreate"]
+    if res["userErrors"]:
+        raise RuntimeError(res["userErrors"])
+    return res["product"]["options"]
+
+
+
+def create_product_and_set_metafields(product_input: dict, metafields: dict, option_names=None):
+    # create product
     data = gql(MUT_PRODUCT_CREATE, {"input": product_input})["productCreate"]
     if data["userErrors"]:
         raise RuntimeError(data["userErrors"])
     product = data["product"]
     pid = product["id"]
-    print(f"✅ Created product: {pid}  handle={product['handle']}  status={product['status']}")
+    print(f"✅ Created product: {pid}  handle={product['handle']}")
 
-    # 2) Set product metafields
+    # set options (Color/Style/Size)
+    if option_names:
+        set_product_options(pid, option_names)
+        print(f"✅ Set product options: {', '.join(option_names)}")
+
+    # set metafields
     if metafields:
         set_product_metafields(pid, metafields)
         print(f"✅ Set {len(metafields)} product metafields")
 
     return pid
+
 
 
 def create_shopify_product(story_data_path, product_type):
@@ -130,6 +166,7 @@ def create_shopify_product(story_data_path, product_type):
     product_handle = story_data['story_slug'] + "-" + product_type
     #product_status = ?
     product_description = story_data['story_full_product_description_html']
+    product_vendor = "The Shapes of Stories"
     productType = product_type
     #tags
     if product_type == "print":
@@ -153,11 +190,19 @@ def create_shopify_product(story_data_path, product_type):
         for sr in md.get("series_or_universe", []):  product_tags.append(f"Series: {sr}")
         for aw in md.get("awards", []):  product_tags.append(f"Award: {aw}")
 
-        
-
     else:
         print("❌ ERROR: Product Type: ", product_type, " NOT supported!")
         return 
+    
+    product_input = {
+        "title": product_title,
+        "handle": product_handle,
+        "descriptionHtml": product_description,
+        "vendor": product_vendor,
+        "productType": productType,
+        "tags": product_tags,
+        "status": "DRAFT" #set it to DRAFT so I will manually inspect and then make it ACTIVE
+    }
 
     #SET SHOPIFY PRODUCT METAFIELDS THAT APPLY TO ALL STORY TYPES
     basic_product_metafields = {
@@ -192,7 +237,10 @@ def create_shopify_product(story_data_path, product_type):
     #combine basic and story specific metafields
     product_metafields = basic_product_metafields | story_specific_product_metafields
 
+    create_product_and_set_metafields(product_input, product_metafields, product_options)
 
+story_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json"
+create_shopify_product(story_data_path, "print")
 
 # ---------- example usage ----------
 # if __name__ == "__main__":

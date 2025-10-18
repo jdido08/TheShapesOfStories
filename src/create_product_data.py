@@ -502,9 +502,9 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 #     "font_color_hex":"#FF8C7C",
 #     "font":"Lora",
 # }
-create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json",
-                    product_type="print", 
-                    product_details={})
+# create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json",
+#                     product_type="print", 
+#                     product_details={})
 
 
 

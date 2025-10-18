@@ -301,11 +301,11 @@ def write_product_description_to_json(
         data: Dict[str, Any] = json.loads(p.read_text(encoding="utf-8"))
         ts = datetime.now().isoformat()
 
-        data["product_description_html"] = full_description,
-        data["product_description_title_block_html"] = title_block,
-        data["product_description_story_behind_html"] = story_behind,
-        data["product_description_print_details_html"] = print_details,
-        data["product_description_ending_hook_html"] = ending_hook,
+        data["product_description_html"] = full_description
+        data["product_description_title_block_html"] = title_block
+        data["product_description_story_behind_html"] = story_behind
+        data["product_description_print_details_html"] = print_details
+        data["product_description_ending_hook_html"] = ending_hook
         data["product_description_timestamp"] = ts
 
         p.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding="utf-8")
@@ -336,7 +336,7 @@ def create_product_description(
     product_description_title_block = parsed_description["title_block"]["html"]      # HTML fragment
     product_description_story_behind = parsed_description["story_behind"]["html"]      # HTML fragment
     product_description_print_details = parsed_description["print_details"]["html"]     # HTML fragment
-    product_description_ending_hook = parsed_description["ending_hook"]["html"]     # HTML fragment
+    product_description_ending_hook = parsed_description["ending_hook"]["html"]    # HTML fragment
 
 
     # Only write back when we truly have a FILE PATH (not dict/None)
