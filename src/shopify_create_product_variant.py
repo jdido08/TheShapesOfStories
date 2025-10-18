@@ -50,11 +50,11 @@ VARIANT_TYPE_MAP: Dict[str, str] = {
     "print.font_family":             "single_line_text_field",
     "print.style_label":             "single_line_text_field",
     "print.line_style":              "single_line_text_field",
-    "print.background_color":        "single_line_text_field",  # hex
+    "print.background_color":        "color",  # hex
     "print.background_color_name":   "single_line_text_field",
     "print.background_color_family": "single_line_text_field",
     "print.background_color_shade":  "single_line_text_field",
-    "print.font_color":              "single_line_text_field",  # hex
+    "print.font_color":              "color",  # hex
     "print.font_color_name":         "single_line_text_field",
     "print.font_color_family":       "single_line_text_field",
     "print.font_color_shade":        "single_line_text_field",
@@ -62,7 +62,7 @@ VARIANT_TYPE_MAP: Dict[str, str] = {
     # numeric extras you referenced
     "print.dpi":                     "number_integer",
     "print.border_in":               "number_decimal",
-    "print.mat_color":               "single_line_text_field",
+    "print.mat_color":               "color",
 
     # printify.*
     "printify.blueprint_id":         "single_line_text_field",
@@ -277,7 +277,7 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
 
         dpi = 300
         border_in = (vjson["border_thickness"] / dpi) / 2  # if your JSON is total border, adjust as needed
-        mat_color = vjson["border_color_name"]
+        mat_color = vjson["border_color_hex"]
         frame_included = False
         paper = "Matte"
 
@@ -310,14 +310,16 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
 
         # --- variant object (for productVariantsBulkCreate) ---
         variants_payload.append({
-            "title": f"{size_label} / {color_label} / {style_label}",
-            "price": "30.00",  # TODO: make dynamic if needed
-            "sku": variant_sku,
-            "options": [
-                {"name": "Size",  "value": size_label},
-                {"name": "Color", "value": color_label},
-                {"name": "Style", "value": style_label},
-            ]
+            "price": 30.00,  # Money can be number or string
+            "optionValues": [
+                {"optionName": "Size",  "name": size_label},      # e.g., "11x14"
+                {"optionName": "Color", "name": color_label},     # e.g., "White/Black"
+                {"optionName": "Style", "name": style_label},     # e.g., "Storybeats"
+            ],
+            "inventoryItem": {
+                "sku": variant_sku,        # <-- SKU goes here now
+                "tracked": True            # optional, if you track inventory
+            }
         })
 
         # --- per-variant metafields (keyed by SKU) ---
