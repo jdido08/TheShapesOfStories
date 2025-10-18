@@ -297,10 +297,25 @@ def publish_product_on_printify(product_data_path, config_path="/Users/johnmiked
         json.dump(product_data, f, ensure_ascii=False, indent=2)
         f.write("\n")  # optional newline at EOF
     time.sleep(2)
-
     print("✅ Product Created and Published on Printify")
+
+    #open story data and link created SKU to specific product 
+    story_data_path = product_data['story_data_path']
+    product_type = product_data['product_type']
+    product_slug = product_data['product_slug']
+    with open(story_data_path, 'r') as f:
+        story_data = json.load(f)
+    #write sku to product data 
+    story_data['products'][product_type][product_slug]['sku'] = sku
+
+    with open(story_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+        json.dump(story_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")  # optional newline at EOF
+    time.sleep(1)
+    print("✅ Story Data Updated w/ Product Variant SKU")
+
     return 
 
 
    
-publish_product_on_printify("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/romeo-and-juliet-juliet-print-11x14-purple-gold.json")
+publish_product_on_printify("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/the-stranger-meursault-print-11x14-karla-white-black.json")

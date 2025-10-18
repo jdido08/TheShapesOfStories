@@ -292,6 +292,7 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     product_data['llm_models']['product_description'] = llm_model_product_description
     product_data['llm_models']['assess_arc_text'] = llm_model_assess_arc_text
     product_data['product_type'] = product_type
+    product_data['story_data_path'] = story_data_path
     product_data['product_create_timestamp'] = datetime.now().isoformat()
     with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
         json.dump(product_data, f, ensure_ascii=False, indent=2)
@@ -327,7 +328,6 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     }
     story_data_products[product_type] = products_dict
     story_data['products'] = story_data_products # story_data_products[product_data['product_slug']] = product_data_path
-
 
 
     with open(story_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
@@ -502,9 +502,9 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
 #     "font_color_hex":"#FF8C7C",
 #     "font":"Lora",
 # }
-# create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json",
-#                     product_type="print", 
-#                     product_details={})
+create_product_data(story_data_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json",
+                    product_type="print", 
+                    product_details={})
 
 
 

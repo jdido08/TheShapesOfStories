@@ -1,4 +1,4 @@
-import os, json, requests, yaml
+import os, json, requests, yaml, time
 
 # ---------- boilerplate (same style you’re using) ----------
 def normalize_myshopify_domain(raw: str) -> str:
@@ -170,7 +170,8 @@ def create_shopify_product(story_data_path, product_type):
     productType = product_type
     #tags
     if product_type == "print":
-        product_options = ["Color", "Style", "Size"]
+        product_category =  "gid://shopify/TaxonomyCategory/hg-3-4-2-2" # this is Shopify preset Categories I'm choosing Home & Garden > Decor > Artwork > Prints, Posters & Visual Artwork > Prints
+        product_options = ["Size", "Color", "Style"]
         product_tags = []
         product_tags.append("Title: " + story_data['title']) 
         product_tags.append(f"Author: {story_data['author']}")
@@ -201,7 +202,8 @@ def create_shopify_product(story_data_path, product_type):
         "vendor": product_vendor,
         "productType": productType,
         "tags": product_tags,
-        "status": "DRAFT" #set it to DRAFT so I will manually inspect and then make it ACTIVE
+        "status": "DRAFT", #set it to DRAFT so I will manually inspect and then make it ACTIVE
+        "category": product_category
     }
 
     #SET SHOPIFY PRODUCT METAFIELDS THAT APPLY TO ALL STORY TYPES
@@ -237,8 +239,17 @@ def create_shopify_product(story_data_path, product_type):
     #combine basic and story specific metafields
     product_metafields = basic_product_metafields | story_specific_product_metafields
 
-    create_product_and_set_metafields(product_input, product_metafields, product_options)
+    shopify_product_id = create_product_and_set_metafields(product_input, product_metafields, product_options)
+    
+    story_data['shopify_product_id'] = shopify_product_id #save shopify product id back to story_data
 
+    with open(story_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+        json.dump(story_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")  # optional newline at EOF
+    time.sleep(1)
+    print("✅ Story Data Updated w/ Shopify Product ID")
+
+#TESTING CODE
 story_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json"
 create_shopify_product(story_data_path, "print")
 
@@ -276,3 +287,24 @@ create_shopify_product(story_data_path, "print")
 #     }
 
 #     create_product_and_set_metafields(product_input, product_metafields)
+
+
+## TEST TO GET PRODUCT CATEGORY FOR PRINTS
+# === test category lookup ===
+# Q = """
+# query($handle: String!) {
+#   productByHandle(handle: $handle) {
+#     id
+#     category {
+#       id
+#       name
+#       fullName
+#       isLeaf
+#     }
+#   }
+# }
+# """
+
+# handle = "the-stranger-meursault-print"  # or any product handle from your store
+# res = gql(Q, {"handle": handle})
+# print(json.dumps(res, indent=2))

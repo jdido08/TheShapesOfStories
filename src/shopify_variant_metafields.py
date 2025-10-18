@@ -70,6 +70,8 @@ DEFS = [
   dict(ns="print",  key="dpi",            type="number_integer",          name="DPI"),
   dict(ns="print", key="border_in",     type="number_decimal",          name="Border (in)"),
   dict(ns="print", key="mat_color",     type="color",                   name="Mat Color"),
+  dict(ns="print", key="frame_included",        type="boolean",          name="Framed Included"),
+  dict(ns="print", key="paper",        type="single_line_text_field",         name="Paper"),
 
   # Styles
   dict(ns="print", key="style_label",          type="single_line_text_field",  name="Print Style Label",),
