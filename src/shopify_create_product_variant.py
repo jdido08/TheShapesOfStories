@@ -6,6 +6,7 @@ import json
 import yaml
 import requests
 from typing import List, Dict, Any, Optional, Tuple
+import time 
 
 # ---------- credentials / HTTP ----------
 
@@ -154,6 +155,82 @@ query($id: ID!) {
 }
 """
 
+# ---------- delete variant -----------
+# ✅ correct mutation (2025-10)
+MUT_PRODUCT_VARIANTS_BULK_DELETE = """
+mutation ($productId: ID!, $variantsIds: [ID!]!) {
+  productVariantsBulkDelete(productId: $productId, variantsIds: $variantsIds) {
+    product { id title }
+    userErrors { field message }
+  }
+}
+"""
+
+def delete_variants(product_id: str, variant_ids: list[str]) -> list[str]:
+    if not variant_ids:
+        return []
+    res = gql(MUT_PRODUCT_VARIANTS_BULK_DELETE,
+              {"productId": product_id, "variantsIds": variant_ids}
+             )["productVariantsBulkDelete"]
+    if res["userErrors"]:
+        raise RuntimeError(res["userErrors"])
+    # API returns the updated product (not the IDs), so just return what we attempted
+    return variant_ids
+
+
+def _key_from_selected_options(selected_options):
+    """Return (Size, Color, Style) tuple from a variant's selectedOptions list."""
+    by = {o["name"]: o["value"] for o in selected_options}
+    return (by.get("Size"), by.get("Color"), by.get("Style"))
+
+def _key_from_bulk_input(variant_input):
+    """Return (Size, Color, Style) tuple from your variant bulk input."""
+    by = {o["optionName"]: o["name"] for o in variant_input.get("optionValues", [])}
+    return (by.get("Size"), by.get("Color"), by.get("Style"))
+
+def build_intended_sets(variants_payload):
+    """Return (intended_keys, intended_skus) from your payload."""
+    intended_keys = set()
+    intended_skus = set()
+    for v in variants_payload:
+        intended_keys.add(_key_from_bulk_input(v))
+        sku = (v.get("inventoryItem") or {}).get("sku")
+        if sku:
+            intended_skus.add(sku)
+    return intended_keys, intended_skus
+
+def find_placeholder_variants(product_id, intended_keys, intended_skus):
+    """
+    Returns list of variant IDs that look like placeholders:
+      - title == 'Default Title'
+      - option value '_'
+      - missing SKU
+      - combo not in intended set
+    """
+    nodes = list_product_variants(product_id)
+    to_delete = []
+    for v in nodes:
+        title = (v.get("title") or "").strip()
+        sku   = (v.get("sku") or "").strip()
+        key   = _key_from_selected_options(v.get("selectedOptions") or [])
+        so    = v.get("selectedOptions") or []
+
+        # placeholder signals
+        if title.lower() == "default title":
+            to_delete.append(v["id"])
+            continue
+        if any(o.get("value") == "_" for o in so):
+            to_delete.append(v["id"])
+            continue
+        if not sku:
+            to_delete.append(v["id"])
+            continue
+        if key not in intended_keys and sku not in intended_skus:
+            to_delete.append(v["id"])
+    return to_delete
+
+
+
 # ---------- helpers ----------
 
 def ensure_product_options(product_id: str, option_names: List[str]) -> None:
@@ -232,7 +309,7 @@ def upsert_variants_with_metafields(
 
 # ---------- main entry (your flow) ----------
 
-def create_shopify_product_variant(story_data_path: str, product_type: str, product_slug: str = "ALL"):
+def create_shopify_product_variant(story_data_path: str, product_type: str, product_slug: str = "ALL", delete_placeholder_variants: bool = True):
     # 1) Load story data
     with open(story_data_path, "r", encoding="utf-8") as f:
         story_data = json.load(f)
@@ -302,7 +379,7 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
 
         color_label = f"{bg_name}/{font_name}"
         font_family = vjson["font_style"]
-        details_html = vjson["story_print_details_product_description_html"]
+        details_html = vjson["product_description_print_details_html"]
 
         printify_blueprint_id = vjson.get("printify_blueprint_id")
         printify_provider_id  = vjson.get("printify_provider_id")
@@ -351,6 +428,7 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
             "printify.variant_id":   str(printify_variant_id)   if printify_variant_id   is not None else "",
         }
 
+
     # 4) Create variants + set metafields
     created, logs = upsert_variants_with_metafields(
         product_id=shopify_product_id,
@@ -364,12 +442,59 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
         opts = " / ".join([f"{o['name']}={o['value']}" for o in v["selectedOptions"]])
         print(f"- {v['title']} | SKU={v.get('sku','')} | {opts} | id={v['id']}")
 
+        #save variant id back into both product json and story json  and save 
+        #find the right place to add by matching sku
+        for slug, entry in product_variants.items(): #product variants part of story data 
+            if entry["sku"] == v["sku"]:
+                entry["shopify_variant_id"] = v["id"] #add shopify product variant 
+                variant_file_path = entry["file_path"]
+
+                with open(variant_file_path, "r", encoding="utf-8") as f:
+                    product_variant_data = json.load(f)
+                
+                product_variant_data['shopify_variant_id'] = v['id']
+                product_variant_data['shopify_product_id'] = shopify_product_id
+
+
+                with open(variant_file_path, "w", encoding="utf-8") as f:     # save it back to the same file
+                    json.dump(product_variant_data, f, ensure_ascii=False, indent=2)
+                    f.write("\n")  # optional newline at EOF
+                time.sleep(1)
+                print("✅ Product Variant Data updated w/ Shopify Variant ID and Shopify Product ID")
+
+                story_data['products'][product_type] = product_variants
+                with open(story_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+                    json.dump(story_data, f, ensure_ascii=False, indent=2)
+                    f.write("\n")  # optional newline at EOF
+                time.sleep(1)
+                print("✅ Story Data updated w/ Shopify Variant ID")
+                
+
     print("----- LOGS -----")
     for line in logs:
         print(line)
+
+    # Build intended keys/SKUs for later comparison
+    intended_keys, intended_skus = build_intended_sets(variants_payload)
+
+
+    if delete_placeholder_variants:
+        placeholder_ids = find_placeholder_variants(shopify_product_id, intended_keys, intended_skus)
+        if not placeholder_ids:
+            print("🧹 No placeholder or stray variants found.")
+        else:
+            existing_after = list_product_variants(shopify_product_id)
+            if len(existing_after) - len(placeholder_ids) < 1:
+                print("⚠️ Refusing to delete: would leave product with zero variants.")
+            else:
+                deleted = delete_variants(shopify_product_id, placeholder_ids)
+                print(f"✅ Deleted placeholder/stray variants: {len(deleted)}")
+    
+
+
 
 # ---------- testing ----------
 
 if __name__ == "__main__":
     story_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json"
-    create_shopify_product_variant(story_data_path, product_type="print", product_slug="ALL")
+    create_shopify_product_variant(story_data_path, product_type="print", product_slug="ALL", delete_placeholder_variants=True)

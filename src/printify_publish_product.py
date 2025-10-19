@@ -318,4 +318,4 @@ def publish_product_on_printify(product_data_path, config_path="/Users/johnmiked
 
 
    
-publish_product_on_printify("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/the-stranger-meursault-print-11x14-karla-white-black.json")
+publish_product_on_printify("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/the-stranger-meursault-print-11x14-helvetica-neue-white-gray.json")
