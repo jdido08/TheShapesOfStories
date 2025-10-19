@@ -96,6 +96,10 @@ DEFS = [
   dict(ns="printify", key="blueprint_id", type="single_line_text_field", name="Printify Blueprint ID"),
   dict(ns="printify", key="provider_id",  type="single_line_text_field", name="Printify Provider ID"),
   dict(ns="printify", key="variant_id",   type="single_line_text_field", name="Printify Variant ID"),
+
+
+  dict(ns="mockup", key="primary",   type="url", name="Mockup Primary"),
+  dict(ns="mockup", key="gallery",   type="list.url", name="Mockup gallery"),
 ]
 
 def ensure_definition(owner_type, ns, key, type_name, name, description="", pin=False, validations=None):
