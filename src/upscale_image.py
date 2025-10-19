@@ -148,28 +148,28 @@ with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/
 
 
 # UPSCALE 3 FRAMES ON WALL
-# three_quads = [
-#     [(125,340),(353,340),(353,637),(125,637)],
-#     [(398,340),(626,340),(626,637),(398,637)],
-#     [(672,340),(900,340),(900,637),(672,637)],
-# ]
-# three_slots = [{"quad": q} for q in three_quads]
+three_quads = [
+    [(125,340),(353,340),(353,637),(125,637)],
+    [(398,340),(626,340),(626,637),(398,637)],
+    [(672,340),(900,340),(900,637),(672,637)],
+]
+three_slots = [{"quad": q} for q in three_quads]
 
-# # 1) Upscale the template + coords
-# scale, slots_big = upscale_template_and_slots(
-#     in_path  = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg",
-#     out_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.png",
-#     slots    = three_slots,
-#     target_short_side=1200,   # aim for ≥1200 px short side per opening
-#     min_scale=2               # at least 2× even if already big
-# )
+# 1) Upscale the template + coords
+scale, slots_big = upscale_template_and_slots(
+    in_path  = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg",
+    out_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG_v2.png",
+    slots    = three_slots,
+    target_short_side=1200,   # aim for ≥1200 px short side per opening
+    min_scale=2               # at least 2× even if already big
+)
 
-# print("scale used:", scale)
-# report_slot_sizes(slots_big)
+print("scale used:", scale)
+report_slot_sizes(slots_big)
 
-# # (optional) Save slots to JSON for reuse
-# with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.slots.json","w") as f:
-#     json.dump(slots_big, f)
+# (optional) Save slots to JSON for reuse
+with open("/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.slots.json","w") as f:
+    json.dump(slots_big, f)
 
 
 

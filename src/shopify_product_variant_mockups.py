@@ -41,6 +41,69 @@ def downscale_to_20mp_inplace(path: str, max_pixels: int = MAX_PIXELS) -> None:
         print(f"ℹ️ Downscaled in-place {os.path.basename(path)}: {w}x{h} → {new_w}x{new_h}")
 
 
+from PIL import Image, ImageCms
+
+import os, io, tempfile
+from PIL import Image, ImageCms
+
+import os, io, tempfile
+from PIL import Image, ImageCms
+
+def normalize_for_shopify(src_path: str, max_edge: int = 5000, flatten_bg=None) -> str:
+    """
+    Normalizes an image IN-PLACE at src_path for Shopify:
+      - 8-bit sRGB
+      - RGB (or RGBA if keeping alpha); optional alpha flatten to a bg color
+      - Long edge <= max_edge (default 5000px) using LANCZOS
+      - Saves as PNG (optimized, non-interlaced) OVERWRITING src_path atomically
+    Returns src_path.
+    """
+    im = Image.open(src_path)
+
+    # Ensure 8-bit channel & compatible mode
+    if im.mode not in ("RGB", "RGBA"):
+        im = im.convert("RGBA")
+
+    # Convert to sRGB if an ICC profile exists
+    try:
+        icc = im.info.get("icc_profile")
+        if icc:
+            src_prof = ImageCms.ImageCmsProfile(io.BytesIO(icc))
+            dst_prof = ImageCms.createProfile("sRGB")
+            im = ImageCms.profileToProfile(im, src_prof, dst_prof, outputMode=im.mode)
+    except Exception:
+        # If profile conversion fails, continue with current image
+        pass
+
+    # Optionally flatten alpha onto a background
+    if im.mode == "RGBA" and flatten_bg is not None:
+        bg = Image.new("RGB", im.size, flatten_bg)
+        bg.paste(im, mask=im.split()[-1])
+        im = bg  # now RGB (no alpha)
+
+    # Clamp dimensions if needed
+    w, h = im.size
+    long_edge = max(w, h)
+    if long_edge > max_edge:
+        scale = max_edge / float(long_edge)
+        im = im.resize((int(round(w*scale)), int(round(h*scale))), Image.LANCZOS)
+
+    # Atomic overwrite to avoid partial writes
+    dir_, base = os.path.split(src_path)
+    with tempfile.NamedTemporaryFile(delete=False, dir=dir_, suffix=".png") as tmp:
+        tmp_path = tmp.name
+    try:
+        im.save(tmp_path, format="PNG", optimize=True)
+        os.replace(tmp_path, src_path)  # atomic on POSIX
+    finally:
+        if os.path.exists(tmp_path):
+            try: os.remove(tmp_path)
+            except OSError: pass
+
+    return src_path
+
+
+
 def clip_alt(text: str, max_len: int = 512) -> str:
     return (text[: max_len - 1] + "…") if len(text) > max_len else text
 
@@ -665,7 +728,9 @@ def add_shopify_product_variant_mockups(product_data_path: str) -> Dict[str, Any
         alt_text = " | ".join([p for p in pieces if p])
         alt_text = clip_alt(alt_text)  # ensure this helper exists; trims ~512 chars
 
-        downscale_to_20mp_inplace(path)
+        #downscale_to_20mp_inplace(path)
+        normalize_for_shopify(path)                   # keeps alpha
+
 
         # Upload to PRODUCT
         img_id, img_url, media_id = sdk.upload_product_image(shopify_product_id, path, alt_text=alt_text)

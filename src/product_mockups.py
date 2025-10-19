@@ -606,7 +606,12 @@ MOCKUPS = {
         "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall@BIG.png",
         "slots":[{'quad': [(750, 2040), (2118, 2040), (2118, 3822), (750, 3822)], 'mode': 'fill'}, {'quad': [(2388, 2040), (3756, 2040), (3756, 3822), (2388, 3822)], 'mode': 'fill'}, {'quad': [(4032, 2040), (5400, 2040), (5400, 3822), (4032, 3822)], 'mode': 'fill'}],
         "name": "3x_wall"
-    }
+    },
+    # "3x_11x14_wall":{
+    #     "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg",
+    #     "slots":[{'quad': [(125,340),(353,340),(353,637),(125,637)], 'mode': 'fill'}, {'quad': [(398,340),(626,340),(626,637),(398,637)], 'mode': 'fill'}, {'quad': [(672,340),(900,340),(900,637),(672,637)], 'mode': 'fill'}],
+    #     "name": "3x_wall"
+    # }
 }
 
 def create_mockups(product_data_path, product_design_path, mockup_list, output_dir="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/product_mockups"):
