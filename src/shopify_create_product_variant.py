@@ -229,7 +229,104 @@ def find_placeholder_variants(product_id, intended_keys, intended_skus):
             to_delete.append(v["id"])
     return to_delete
 
+# ----- handle inventory because POD product 
+# --- POD INVENTORY HELPERS (ADD) ---
+MUT_VARIANT_POLICY_CONTINUE = """
+mutation SetPolicy($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+    productVariants { id inventoryPolicy }
+    userErrors { field message }
+  }
+}
+"""
 
+
+Q_VARIANT_INV_ITEM = """
+query GetInvItem($id: ID!) {
+  productVariant(id: $id) { inventoryItem { id tracked } }
+}
+"""
+
+MUT_INVITEM_UNTRACK = """
+mutation Untrack($id: ID!) {
+  inventoryItemUpdate(id: $id, input: { tracked: false }) {
+    inventoryItem { id tracked }
+    userErrors { field message }
+  }
+}
+"""
+
+import requests
+
+# --- Admin GraphQL executor (ADD) ---
+# Make sure these are set in your env or config:
+
+def admin_gql(query: str, variables: dict | None = None) -> dict:
+    url = f"https://{SHOP_DOMAIN}/admin/api/2024-07/graphql.json"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": TOKEN,   # NOTE: Admin token (NOT Storefront)
+    }
+    r = requests.post(url, json={"query": query, "variables": variables or {}}, headers=headers, timeout=60)
+    r.raise_for_status()
+    data = r.json()
+    if "errors" in data:
+        raise RuntimeError(json.dumps(data["errors"], indent=2))
+    return data["data"]
+# --- /Admin GraphQL executor (ADD) ---
+def ensure_pod_inventory_settings(product_gid: str, variant_gid: str):
+    """
+    Sets inventoryPolicy=CONTINUE on the variant (bulk update requires product id),
+    and sets the linked inventory item to tracked:false.
+    """
+    # If you ever pass a numeric product id, convert it to a GID for GraphQL:
+    if product_gid.isdigit():
+        product_gid = f"gid://shopify/Product/{product_gid}"
+
+    # 1) Allow oversell (inventoryPolicy = CONTINUE)
+    res1 = admin_gql(
+        """
+        mutation SetPolicy($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id inventoryPolicy }
+            userErrors { field message }
+          }
+        }
+        """,
+        {
+            "productId": product_gid,
+            "variants": [{"id": variant_gid, "inventoryPolicy": "CONTINUE"}],
+        },
+    )["productVariantsBulkUpdate"]
+    if res1["userErrors"]:
+        raise RuntimeError(f"productVariantsBulkUpdate errors: {res1['userErrors']}")
+
+    # 2) Stop tracking quantity on the inventory item
+    inv = admin_gql(
+        """
+        query GetInvItem($id: ID!) {
+          productVariant(id: $id) { inventoryItem { id tracked } }
+        }
+        """,
+        {"id": variant_gid},
+    )["productVariant"]["inventoryItem"]
+    if not inv:
+        raise RuntimeError(f"No inventoryItem for variant {variant_gid}")
+    if inv.get("tracked") is False:
+        return
+    res2 = admin_gql(
+        """
+        mutation Untrack($id: ID!) {
+          inventoryItemUpdate(id: $id, input: { tracked: false }) {
+            inventoryItem { id tracked }
+            userErrors { field message }
+          }
+        }
+        """,
+        {"id": inv["id"]},
+    )["inventoryItemUpdate"]
+    if res2["userErrors"]:
+        raise RuntimeError(f"inventoryItemUpdate errors: {res2['userErrors']}")
 
 # ---------- helpers ----------
 
@@ -249,6 +346,7 @@ def ensure_product_options(product_id: str, option_names: List[str]) -> None:
 
 def bulk_create_variants(product_id: str, variants_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     res = gql(MUT_VARIANTS_BULK_CREATE, {"productId": product_id, "variants": variants_data})["productVariantsBulkCreate"]
+
     if res["userErrors"]:
         raise RuntimeError(res["userErrors"])
     return res["product"]
@@ -293,6 +391,11 @@ def upsert_variants_with_metafields(
 
     created = list_product_variants(product_id)
     logs.append(f"Fetched {len(created)} variants")
+    # --- POD: enforce inventory policy + untracking for all variants (ADD) ---
+    for v in created:
+        ensure_pod_inventory_settings(product_id, v["id"])
+    # --- /POD ---
+    
 
     # Map by SKU primarily; fallback by title
     by_sku = {v.get("sku") or "": v for v in created if v.get("sku")}
@@ -306,6 +409,7 @@ def upsert_variants_with_metafields(
             logs.append(f"Set {len(fields)} metafields on variant '{key}'")
 
     return created, logs
+
 
 # ---------- main entry (your flow) ----------
 
@@ -388,6 +492,7 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
         # --- variant object (for productVariantsBulkCreate) ---
         variants_payload.append({
             "price": 30.00,  # Money can be number or string
+            "inventoryPolicy": "CONTINUE",
             "optionValues": [
                 {"optionName": "Size",  "name": size_label},      # e.g., "11x14"
                 {"optionName": "Color", "name": color_label},     # e.g., "White/Black"
@@ -395,7 +500,7 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
             ],
             "inventoryItem": {
                 "sku": variant_sku,        # <-- SKU goes here now
-                "tracked": True            # optional, if you track inventory
+                "tracked": False            # optional, if you track inventory
             }
         })
 
