@@ -772,4 +772,4 @@ def add_shopify_product_variant_mockups(product_data_path: str) -> Dict[str, Any
     return result
 
 
-add_shopify_product_variant_mockups("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/the-stranger-meursault-print-11x14-helvetica-neue-white-gray.json")
+# add_shopify_product_variant_mockups("/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/the-stranger-meursault-print-11x14-helvetica-neue-white-gray.json")

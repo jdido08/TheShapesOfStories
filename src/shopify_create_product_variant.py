@@ -600,6 +600,6 @@ def create_shopify_product_variant(story_data_path: str, product_type: str, prod
 
 # ---------- testing ----------
 
-if __name__ == "__main__":
-    story_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json"
-    create_shopify_product_variant(story_data_path, product_type="print", product_slug="ALL", delete_placeholder_variants=True)
+# if __name__ == "__main__":
+#     story_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json"
+#     create_shopify_product_variant(story_data_path, product_type="print", product_slug="ALL", delete_placeholder_variants=True)

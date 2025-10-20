@@ -250,8 +250,8 @@ def create_shopify_product(story_data_path, product_type):
     print("✅ Story Data Updated w/ Shopify Product ID")
 
 #TESTING CODE
-story_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json"
-create_shopify_product(story_data_path, "print")
+# story_data_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/the-stranger-meursault.json"
+# create_shopify_product(story_data_path, "print")
 
 # ---------- example usage ----------
 # if __name__ == "__main__":

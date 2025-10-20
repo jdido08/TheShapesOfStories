@@ -256,6 +256,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     )
     print("✅ Story MetaData")
     print("")
+    return story_data_file_path
+
     
 
     
@@ -264,10 +266,10 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
 # Examle Call 		
-create_story_data(story_type="Literature", 
-                  story_title="The Stranger", 
-                  story_author="Albert Camus",
-                  story_protagonist="Meursault", 
-                  story_year="1942", 
-                  story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/the_stranger_composite_data.json")
+# create_story_data(story_type="Literature", 
+#                   story_title="The Stranger", 
+#                   story_author="Albert Camus",
+#                   story_protagonist="Meursault", 
+#                   story_year="1942", 
+#                   story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/the_stranger_composite_data.json")
 
