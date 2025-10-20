@@ -9,11 +9,11 @@ from shopify_product_variant_mockups import add_shopify_product_variant_mockups
 
 
 story_data_path = create_story_data(story_type="Literature", 
-                  story_title="The Stranger", 
-                  story_author="Albert Camus",
-                  story_protagonist="Meursault", 
-                  story_year="1942", 
-                  story_summary_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/the_stranger_composite_data.json")
+                  story_title="The Picture of Dorian Gray", 
+                  story_author="Oscar Wilde",
+                  story_protagonist="Dorian Gray", 
+                  story_year="1890", 
+                  story_summary_path="/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_picture_of_dorian_gray_composite_data.json")
 
 
 product_data_path = create_product_data(story_data_path=story_data_path,

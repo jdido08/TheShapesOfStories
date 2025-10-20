@@ -207,7 +207,7 @@ def publish_product_on_printify(product_data_path, config_path="/Users/johnmiked
         product_data = json.load(f)
     
     #get important details about the product: title, author, protagonist, year, description, story slug, product slug , product_size, product_type, product_design_path 
-    title = product_data['title']
+    title = product_data['product_slug'] #making title the product slug which is unique per product variant
     protagonist = product_data['protagonist']
     description = product_data['product_description_html']
     product_type = product_data['product_type']
