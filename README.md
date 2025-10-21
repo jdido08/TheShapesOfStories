@@ -360,6 +360,8 @@ Mockups
 #10/19/2025:
 1. Clean up mockup quality --> I actually think it's fine 
 2. Clean up content creation pipeline --> 
+    --> centrlize llms to use in yaml (so it's easier to change?)
+    --> redo summary creation process 
 3. Figure out website product page layout 
 4. Redo Summary Creation 
 5. Identify Stories to Launch With
