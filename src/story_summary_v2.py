@@ -22,8 +22,17 @@ import time
 from llm import load_config, get_llm, extract_json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
+import inflect
 
-def get_story_summary(story_title, author, protagonist, story_summary_path, config_path, llm_provider, llm_model):
+
+
+
+#CAN BE SOMETHING SIMPLE LIKE:
+# Below are 3 authoritative summaries of Victor Hugo's Les Miserables. 
+# Please carefully read each then create a comprehensive summary of the story using details from all three sources that's focused on the story's protagonist Jean Valjean.
+
+# def get_story_summary(story_title, author, protagonist, story_summary_path, config_path, llm_provider, llm_model):
+def get_story_summary(story_summary_path):
 
     """
     Inputs are a file path that contains story summary(s) and returns story summary
@@ -48,50 +57,53 @@ def get_story_summary(story_title, author, protagonist, story_summary_path, conf
     for key, value in story_summaries_dict.items():
         story_summaries_string += f"Summary from {key}:\n{value}\n\n"
     
+    p = inflect.engine()
+    num_of_summaries = len(story_summaries_dict)
+    num_of_summaries_words = p.number_to_words(num_of_summaries)
+
+    print(num_of_summaries_words)
 
 
     prompt_template = """
     You are a meticulous story synthesis assistant. 
 
-    Your task: Create a comprehensive summary of {story_author}'s {story_title} that's centered on the character: {protagonist}.
-
-    Instructions:
-    1. Carefully read the summaries below. Each summary is from an authorative source. For each summary, focus on the concrete events that happen to {protagonist} (e.g. the actions they take, the places they go, the things that happen to them, the decisions they make, turning points, etc...) 
-    2. Combine the details of each summary to create a single comphrehenseive summary.  
-
+    Your task:
+    Below are {num_of_summaries_words} authoritative summaries of {author}'s {title}.
+    Carefully read each summary, then using details from all {num_of_summaries_words} sources, create one comprehensive summary of the story that is focused on the protagonist: {protagonist}.
+    Output the new comprehensive summary and nothing else.
     
-    {story_author}'s {story_title} Summaries:
+    # {author}'s {title} Summaries:
 
-    {story_summaries_string}
-    """
+    # {story_summaries_string}
+    # """
 
 
     prompt = PromptTemplate(
-        input_variables=["story_title", "author", "protagonist"],  # Define the expected inputs
+        input_variables=["num_of_summaries_words", "author", "title", "protagonist", "story_summaries_string"],  # Define the expected inputs
         template=prompt_template
     )
 
 
-    config = load_config(config_path=config_path)
-    llm = get_llm(llm_provider, llm_model, config, max_tokens=1000)
+    # config = load_config(config_path=config_path)
+    # llm = get_llm(llm_provider, llm_model, config, max_tokens=1000)
 
-    # Instead of building an LLMChain, use the pipe operator:
-    runnable = prompt | llm
+    # # Instead of building an LLMChain, use the pipe operator:
+    # runnable = prompt | llm
 
-    # Then invoke with the required inputs:
-    output = runnable.invoke({
-        "story_title": story_title,
-        "author": author,
-        "protagonist": protagonist
-    })
+    # # Then invoke with the required inputs:
+    # output = runnable.invoke({
+    #     "story_title": story_title,
+    #     "author": author,
+    #     "protagonist": protagonist
+    # })
 
-    #print(output)
+    # #print(output)
 
-    # If the output is an object with a 'content' attribute, extract it.
-    if hasattr(output, "content"):
-        output_text = output.content
-    else:
-        output_text = output
+    # # If the output is an object with a 'content' attribute, extract it.
+    # if hasattr(output, "content"):
+    #     output_text = output.content
+    # else:
+    #     output_text = output
 
     
 
