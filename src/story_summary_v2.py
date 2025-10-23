@@ -23,7 +23,7 @@ from llm import load_config, get_llm, extract_json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import inflect
-
+from paths import PATHS
 
 
 
@@ -32,7 +32,7 @@ import inflect
 # Please carefully read each then create a comprehensive summary of the story using details from all three sources that's focused on the story's protagonist Jean Valjean.
 
 # def get_story_summary(story_title, author, protagonist, story_summary_path, config_path, llm_provider, llm_model):
-def get_story_summary(story_summary_path):
+def get_story_summary(story_title, story_author, story_protagonist, story_summary_path, config_path, llm_provider, llm_model):
 
     """
     Inputs are a file path that contains story summary(s) and returns story summary
@@ -70,11 +70,12 @@ def get_story_summary(story_summary_path):
     Your task:
     Below are {num_of_summaries_words} authoritative summaries of {author}'s {title}.
     Carefully read each summary, then using details from all {num_of_summaries_words} sources, create one comprehensive summary of the story that is focused on the protagonist: {protagonist}.
-    Output the new comprehensive summary and nothing else.
     
     # {author}'s {title} Summaries:
+    {story_summaries_string}
+    === SUMMARIES END ===
 
-    # {story_summaries_string}
+    Respond with only the new comprehensive summary and nothing else.
     # """
 
 
@@ -84,34 +85,36 @@ def get_story_summary(story_summary_path):
     )
 
 
-    # config = load_config(config_path=config_path)
-    # llm = get_llm(llm_provider, llm_model, config, max_tokens=1000)
+    config = load_config(config_path=config_path)
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=10000)
 
-    # # Instead of building an LLMChain, use the pipe operator:
-    # runnable = prompt | llm
+    # Instead of building an LLMChain, use the pipe operator:
+    runnable = prompt | llm
 
     # # Then invoke with the required inputs:
-    # output = runnable.invoke({
-    #     "story_title": story_title,
-    #     "author": author,
-    #     "protagonist": protagonist
-    # })
+    output = runnable.invoke({
+        "num_of_summaries_words": num_of_summaries_words,
+        "author": story_author,
+        "title": story_title,
+        "protagonist": story_protagonist,
+        "story_summaries_string": story_summaries_string
+    })
 
-    # #print(output)
+    print(output)
 
-    # # If the output is an object with a 'content' attribute, extract it.
-    # if hasattr(output, "content"):
-    #     output_text = output.content
-    # else:
-    #     output_text = output
+    # If the output is an object with a 'content' attribute, extract it.
+    if hasattr(output, "content"):
+        output_text = output.content
+    else:
+        output_text = output
 
     
 
 
 
-    # with open("test_summary_dict.txt", "w", encoding="utf-8") as f:
-    #     f.write(story_summaries_string)
-    # print("✅ Story Summary Saved")
+    with open("test_summary_dict.txt", "w", encoding="utf-8") as f:
+        f.write(output_text)
+    print("✅ Story Summary Saved")
 
 
 
@@ -139,5 +142,20 @@ def get_story_summary(story_summary_path):
     
     # return story_summary
 
+story_title = "Les Miserables"
+story_author = "Victor Hugo"
+story_protagonist = "Jean Valjean"
 story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/les_miserables_composite_data.json"
-get_story_summary(story_summary_path)
+config_path=PATHS['config']
+llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+llm_model = "gemini-2.5-pro" #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2
+
+get_story_summary(
+    story_title = story_title,
+    story_author = story_author,
+    story_protagonist = story_protagonist,
+    story_summary_path = story_summary_path,
+    config_path=config_path,
+    llm_provider = llm_provider,
+    llm_model = llm_model
+)
