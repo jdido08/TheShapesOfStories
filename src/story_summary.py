@@ -28,13 +28,28 @@ import textwrap
 from paths import PATHS
 
 
-def build_sources_block(all_summary_sources, story_summary_data) -> str:
+ # List is in priority order -- this is all possible summary sources will need to update in future 
+SUMMARY_SOURCES = [
+    'sparknotes', 'cliffnotes', 'bookwolf', 'gradesaver', 
+    'novelguide', 'pinkmonkey', 'shmoop', 'thebestnotes', 'wiki', 'other'
+]
+
+
+def build_sources_block(story_summary_data) -> str:
     """
     all_summary_sources: iterable of source names in the order you want preserved
     story_summary_data: dict like {src: {"summary": "..."}}
     """
+
+    for key, value in story_summary_data.items():
+        #print(key)
+        if key not in SUMMARY_SOURCES and key != "title" and key != "openlib":
+            print("❌ ERROR: Unexpected Summary Source: ", key , " in ", story_summary_data.get("title", ""))
+            raise ValueError("Need to Investigate ", key, " summary")
+            return None 
+            
     parts = []
-    for name in all_summary_sources:
+    for name in SUMMARY_SOURCES:
         text = story_summary_data.get(name, {}).get("summary", "")
         if not text:
             continue
@@ -45,7 +60,8 @@ def build_sources_block(all_summary_sources, story_summary_data) -> str:
         else:
             parts.append(f'<source name="{name}">\n{text}\n</source>')
     if not parts:
-        return "<sources>\n  <!-- no sources provided -->\n</sources>"
+        raise ValueError("No usable sources found; aborting to prevent hallucination.")
+        #return "<sources>\n  <!-- no sources provided -->\n</sources>"
     return "<sources>\n" + "\n\n".join(parts) + "\n</sources>"
 
 
@@ -64,13 +80,9 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
     with open(story_summary_path, 'r', encoding='utf-8') as file:
         story_summary_data = json.load(file)
 
-     # List is in priority order -- this is all possible summary sources will need to update in future 
-    all_summary_sources = [
-        'sparknotes', 'cliffnotes', 'bookwolf', 'gradesaver', 
-        'novelguide', 'pinkmonkey', 'shmoop', 'thebestnotes', 'wiki', 'other'
-    ]
-
-    sources_block = build_sources_block(all_summary_sources, story_summary_data)
+    
+    sources_block = build_sources_block(story_summary_data)
+    #print("soource block created!")
 
     #testing
     # sources_block = ""
@@ -82,12 +94,16 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
     SYSTEM_PROMPT = textwrap.dedent("""\
     You are a meticulous literary editor. 
     Your job is to synthesize multiple authoritative plot summaries into one canonical, comprehensive, chronologically ordered narrative focused on the protagonist’s concrete actions and experiences. 
-    You never invent details not present in the sources. You write clearly, precisely, and neutrally; no analysis, no interpretation, no themes—just the story as it happens.
+    You ALWAYS ground your synthesis in the provided sources and NEVER invent details. You write clearly, precisely, and neutrally; no analysis, no interpretation, no themes—just the story as it happens.
     """).strip()
 
 
     USER_PROMPT = textwrap.dedent("""\
-    <task> Synthesize the provided sources into ONE comprehensive summary for downstream story-shape analysis. Write in third person, neutral register, and simple past tense. Include the ending (spoilers are allowed). Do not summarize or analyze—recount the sequence of events as they occur to the protagonist. No length limit: include every salient event that meaningfully affects the protagonist.</task>
+    <task>
+    Synthesize the provided sources into ONE comprehensive, canonical summary focused on the story’s protagonist.
+    Write in third person, neutral register, and simple past tense. Be strictly chronological and include the ending.
+    Use only facts from the provided sources. No length limit: include every salient event that meaningfully affects the protagonist.
+    </task>
     
     <context>
         <title>{title}</title>
@@ -151,7 +167,7 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
     <quality_checks> <!-- perform silently; do NOT include in output -->
         - Events progress strictly from beginning → end with no backtracking.
         - All proper nouns are consistent with the canonical map.
-        - Every sentence describes something that happens to or is done by {protagonist}.
+        - Content is centered on {protagonist}; sentences primarily describe actions, events, or consequences for {protagonist}, with occasional brief context (time/place/other actors) only when needed for coherence.
         - Ending included.
         - No facts appear that are unsupported by at least one source.
         - No meta-text or analysis.
@@ -201,6 +217,7 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
 story_title = "Les Miserables"
 story_author = "Victor Hugo"
 story_protagonist = "Jean Valjean"
+#story_summary_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/les_miserables_composite_data.json"
 story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/les_miserables_composite_data.json"
 config_path=PATHS['config']
 llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
