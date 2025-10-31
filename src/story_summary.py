@@ -49,6 +49,7 @@ def build_sources_block(story_summary_data) -> str:
             return None 
             
     parts = []
+    sources_used = []
     for name in SUMMARY_SOURCES:
         text = story_summary_data.get(name, {}).get("summary", "")
         if not text:
@@ -57,12 +58,15 @@ def build_sources_block(story_summary_data) -> str:
         # If text includes XML-ish chars, wrap in CDATA for safety
         if any(ch in text for ch in "<&"):
             parts.append(f'<source name="{name}"><![CDATA[\n{text}\n]]></source>')
+            sources_used.append(name)
         else:
             parts.append(f'<source name="{name}">\n{text}\n</source>')
+            sources_used.append(name)
     if not parts:
         raise ValueError("No usable sources found; aborting to prevent hallucination.")
         #return "<sources>\n  <!-- no sources provided -->\n</sources>"
-    return "<sources>\n" + "\n\n".join(parts) + "\n</sources>"
+    sources_block = "<sources>\n" + "\n\n".join(parts) + "\n</sources>"
+    return sources_block, sources_used
 
 
 
@@ -81,7 +85,7 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
         story_summary_data = json.load(file)
 
     
-    sources_block = build_sources_block(story_summary_data)
+    sources_block, sources_used = build_sources_block(story_summary_data)
     #print("soource block created!")
 
     #testing
@@ -207,28 +211,47 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
         output_text = output
 
     
-    with open("test_summary_dict.txt", "w", encoding="utf-8") as f:
-        f.write(output_text)
-    print("✅ Story Summary Saved")
+    #save in 
+    if (output_text or "").strip() != "":
+        summary_file_name = f'{story_title.lower().replace(" ", "-")}-{story_protagonist.lower().replace(" ", "-")}_summary.json'
+        summary_file_path = PATHS['story_summaries'] + "/" + summary_file_name
+
+        summary_data = {
+            "title": story_title,
+            "author": story_author,
+            "protagonist": story_protagonist,
+            "summary": output_text.strip(),
+            "summmary_sources": sources_used,
+            "summary_sources_file_path": story_summary_path
+        }
+
+        with open(summary_file_path, 'w') as f:
+            json.dump(summary_data, f, indent=4)
+        
+        #wait a few seconds 
+        time.sleep(3)
+        print("✅ Story Summary Saved")
+    else:
+        print("❌ ERROR: No Story Summary Generated")
 
     return (output_text or "").strip()
 
 
-story_title = "Les Miserables"
-story_author = "Victor Hugo"
-story_protagonist = "Jean Valjean"
-#story_summary_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/les_miserables_composite_data.json"
-story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/les_miserables_composite_data.json"
-config_path=PATHS['config']
-llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-llm_model = "gemini-2.5-pro" #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2
+# story_title = "Les Miserables"
+# story_author = "Victor Hugo"
+# story_protagonist = "Jean Valjean"
+# #story_summary_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/les_miserables_composite_data.json"
+# story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/les_miserables_composite_data.json"
+# config_path=PATHS['config']
+# llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+# llm_model = "gemini-2.5-pro" #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2
 
-get_story_summary(
-    story_title = story_title,
-    story_author = story_author,
-    story_protagonist = story_protagonist,
-    story_summary_path = story_summary_path,
-    config_path=config_path,
-    llm_provider = llm_provider,
-    llm_model = llm_model
-)
+# get_story_summary(
+#     story_title = story_title,
+#     story_author = story_author,
+#     story_protagonist = story_protagonist,
+#     story_summary_path = story_summary_path,
+#     config_path=config_path,
+#     llm_provider = llm_provider,
+#     llm_model = llm_model
+# )

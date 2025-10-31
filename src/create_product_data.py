@@ -486,7 +486,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
                     recursive_mode = True, #if you want to recurisvely generate story
                     recursive_loops = 10000, #the number of iterations 
                     llm_provider = "anthropic",#"groq",#"openai", #anthropic",#"google" #for generating descriptors
-                    llm_model = "claude-3-5-sonnet-latest",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
+                    llm_model = "claude-sonnet-4-5",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     #llm_provider = "google", #"anthropic", #google", 
                     #llm_model = "gemini-2.5-pro-preview-05-06", #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
                     output_format=output_format #options png or svg

@@ -16,7 +16,7 @@ from google.oauth2.service_account import Credentials
 
 def full_create(story_type, story_title, story_author, story_protagonist, story_year, story_summary_path, product_type, product_details, skip_story_create=False):
 
-    if skip_story_create == True:
+    if skip_story_create == False:
         story_data_path = create_story_data(story_type=story_type, 
                         story_title=story_title, 
                         story_author=story_author,
@@ -24,7 +24,7 @@ def full_create(story_type, story_title, story_author, story_protagonist, story_
                         story_year=story_year, 
                         story_summary_path=story_summary_path)
     else:
-        print("Skipping Story Create.")
+        print("Skipping Story Create for ", story_title, " - ", story_protagonist)
         print("Finding Story Data...")
         story_data_file_name = story_title.lower().replace(' ', '-') + "-" + story_protagonist.lower().replace(' ', '-')
         story_data_path = os.path.join(PATHS['story_data'], story_data_file_name + ".json")

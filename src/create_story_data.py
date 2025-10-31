@@ -10,7 +10,7 @@ from datetime import datetime
 # imports from my code
 from story_style import get_story_style, pango_font_exists #move to this sheet
 from story_components import get_story_components, grade_story_components
-from archive_story_summary import get_story_summary
+from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
 
@@ -131,7 +131,7 @@ import sys
 # print("All paths configured successfully.")
 
 
-def create_story_data(story_type, story_title, story_author,story_protagonist, story_year, story_summary_path):
+def create_story_data(story_type, story_title, story_author,story_protagonist, story_year, story_summary_path, build_story_summary=True):
     print("Story: ", story_title, " - ", story_protagonist)
 
     # create story data file name --> [story_title]-[story_protagonist].json
@@ -150,10 +150,29 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     
 
     # get story summary from story summary path 
-    story_summary = get_story_summary(story_summary_path)
+    #story_summary = get_story_summary(story_summary_path)
+    if build_story_summary == True:
+        story_summary_llm_model = "gemini-2.5-pro"
+        story_summary = get_story_summary(
+            story_title=story_title, 
+            story_author=story_author, 
+            story_protagonist=story_protagonist, 
+            story_summary_path=story_summary_path, 
+            config_path=PATHS['config'],
+            llm_provider="google", 
+            llm_model=story_summary_llm_model)
+        if story_summary is not None:
+            print("✅ Story Summary Created")
+    else:
+        with open(story_summary_path, 'r') as f:
+            story_summary_data = json.load(f)
+        story_summary = story_summary_data.get("summary")
+        print("✅ Story Summary Loaded")
+
+
 
     # get story components --> don't use google you often get blocked
-    story_components_llm_model = "claude-3-5-sonnet-latest"
+    story_components_llm_model = "gemini-2.5-pro"
     story_components = get_story_components(
         config_path=PATHS['config'],
         story_title=story_title,
@@ -161,7 +180,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         author=story_author,
         year=story_year,
         protagonist=story_protagonist,
-        llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+        llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
         llm_model = story_components_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
     print("✅ Story Components Created")
@@ -186,7 +205,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     print("✅ Story Shape Category")
     
     # get stort style
-    story_style_llm_model = "claude-3-5-sonnet-latest"
+    story_style_llm_model = "claude-sonnet-4-5"
     story_style = get_story_style(
         config_path = PATHS['config'],
         story_title = story_title, 
@@ -227,8 +246,11 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
             "design_rationale":design_rationale
         },
         "summary": story_summary,
+        "story_summary_sources_path":story_summary_path,
+
         "story_component_grades":story_component_grades,
         "llm_models": {
+            "story_summary": story_summary_llm_model,
             "story_components": story_components_llm_model,
             "story_components_grade": story_components_grader_llm_model,
             "story_default_style": story_style_llm_model
@@ -248,7 +270,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
     #get story metadata
     story_metadata_llm_provider = "anthropic"
-    story_metadata_llm_model = "claude-3-5-sonnet-latest"
+    story_metadata_llm_model = "claude-sonnet-4-5"
     get_story_metadata(
         story_json_path=story_data_file_path,
         use_llm="on",

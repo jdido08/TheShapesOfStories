@@ -12,6 +12,7 @@ BASE_DIR = local_drive_path
 # --- Define all other paths relative to the base directory ---
 PATHS['src'] = os.path.join(BASE_DIR, 'src')
 PATHS['summaries'] = os.path.join(BASE_DIR, 'summaries')
+PATHS['story_summaries'] = os.path.join(BASE_DIR, 'story_summaries')
 PATHS['story_data'] = os.path.join(BASE_DIR, 'story_data')
 PATHS['product_data'] = os.path.join(BASE_DIR, 'product_data')
 PATHS['product_designs'] = os.path.join(BASE_DIR, 'product_designs')
