@@ -1,0 +1,365 @@
+{% comment %}
+  Hero — Rotating Frame (Template-aware, rock-solid)
+  - Full-bleed (object-fit: cover) or no-crop (contain)
+  - Overlay anchored using ORIGINAL image coordinates (naturalWidth/Height)
+  - Global + per-image overrides for "frame end" and vertical focal point
+  - Separate height controls for desktop and mobile
+  - No dots; minimal prev/next arrows
+{% endcomment %}
+
+<section
+  id="hero-rotating-frame-{{ section.id }}"
+  class="hero-rotating-frame"
+  data-autoplay="{{ section.settings.autoplay }}"
+  data-interval="{{ section.settings.interval | default: 5000 }}"
+  data-object-fit="{{ section.settings.object_fit | default: 'cover' }}"
+  data-frame-end-natural-desktop="{{ section.settings.frame_end_percent_natural_desktop | default: 62 }}"
+  data-frame-end-natural-mobile="{{ section.settings.frame_end_percent_natural_mobile | default: 66 }}"
+  data-offset-desktop="{{ section.settings.offset_desktop_px | default: 12 }}"
+  data-offset-mobile="{{ section.settings.offset_mobile_px | default: 10 }}"
+  data-text-max-width="{{ section.settings.text_max_width | default: 680 }}"
+  data-font-scale="{{ section.settings.font_scale | default: 1.0 }}"
+  data-focal-y="{{ section.settings.focal_y_percent | default: 50 }}"
+>
+  {% comment %} Compute per-breakpoint min-height values {% endcomment %}
+  {% assign desktop_height_value = section.settings.desktop_vh | append: 'vh' %}
+  {% if section.settings.desktop_height_mode == 'px' %}
+    {% assign desktop_height_value = section.settings.desktop_px | append: 'px' %}
+  {% endif %}
+  {% assign mobile_height_value = section.settings.mobile_vh | append: 'vh' %}
+  {% if section.settings.mobile_height_mode == 'px' %}
+    {% assign mobile_height_value = section.settings.mobile_px | append: 'px' %}
+  {% endif %}
+
+  <style>
+    #hero-rotating-frame-{{ section.id }}{
+      --hero-min-height-desktop: {{ desktop_height_value }};
+      --hero-min-height-mobile:  {{ mobile_height_value }};
+      --text-max: {{ section.settings.text_max_width | default: 680 }}px;
+      --font-scale: {{ section.settings.font_scale | default: 1.0 }};
+    }
+    #hero-rotating-frame-{{ section.id }} { position: relative; overflow: hidden; }
+    #hero-rotating-frame-{{ section.id }} .hero-inner {
+      position: relative; width: 100%;
+      display: grid; place-items: center;
+      min-height: var(--hero-min-height-desktop);
+    }
+    @media (max-width: 749px){
+      #hero-rotating-frame-{{ section.id }} .hero-inner { min-height: var(--hero-min-height-mobile); }
+    }
+
+    /* Slides */
+    #hero-rotating-frame-{{ section.id }} .slides { position: absolute; inset: 0; }
+    #hero-rotating-frame-{{ section.id }} .slide {
+      position: absolute; inset: 0; opacity: 0; transition: opacity 500ms ease; pointer-events: none;
+    }
+    #hero-rotating-frame-{{ section.id }} .slide.is-active { opacity: 1; pointer-events: auto; }
+    #hero-rotating-frame-{{ section.id }} .slide img {
+      width: 100%; height: 100%; object-fit: {{ section.settings.object_fit | default: 'cover' }};
+      object-position: 50% var(--slide-focal-y, 50%); display: block;
+    }
+
+    /* Overlay */
+    #hero-rotating-frame-{{ section.id }} .overlay{
+      position: absolute; left: 0; right: 0; display: grid; place-items: center;
+      padding: 0 16px 24px; pointer-events: none; /* top set via JS */
+    }
+    #hero-rotating-frame-{{ section.id }} .overlay-inner{
+      max-width: var(--text-max); text-align: center; pointer-events: auto;
+    }
+    #hero-rotating-frame-{{ section.id }} .headline{
+      margin: 0 0 12px; line-height: 1.08; font-weight: 700;
+      color: {{ section.settings.text_color }}; font-family: {{ section.settings.headline_font | default: 'inherit' }};
+      font-size: calc( clamp(26px, 3.2vw, 44px) * var(--font-scale) ); letter-spacing: -0.01em;
+      text-shadow: 0 1px 2px rgba(0,0,0,.15);
+    }
+    #hero-rotating-frame-{{ section.id }} .cta{
+      display: inline-block; background: {{ section.settings.button_bg }}; color: {{ section.settings.button_text }};
+      border: 1px solid {{ section.settings.button_border }}; padding: 10px 18px; border-radius: 999px;
+      text-decoration: none; font-weight: 600; font-size: calc( clamp(13px, 1.5vw, 16px) * var(--font-scale) );
+      transition: transform .15s ease, background .2s ease, color .2s ease, border-color .2s ease;
+    }
+    #hero-rotating-frame-{{ section.id }} .cta:hover{ transform: translateY(-1px); }
+
+    /* Prev/Next controls (no dots) */
+    #hero-rotating-frame-{{ section.id }} .controls{
+      position: absolute; inset-inline: 10px; bottom: 10px; display: flex; justify-content: space-between; gap: 8px;
+      z-index: 2; pointer-events: none;
+    }
+    #hero-rotating-frame-{{ section.id }} .btn{
+      pointer-events: auto; appearance: none; border: 1px solid rgba(0,0,0,.15);
+      background: rgba(255,255,255,.85); backdrop-filter: blur(6px); border-radius: 999px; padding: 6px 10px;
+      line-height: 1; cursor: pointer; transition: background .2s ease;
+    }
+    #hero-rotating-frame-{{ section.id }} .btn:hover{ background: #fff; }
+    @media (max-width: 749px){ #hero-rotating-frame-{{ section.id }} .controls{ display: none; } }
+
+    /* Force black CTA styles regardless of theme link colors */
+    #hero-rotating-frame-{{ section.id }} .cta,
+    #hero-rotating-frame-{{ section.id }} .cta:link,
+    #hero-rotating-frame-{{ section.id }} .cta:visited {
+      background: #000 !important;
+      color: #fff !important;
+      border-color: #000 !important;
+      text-decoration: none !important;
+    }
+
+    #hero-rotating-frame-{{ section.id }} .cta:hover,
+    #hero-rotating-frame-{{ section.id }} .cta:focus {
+      background: #111 !important;
+      border-color: #111 !important;
+      color: #fff !important;
+      text-decoration: none !important;
+    }
+
+    #hero-rotating-frame-{{ section.id }} .cta:active {
+      background: #000 !important;
+      border-color: #000 !important;
+      color: #fff !important;
+    }
+
+  </style>
+
+  <div class="hero-inner" aria-label="Rotating gallery">
+    <div class="slides">
+      {% for block in section.blocks %}
+        {% if block.type == 'image' %}
+          <div
+            class="slide{% if forloop.first %} is-active{% endif %}"
+            data-override-frame="{{ block.settings.override_frame_end }}"
+            data-frame-end-override="{{ block.settings.frame_end_percent_natural_override }}"
+            data-override-focal="{{ block.settings.override_focal }}"
+            data-focal-y="{{ block.settings.focal_y_percent_block }}"
+            {{ block.shopify_attributes }}
+          >
+            {% if block.settings.image != blank %}
+              <img
+                src="{{ block.settings.image | image_url: width: 2400 }}"
+                srcset="
+                  {{ block.settings.image | image_url: width: 800 }} 800w,
+                  {{ block.settings.image | image_url: width: 1200 }} 1200w,
+                  {{ block.settings.image | image_url: width: 1800 }} 1800w,
+                  {{ block.settings.image | image_url: width: 2400 }} 2400w
+                "
+                sizes="100vw"
+                alt="{{ block.settings.alt | escape }}"
+                loading="eager"
+              >
+            {% else %}
+              <div style="display:grid;place-items:center;height:100%;color:#6b7280">Upload an image</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% assign cta_href = section.settings.button_link | default: routes.root | append: 'pages/about' %}
+    <div class="overlay">
+      <div class="overlay-inner">
+        <h2 class="headline">{{ section.settings.headline | default: "Every Story Has a Shape" }}</h2>
+        <a class="cta" href="{{ cta_href }}">{{ section.settings.button_label | default: "Learn More" }}</a>
+      </div>
+    </div>
+
+    <div class="controls" aria-hidden="true">
+      <button class="btn prev" type="button" aria-label="Previous">‹</button>
+      <button class="btn next" type="button" aria-label="Next">›</button>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const root = document.getElementById('hero-rotating-frame-{{ section.id }}');
+    if (!root) return;
+
+    const slides = Array.from(root.querySelectorAll('.slide'));
+    const overlay = root.querySelector('.overlay');
+    const prevBtn = root.querySelector('.prev');
+    const nextBtn = root.querySelector('.next');
+    const container = root.querySelector('.hero-inner');
+
+    // Settings (section-level)
+    const autoplay = root.dataset.autoplay === 'true';
+    const interval = Math.min(Math.max(parseInt(root.dataset.interval || '5000', 10), 2000), 9500);
+    const objectFit = (root.dataset.objectFit || 'cover').toLowerCase();
+    const defaultFocalY = Math.min(100, Math.max(0, parseFloat(root.dataset.focalY || '50')));
+    const frameEndPctDesktop = parseFloat(root.dataset.frameEndNaturalDesktop || '62') / 100;
+    const frameEndPctMobile  = parseFloat(root.dataset.frameEndNaturalMobile  || '66') / 100;
+
+    let index = 0;
+    let timer = null;
+    const ro = new ResizeObserver(() => positionOverlay());
+
+    function activeSlide(){ return slides[index]; }
+    function activeImg(){ return activeSlide()?.querySelector('img'); }
+
+    function go(newIndex){
+      if (newIndex === index) return;
+      slides[index]?.classList.remove('is-active');
+      index = (newIndex + slides.length) % slides.length;
+      slides[index]?.classList.add('is-active');
+      positionOverlay();
+      restart();
+    }
+    function next(){ go(index + 1); }
+    function prev(){ go(index - 1); }
+    function restart(){
+      if (!autoplay) return;
+      clearInterval(timer);
+      timer = setInterval(next, interval);
+    }
+
+    // Map ORIGINAL Y (px in natural image) to VISIBLE container Y, honoring object-fit & focal point
+    function mapOriginalYToVisible(img, originalY, focalY){
+      const cRect = container.getBoundingClientRect();
+      const Wc = cRect.width, Hc = cRect.height;
+
+      const Wi = img.naturalWidth || 1, Hi = img.naturalHeight || 1;
+      if (Wi <= 0 || Hi <= 0) return 0;
+
+      let s; // scale
+      if (objectFit === 'contain') {
+        s = Math.min(Wc / Wi, Hc / Hi);
+        const Hd = Hi * s;
+        const letterboxTop = (Hc - Hd) / 2;
+        return originalY * s + letterboxTop;
+      } else { // cover
+        s = Math.max(Wc / Wi, Hc / Hi);
+        const Hd = Hi * s;
+        const overflow = Math.max(0, Hd - Hc);
+        const cropTop = overflow * (focalY / 100); // 0%=top aligned, 50%=center, 100%=bottom aligned
+        return originalY * s - cropTop;
+      }
+    }
+
+    function positionOverlay(){
+      const slide = activeSlide();
+      const img = activeImg();
+      if (!slide || !img || !overlay) return;
+      if (!img.complete || !img.naturalWidth) return;
+
+      // Pull per-slide overrides (if any)
+      const overrideFrame = slide.dataset.overrideFrame === 'true';
+      const frameOverride = parseFloat(slide.dataset.frameEndOverride || '0') / 100;
+      const overrideFocal = slide.dataset.overrideFocal === 'true';
+      const focalYBlock = parseFloat(slide.dataset.focalY || '' /* NaN */);
+
+      // Compute effective parameters
+      const isMobile = window.matchMedia('(max-width: 749px)').matches;
+      const pct = overrideFrame && frameOverride > 0 ? frameOverride : (isMobile ? frameEndPctMobile : frameEndPctDesktop);
+      const focalY = overrideFocal && !Number.isNaN(focalYBlock) ? focalYBlock : defaultFocalY;
+      // Also set CSS object-position to match focal point so visual crop == math
+      img.style.setProperty('--slide-focal-y', focalY + '%');
+
+      const Hi = img.naturalHeight || 1;
+      const originalY = Hi * pct;
+
+      const yVisible = mapOriginalYToVisible(img, originalY, focalY);
+      const extraOffset = isMobile ? parseFloat(root.dataset.offsetMobile || '10') : parseFloat(root.dataset.offsetDesktop || '12');
+
+      const localTop = Math.max(0, yVisible + extraOffset);
+      overlay.style.top = localTop + 'px';
+    }
+
+    function onImageLoad(){ positionOverlay(); }
+    function onResize(){ positionOverlay(); }
+
+    nextBtn?.addEventListener('click', next);
+    prevBtn?.addEventListener('click', prev);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', positionOverlay, { passive: true });
+    ro.observe(container);
+
+    slides.forEach(sl => {
+      const img = sl.querySelector('img');
+      if (img && !img.complete) img.addEventListener('load', onImageLoad, { once: true });
+    });
+
+    positionOverlay();
+    restart();
+
+    document.addEventListener('shopify:section:load', positionOverlay);
+    document.addEventListener('shopify:section:reorder', positionOverlay);
+    document.addEventListener('shopify:block:select', positionOverlay);
+    document.addEventListener('shopify:block:deselect', positionOverlay);
+  })();
+  </script>
+
+  {% schema %}
+  {
+    "name": "Hero — Rotating Frame",
+    "tag": "section",
+    "class": "section hero-rotating-frame",
+    "settings": [
+      { "type": "checkbox", "id": "autoplay", "label": "Autoplay", "default": true },
+      { "type": "range", "id": "interval", "min": 2000, "max": 9500, "step": 500, "unit": "ms", "label": "Slide interval", "default": 5000 },
+
+      { "type": "header", "content": "Height — Desktop" },
+      { "type": "select", "id": "desktop_height_mode", "label": "Desktop height mode", "default": "vh",
+        "options": [
+          { "label": "Viewport (vh)", "value": "vh" },
+          { "label": "Fixed (px)", "value": "px" }
+        ]
+      },
+      { "type": "range", "id": "desktop_vh", "label": "Desktop viewport height", "min": 40, "max": 100, "step": 1, "unit": "vh", "default": 72 },
+      { "type": "range", "id": "desktop_px", "label": "Desktop fixed height", "min": 400, "max": 1100, "step": 10, "unit": "px", "default": 760 },
+
+      { "type": "header", "content": "Height — Mobile (≤ 749px)" },
+      { "type": "select", "id": "mobile_height_mode", "label": "Mobile height mode", "default": "vh",
+        "options": [
+          { "label": "Viewport (vh)", "value": "vh" },
+          { "label": "Fixed (px)", "value": "px" }
+        ]
+      },
+      { "type": "range", "id": "mobile_vh", "label": "Mobile viewport height", "min": 40, "max": 100, "step": 1, "unit": "vh", "default": 60 },
+      { "type": "range", "id": "mobile_px", "label": "Mobile fixed height", "min": 360, "max": 900, "step": 10, "unit": "px", "default": 560 },
+
+      { "type": "header", "content": "Image & placement (global defaults)" },
+      { "type": "select", "id": "object_fit", "label": "Object fit", "default": "cover",
+        "options": [
+          { "label": "Cover (full-bleed)", "value": "cover" },
+          { "label": "Contain (no crop)",  "value": "contain" }
+        ]
+      },
+      { "type": "range", "id": "frame_end_percent_natural_desktop", "min": 40, "max": 85, "step": 0.5, "unit": "%", "label": "Frame end — original image (desktop, % of image height)", "default": 62 },
+      { "type": "range", "id": "frame_end_percent_natural_mobile",  "min": 40, "max": 90, "step": 0.5, "unit": "%", "label": "Frame end — original image (mobile, % of image height)", "default": 66 },
+
+      { "type": "range", "id": "offset_desktop_px", "label": "Extra offset (desktop, px)", "min": 0, "max": 60, "step": 1, "default": 12 },
+      { "type": "range", "id": "offset_mobile_px",  "label": "Extra offset (mobile, px)",  "min": 0, "max": 60, "step": 1, "default": 10 },
+
+      { "type": "range", "id": "focal_y_percent", "label": "Vertical focal point (global, % from top)", "min": 0, "max": 100, "step": 1, "default": 50 },
+
+      { "type": "header", "content": "Overlay content" },
+      { "type": "text", "id": "headline", "label": "Headline", "default": "Every Story Has a Shape" },
+      { "type": "url",  "id": "button_link", "label": "Button link" },
+      { "type": "text", "id": "button_label", "label": "Button label", "default": "Learn More" },
+
+      { "type": "header", "content": "Typography & layout" },
+      { "type": "text", "id": "headline_font", "label": "Headline font-family (optional)", "default": "inherit" },
+      { "type": "range", "id": "font_scale", "min": 0.8, "max": 1.4, "step": 0.1, "label": "Font scale", "default": 1.0 },
+      { "type": "range", "id": "text_max_width", "min": 420, "max": 920, "step": 10, "unit": "px", "label": "Max text width", "default": 680 }
+    ],
+    "blocks": [
+      {
+        "type": "image",
+        "name": "Image",
+        "settings": [
+          { "type": "image_picker", "id": "image", "label": "Mockup image" },
+          { "type": "text", "id": "alt", "label": "Alt text", "default": "Framed print on wall" },
+
+          { "type": "header", "content": "Per-image overrides (optional)" },
+          { "type": "checkbox", "id": "override_frame_end", "label": "Override frame end for this image", "default": false },
+          { "type": "range", "id": "frame_end_percent_natural_override", "min": 0, "max": 100, "step": 1, "unit": "%", "label": "Frame end — original image (this image)", "default": 62 },
+
+          { "type": "checkbox", "id": "override_focal", "label": "Override focal point for this image", "default": false },
+          { "type": "range", "id": "focal_y_percent_block", "label": "Vertical focal point (this image, % from top)", "min": 0, "max": 100, "step": 1, "default": 50 }
+        ]
+      }
+    ],
+    "max_blocks": 10,
+    "presets": [
+      { "name": "Hero — Rotating Frame", "category": "Image" }
+    ]
+  }
+  {% endschema %}
+</section>

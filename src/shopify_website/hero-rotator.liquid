@@ -1,0 +1,254 @@
+{% comment %}
+  sections/hero-rotator.liquid
+{% endcomment %}
+
+<section
+  class="sos-hero-rotator"
+  style="--sos-interval: {{ section.settings.interval | default: 5000 }}ms; --sos-fade: {{ section.settings.fade_duration | default: 700 }}ms;"
+>
+  <div
+    class="sos-hero"
+    style="
+      --sos-height-desktop: {{ section.settings.height_desktop }}vh;
+      --sos-height-mobile: {{ section.settings.height_mobile }}vh;
+      --sos-overlay: {{ section.settings.overlay_opacity }};
+      --sos-content-max: {{ section.settings.content_max_width }}px;
+      --sos-content-color: {{ section.settings.text_color }};
+    "
+  >
+    <div class="sos-hero__slides" aria-hidden="true">
+      {% for block in section.blocks %}
+        {% if block.type == 'slide' %}
+          {% assign desktop = block.settings.image_desktop %}
+          {% assign mobile = block.settings.image_mobile | default: desktop %}
+          <div
+            class="sos-hero__slide{% if forloop.first %} is-active{% endif %}"
+            data-index="{{ forloop.index0 }}"
+            {{ block.shopify_attributes }}
+            {% if desktop %}
+              style="--bg-desktop: url({{ desktop | image_url: width: 2400 }}); --bg-mobile: url({{ mobile | image_url: width: 1200 }});"
+            {% endif %}
+          >
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="sos-hero__overlay"></div>
+
+    <div
+      class="
+        sos-hero__content
+        sos-hero__content--{{ section.settings.content_align }}
+        sos-hero__content--{{ section.settings.content_vertical }}
+        sos-hero__content--m-{{ section.settings.content_align_mobile }}
+        sos-hero__content--m-{{ section.settings.content_vertical_mobile }}
+      "
+      style="
+        --sos-x: {{ section.settings.content_offset_x }}px;
+        --sos-y: {{ section.settings.content_offset_y }}px;
+        --sos-x-m: {{ section.settings.content_offset_x_mobile }}px;
+        --sos-y-m: {{ section.settings.content_offset_y_mobile }}px;
+      "
+    >
+      {% if section.settings.kicker != blank %}
+        <p class="sos-hero__kicker">{{ section.settings.kicker }}</p>
+      {% endif %}
+      <h1 class="sos-hero__heading">{{ section.settings.heading | default: 'Every Story Has a Shape' }}</h1>
+      {% if section.settings.subheading != blank %}
+        <p class="sos-hero__subheading">{{ section.settings.subheading }}</p>
+      {% endif %}
+      {% if section.settings.button_label != blank %}
+        <a class="sos-hero__button" href="{{ section.settings.button_link | default: '/pages/about' }}">{{ section.settings.button_label }}</a>
+      {% endif %}
+    </div>
+  </div>
+    
+  <style>
+    .sos-hero-rotator { position: relative; }
+
+    .sos-hero {
+      position: relative;
+      height: var(--sos-height-desktop, 80vh);
+      min-height: 420px;
+      overflow: hidden;
+      color: var(--sos-content-color, #111);
+    }
+    @media (max-width: 749px){
+      .sos-hero {
+        height: var(--sos-height-mobile, 68vh);
+        min-height: 360px;
+      }
+    }
+
+    .sos-hero__slides { position: absolute; inset: 0; }
+    .sos-hero__slide {
+      position: absolute; inset: 0;
+      opacity: 0; transition: opacity var(--sos-fade) ease;
+      background-position: center; background-size: cover; background-repeat: no-repeat;
+      background-image: var(--bg-desktop);
+    }
+    @media (max-width: 749px){
+      .sos-hero__slide { background-image: var(--bg-mobile); }
+    }
+    .sos-hero__slide.is-active { opacity: 1; }
+
+    .sos-hero__overlay {
+      position: absolute; inset: 0;
+      background: #000; opacity: var(--sos-overlay, 0.25);
+      pointer-events: none;
+    }
+
+    .sos-hero__content {
+      position: relative; z-index: 2;
+      height: 100%; width: 100%;
+      max-width: var(--sos-content-max, 900px);
+      margin: 0 auto; padding: 0 1.25rem;
+      display: grid; gap: 1rem; text-align: center;
+      /* default vertical alignment (overridden by modifier classes below) */
+      align-content: center;
+    }
+
+    /* Horizontal alignment (desktop) */
+    .sos-hero__content--left   { justify-items: start;  text-align: left; }
+    .sos-hero__content--center { justify-items: center; text-align: center; }
+    .sos-hero__content--right  { justify-items: end;    text-align: right; }
+
+    /* Vertical position (desktop) */
+    .sos-hero__content--top    { align-content: start; }
+    .sos-hero__content--center { align-content: center; }
+    .sos-hero__content--bottom { align-content: end; }
+
+    /* Desktop offsets (≥750px) */
+    @media (min-width: 750px){
+      .sos-hero__content { transform: translate(var(--sos-x, 0), var(--sos-y, 0)); }
+    }
+
+    /* Mobile overrides (<750px) */
+    @media (max-width: 749px){
+      .sos-hero__content {
+        transform: translate(var(--sos-x-m, 0), var(--sos-y-m, 0));
+      }
+      .sos-hero__content--m-left   { justify-items: start;  text-align: left; }
+      .sos-hero__content--m-center { justify-items: center; text-align: center; }
+      .sos-hero__content--m-right  { justify-items: end;    text-align: right; }
+      .sos-hero__content--m-top    { align-content: start; }
+      .sos-hero__content--m-center { align-content: center; }
+      .sos-hero__content--m-bottom { align-content: end; }
+    }
+
+    .sos-hero__kicker {
+      font-size: .9rem; letter-spacing: .12em;
+      text-transform: uppercase; opacity: .9; margin: 0;
+    }
+    .sos-hero__heading {
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1.05; margin: 0; color: var(--sos-content-color, #fff);
+    }
+    .sos-hero__subheading {
+      font-size: clamp(1rem, 2.2vw, 1.25rem);
+      opacity: .9; margin: 0;
+    }
+    .sos-hero__button {
+      display: inline-block; margin-top: .25rem;
+      padding: .8rem 1.2rem; border-radius: .375rem;
+      background: #111; color: #fff; text-decoration: none; font-weight: 600;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+    .sos-hero__button:hover { transform: translateY(-1px); opacity: .96; }
+  </style>
+
+
+  <script>
+    (function(){
+      const root = document.currentScript.closest('.sos-hero-rotator');
+      const slides = root.querySelectorAll('.sos-hero__slide');
+      if (!slides.length) return;
+      const interval = parseInt(getComputedStyle(root).getPropertyValue('--sos-interval')) || 5000;
+      let i = 0;
+      const activate = (idx) => { slides.forEach((s, j) => s.classList.toggle('is-active', j === idx)); };
+      activate(0);
+      let timer = setInterval(function(){ i = (i + 1) % slides.length; activate(i); }, interval);
+      root.addEventListener('mouseenter', function(){ clearInterval(timer); });
+      root.addEventListener('mouseleave', function(){ timer = setInterval(function(){ i = (i + 1) % slides.length; activate(i); }, interval); });
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { clearInterval(timer); slides.forEach(function(s){ s.style.transition = 'none'; }); }
+    })();
+  </script>
+</section>
+
+{% schema %}
+{
+  "name": "Hero - Rotating Wall",
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Kicker (optional)" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Every Story Has a Shape" },
+    { "type": "textarea", "id": "subheading", "label": "Subheading (optional)" },
+
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Learn more" },
+    { "type": "url",  "id": "button_link",  "label": "Button link (About page)", "default": "/" },
+
+    { "type": "range", "id": "height_desktop", "label": "Height (desktop, vh)", "min": 50, "max": 100, "step": 1, "default": 80 },
+    { "type": "range", "id": "height_mobile",  "label": "Height (mobile, vh)",  "min": 40, "max": 100, "step": 1, "default": 68 },
+
+    { "type": "select", "id": "content_align", "label": "Content alignment", "default": "center",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ]
+    },
+
+    { "type": "select", "id": "content_vertical", "label": "Vertical position (desktop)", "default": "center",
+      "options": [
+        { "value": "top", "label": "Top" },
+        { "value": "center", "label": "Center" },
+        { "value": "bottom", "label": "Bottom" }
+      ]
+    },
+    { "type": "select", "id": "content_align_mobile", "label": "Content alignment (mobile)", "default": "center",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ]
+    },
+    { "type": "select", "id": "content_vertical_mobile", "label": "Vertical position (mobile)", "default": "center",
+      "options": [
+        { "value": "top", "label": "Top" },
+        { "value": "center", "label": "Center" },
+        { "value": "bottom", "label": "Bottom" }
+      ]
+    },
+    { "type": "range", "id": "content_offset_x", "label": "Horizontal offset (px)", "min": -200, "max": 200, "step": 5, "default": 0 },
+    { "type": "range", "id": "content_offset_y", "label": "Vertical offset (px)",   "min": -200, "max": 200, "step": 5, "default": 0 },
+    { "type": "range", "id": "content_offset_x_mobile", "label": "Horizontal offset (mobile, px)", "min": -200, "max": 200, "step": 5, "default": 0 },
+    { "type": "range", "id": "content_offset_y_mobile", "label": "Vertical offset (mobile, px)",   "min": -200, "max": 200, "step": 5, "default": 0 },
+
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#FFFFFF" },
+    { "type": "range", "id": "overlay_opacity", "label": "Overlay strength", "min": 0, "max": 1, "step": 0.1, "default": 0.3 },
+
+    { "type": "range", "id": "interval", "label": "Slide interval (ms)", "min": 2000, "max": 9000, "step": 250, "default": 5000 },
+    { "type": "range", "id": "fade_duration", "label": "Fade duration (ms)", "min": 200, "max": 2000, "step": 50, "default": 700 },
+
+    { "type": "range", "id": "content_max_width", "label": "Content max width (px)", "min": 480, "max": 1200, "step": 20, "default": 900 }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Slide",
+      "settings": [
+        { "type": "image_picker", "id": "image_desktop", "label": "Desktop image (required)" },
+        { "type": "image_picker", "id": "image_mobile", "label": "Mobile image (optional)" }
+      ]
+    }
+  ],
+  "max_blocks": 10,
+  "presets": [
+    {
+      "name": "Hero - Rotating Wall",
+      "category": "Hero",
+      "blocks": [{ "type": "slide" }]
+    }
+  ]
+}
+{% endschema %}

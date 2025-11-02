@@ -1,0 +1,323 @@
+{% comment %}
+  Hero Rotating Frame — The Shapes of Stories
+  - Full-bleed hero (image covers the entire section)
+  - Rotates through user-supplied images
+  - Positions headline + button just below the frame (based on % of image height)
+  - No dots; simple prev/next controls
+{% endcomment %}
+
+<section
+  id="hero-rotating-frame-{{ section.id }}"
+  class="hero-rotating-frame"
+  data-autoplay="{{ section.settings.autoplay }}"
+  data-interval="{{ section.settings.interval | default: 5000 }}"
+  data-frame-bottom-desktop="{{ section.settings.frame_bottom_percent_desktop | default: 62 }}"
+  data-frame-bottom-mobile="{{ section.settings.frame_bottom_percent_mobile | default: 66 }}"
+  data-offset-desktop="{{ section.settings.offset_desktop_px | default: 12 }}"
+  data-offset-mobile="{{ section.settings.offset_mobile_px | default: 10 }}"
+  data-text-max-width="{{ section.settings.text_max_width | default: 680 }}"
+  data-font-scale="{{ section.settings.font_scale | default: 1.0 }}"
+>
+  <style>
+    #hero-rotating-frame-{{ section.id }} {
+      position: relative;
+      overflow: hidden;
+    }
+    #hero-rotating-frame-{{ section.id }} .hero-inner {
+      position: relative;
+      width: 100%;
+      {% case section.settings.hero_height %}
+        {% when 'half' %} min-height: 55vh;
+        {% when 'tall' %} min-height: 80vh;
+        {% else %}      min-height: 68vh;
+      {% endcase %}
+      display: grid;
+      place-items: center;
+      /* no background; the image fills everything */
+    }
+
+    /* Slides */
+    #hero-rotating-frame-{{ section.id }} .slides {
+      position: absolute;
+      inset: 0;
+    }
+    #hero-rotating-frame-{{ section.id }} .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 500ms ease;
+      pointer-events: none;
+    }
+    #hero-rotating-frame-{{ section.id }} .slide.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #hero-rotating-frame-{{ section.id }} .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;   /* Full-bleed, no letterboxing */
+      object-position: center;
+      display: block;
+    }
+
+    /* Overlay */
+    #hero-rotating-frame-{{ section.id }} .overlay {
+      position: absolute;
+      left: 0;
+      right: 0;
+      /* top is set dynamically by JS so it sits just below the frame */
+      display: grid;
+      place-items: center;
+      padding: 0 16px 24px;
+      pointer-events: none; /* let clicks pass except button */
+    }
+    #hero-rotating-frame-{{ section.id }} .overlay-inner {
+      max-width: var(--text-max, 720px);
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    #hero-rotating-frame-{{ section.id }} .headline {
+      margin: 0 0 12px 0;
+      line-height: 1.08;
+      font-weight: 700;
+      color: {{ section.settings.text_color }};
+      font-family: {{ section.settings.headline_font | default: 'inherit' }};
+      font-size: calc( clamp(26px, 3.2vw, 44px) * var(--font-scale, 1) );
+      letter-spacing: -0.01em;
+      text-shadow: 0 1px 2px rgba(0,0,0,.15);
+    }
+    #hero-rotating-frame-{{ section.id }} .cta {
+      display: inline-block;
+      background: {{ section.settings.button_bg }};
+      color: {{ section.settings.button_text }};
+      border: 1px solid {{ section.settings.button_border }};
+      padding: 10px 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: calc( clamp(13px, 1.5vw, 16px) * var(--font-scale, 1) );
+      transition: transform .15s ease, background .2s ease, color .2s ease, border-color .2s ease;
+    }
+    #hero-rotating-frame-{{ section.id }} .cta:hover { transform: translateY(-1px); }
+
+    /* Prev/Next controls (kept; dots removed) */
+    #hero-rotating-frame-{{ section.id }} .controls {
+      position: absolute;
+      inset-inline: 10px;
+      bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    #hero-rotating-frame-{{ section.id }} .btn {
+      pointer-events: auto;
+      appearance: none;
+      border: 1px solid rgba(0,0,0,.15);
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(6px);
+      border-radius: 999px;
+      padding: 6px 10px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .2s ease;
+    }
+    #hero-rotating-frame-{{ section.id }} .btn:hover { background: white; }
+
+    @media (max-width: 749px){
+      #hero-rotating-frame-{{ section.id }} .controls { display: none; }
+    }
+  </style>
+
+  <div class="hero-inner" aria-label="Rotating gallery">
+    <div class="slides">
+      {% for block in section.blocks %}
+        {% if block.type == 'image' %}
+          <div class="slide{% if forloop.first %} is-active{% endif %}" {{ block.shopify_attributes }}>
+            {%- if block.settings.image != blank -%}
+              <img
+                src="{{ block.settings.image | image_url: width: 2400 }}"
+                srcset="
+                  {{ block.settings.image | image_url: width: 800 }} 800w,
+                  {{ block.settings.image | image_url: width: 1200 }} 1200w,
+                  {{ block.settings.image | image_url: width: 1800 }} 1800w,
+                  {{ block.settings.image | image_url: width: 2400 }} 2400w
+                "
+                sizes="100vw"
+                alt="{{ block.settings.alt | escape }}"
+                loading="eager"
+              >
+            {%- else -%}
+              <div style="display:grid;place-items:center;height:100%;color:#6b7280">
+                <span>Upload an image</span>
+              </div>
+            {%- endif -%}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Overlay (positioned by JS just below the frame) -->
+    {% assign cta_href = section.settings.button_link | default: routes.root | append: 'pages/about' %}
+    <div class="overlay">
+      <div class="overlay-inner">
+        <h2 class="headline">{{ section.settings.headline | default: "Every Story Has a Shape" }}</h2>
+        <a class="cta" href="{{ cta_href }}">
+          {{ section.settings.button_label | default: "Learn More" }}
+        </a>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls" aria-hidden="true">
+      <button class="btn prev" type="button" aria-label="Previous">‹</button>
+      <button class="btn next" type="button" aria-label="Next">›</button>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const root = document.getElementById('hero-rotating-frame-{{ section.id }}');
+    if (!root) return;
+
+    const slides = Array.from(root.querySelectorAll('.slide'));
+    const overlay = root.querySelector('.overlay');
+    const prevBtn = root.querySelector('.prev');
+    const nextBtn = root.querySelector('.next');
+
+    // Settings from data-attrs
+    const autoplay = root.dataset.autoplay === 'true';
+    const interval = Math.min(Math.max(parseInt(root.dataset.interval || '5000', 10), 2000), 9500);
+    const frameBottomDesktop = parseFloat(root.dataset.frameBottomDesktop || '62') / 100;
+    const frameBottomMobile  = parseFloat(root.dataset.frameBottomMobile  || '66') / 100;
+    const offsetDesktop = parseFloat(root.dataset.offsetDesktop || '12'); // px
+    const offsetMobile  = parseFloat(root.dataset.offsetMobile  || '10'); // px
+    const textMax = parseFloat(root.dataset.textMaxWidth || '680');
+    const fontScale = parseFloat(root.dataset.fontScale || '1.0');
+
+    root.style.setProperty('--text-max', textMax + 'px');
+    root.style.setProperty('--font-scale', fontScale);
+
+    let index = 0;
+    let timer = null;
+
+    function go(newIndex){
+      if (newIndex === index) return;
+      slides[index]?.classList.remove('is-active');
+      index = (newIndex + slides.length) % slides.length;
+      slides[index]?.classList.add('is-active');
+      positionOverlay();
+      restart();
+    }
+
+    function next(){ go(index + 1); }
+    function prev(){ go(index - 1); }
+
+    function restart(){
+      if (!autoplay) return;
+      clearInterval(timer);
+      timer = setInterval(next, interval);
+    }
+
+    // Compute overlay top so the text/button sit just below the frame
+    function positionOverlay(){
+      const active = slides[index];
+      const img = active?.querySelector('img');
+      if (!img || !overlay) return;
+
+      const rect = img.getBoundingClientRect();
+      const isMobile = window.matchMedia('(max-width: 749px)').matches;
+
+      const frameBottomRatio = isMobile ? frameBottomMobile : frameBottomDesktop;
+      const extraOffset = isMobile ? offsetMobile : offsetDesktop;
+
+      // With object-fit: cover, rect is the visible area; ratio maps to visible height.
+      const overlayTopPx = rect.top + (rect.height * frameBottomRatio) + extraOffset;
+
+      const rootTop = root.getBoundingClientRect().top;
+      const localTop = overlayTopPx - rootTop;
+
+      overlay.style.top = Math.max(localTop, 0) + 'px';
+    }
+
+    function onResize(){ positionOverlay(); }
+    function onImageLoad(){ positionOverlay(); }
+
+    nextBtn?.addEventListener('click', next);
+    prevBtn?.addEventListener('click', prev);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', positionOverlay, { passive: true });
+
+    slides.forEach(sl => {
+      const img = sl.querySelector('img');
+      if (img && !img.complete) img.addEventListener('load', onImageLoad);
+    });
+
+    positionOverlay();
+    restart();
+
+    document.addEventListener('shopify:section:load', positionOverlay);
+    document.addEventListener('shopify:section:reorder', positionOverlay);
+    document.addEventListener('shopify:block:select', positionOverlay);
+    document.addEventListener('shopify:block:deselect', positionOverlay);
+  })();
+  </script>
+
+  {% schema %}
+  {
+    "name": "Hero — Rotating Frame",
+    "tag": "section",
+    "class": "section hero-rotating-frame",
+    "settings": [
+      { "type": "checkbox", "id": "autoplay", "label": "Autoplay", "default": true },
+      { "type": "range", "id": "interval", "min": 2000, "max": 9500, "step": 500, "unit": "ms", "label": "Slide interval", "default": 5000 },
+
+      { "type": "select", "id": "hero_height", "label": "Section height", "default": "standard",
+        "options": [
+          { "label": "Standard (≈68vh)", "value": "standard" },
+          { "label": "Tall (≈80vh)", "value": "tall" },
+          { "label": "Half (≈55vh)", "value": "half" }
+        ]
+      },
+
+      { "type": "header", "content": "Overlay placement (Below the frame)" },
+      { "type": "range", "id": "frame_bottom_percent_desktop", "min": 40, "max": 85, "step": 0.5, "unit": "%", "label": "Frame end (desktop, % of image height)", "default": 62 },
+      { "type": "range", "id": "frame_bottom_percent_mobile",  "min": 40, "max": 90, "step": 0.5, "unit": "%", "label": "Frame end (mobile, % of image height)", "default": 66 },
+      { "type": "number", "id": "offset_desktop_px", "label": "Extra offset (desktop, px)", "default": 12 },
+      { "type": "number", "id": "offset_mobile_px",  "label": "Extra offset (mobile, px)", "default": 10 },
+
+      { "type": "header", "content": "Overlay content" },
+      { "type": "text", "id": "headline", "label": "Headline", "default": "Every Story Has a Shape" },
+      { "type": "url",  "id": "button_link", "label": "Button link" },
+      { "type": "text", "id": "button_label", "label": "Button label", "default": "Learn More" },
+
+      { "type": "header", "content": "Typography & layout" },
+      { "type": "text", "id": "headline_font", "label": "Headline font-family (optional)", "default": "inherit" },
+      { "type": "range", "id": "font_scale", "min": 0.8, "max": 1.4, "step": 0.1, "label": "Font scale", "default": 1.0 },
+      { "type": "range", "id": "text_max_width", "min": 420, "max": 920, "step": 10, "unit": "px", "label": "Max text width", "default": 680 },
+
+      { "type": "header", "content": "Colors" },
+      { "type": "color", "id": "text_color", "label": "Headline color", "default": "#000000" },
+      { "type": "color", "id": "button_bg", "label": "Button background", "default": "#000000" },
+      { "type": "color", "id": "button_text", "label": "Button text", "default": "#FFFFFF" },
+      { "type": "color", "id": "button_border", "label": "Button border", "default": "#000000" }
+    ],
+    "blocks": [
+      {
+        "type": "image",
+        "name": "Image",
+        "settings": [
+          { "type": "image_picker", "id": "image", "label": "Mockup image" },
+          { "type": "text", "id": "alt", "label": "Alt text", "default": "Framed print on wall" }
+        ]
+      }
+    ],
+    "max_blocks": 10,
+    "presets": [
+      { "name": "Hero — Rotating Frame", "category": "Image" }
+    ]
+  }
+  {% endschema %}
+</section>
