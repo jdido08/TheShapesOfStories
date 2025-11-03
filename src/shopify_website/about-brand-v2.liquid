@@ -1,0 +1,602 @@
+{% comment %}
+About — Brand (verbatim copy preserved)
+- Uses theme typography (no Tailwind/CDNs)
+- Keeps your headings, paragraphs, labels, SVGs, and CTA text EXACTLY as provided
+- Optional fixed story graph on scroll (reduced-motion aware)
+{% endcomment %}
+
+<section id="about-brand-{{ section.id }}" class="about-brand">
+  <style>
+    /* Theme fonts */
+    {{ settings.type_header_font | font_face }}
+    {{ settings.type_body_font   | font_face }}
+
+    #about-brand-{{ section.id }}{
+      --text-max: 72ch;
+      --gutter: 24px;
+    }
+    #about-brand-{{ section.id }} .wrap{
+      max-width: 1100px; margin: 0 auto; padding: clamp(28px, 4vw, 48px) var(--gutter);
+      font-family: {{ settings.type_body_font.family }}, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.6; color: #111;
+    }
+    #about-brand-{{ section.id }} h1,
+    #about-brand-{{ section.id }} h2,
+    #about-brand-{{ section.id }} h3{
+      font-family: {{ settings.type_header_font.family }}, Georgia, serif;
+      line-height: 1.2; margin: 0 0 .6em; letter-spacing: .2px; font-weight: 600;
+    }
+    #about-brand-{{ section.id }} h1{ font-size: clamp(32px, 4.4vw, 46px); text-align:center; margin-bottom: .9em; }
+    #about-brand-{{ section.id }} h2{ font-size: clamp(26px, 3.2vw, 34px); text-align:center; }
+    #about-brand-{{ section.id }} h3{ font-size: clamp(20px, 2.2vw, 24px); }
+
+    #about-brand-{{ section.id }} p{ margin: 0 0 1em; max-width: var(--text-max); }
+    #about-brand-{{ section.id }} .center{ text-align:center; }
+    #about-brand-{{ section.id }} .muted{ color:#555; }
+    #about-brand-{{ section.id }} .grid{ display:grid; gap: clamp(20px,3vw,32px); grid-template-columns:1fr; }
+    @media (min-width: 900px){ #about-brand-{{ section.id }} .grid.two{ grid-template-columns: 1.1fr .9fr; align-items: center; } }
+
+    /* Cards / chips */
+    #about-brand-{{ section.id }} .chip{ background:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; padding:4px 10px; display:inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    
+    #about-brand-{{ section.id }} .chip svg{
+    width: 18px; height: 18px; display:block;
+    }
+
+    /* How-it-works layout */
+    {% comment %} #about-brand-{{ section.id }} .hiw-sub{ margin: 18px 0 22px; }
+    #about-brand-{{ section.id }} .hiw-sub h3{
+    font-family: {{ settings.type_header_font.family }}, Georgia, serif;
+    font-weight: 600; margin: 0 0 10px; text-align: center;
+    font-size: clamp(18px, 2.2vw, 22px);
+    }
+    #about-brand-{{ section.id }} .hiw-list{
+    list-style: none; padding: 0; margin: 0 auto; max-width: var(--text-max);
+    display: grid; gap: 10px;
+    }
+    #about-brand-{{ section.id }} .hiw-item{
+    display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 12px;
+    }
+    #about-brand-{{ section.id }} .hiw-left{ text-align: left; }
+    #about-brand-{{ section.id }} .hiw-left .hiw-item{ justify-content: start; } {% endcomment %}
+
+    /* How-it-works alignment fixes */
+    #about-brand-{{ section.id }} .hiw-wrap{
+    max-width: 780px;           /* one column width for the whole section */
+    margin: 0 auto;             /* center on desktop */
+    }
+
+    #about-brand-{{ section.id }} .hiw-sub{ margin: 18px 0 22px; }
+    #about-brand-{{ section.id }} .hiw-sub h3{
+    font-family: {{ settings.type_header_font.family }}, Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(18px, 2.2vw, 22px);
+    margin: 0 0 10px;
+    text-align: center;         /* keep sub-heads centered */
+    }
+
+    /* Lists are centered as a block but the items can be left-aligned */
+    #about-brand-{{ section.id }} .hiw-list{
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;             /* center list block under the sub-head */
+    display: grid;
+    gap: 10px;
+    max-width: 780px;
+    }
+
+    #about-brand-{{ section.id }} .hiw-item{
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 12px;
+    }
+
+    /* Second subsection: left-align text content */
+    #about-brand-{{ section.id }} .hiw-left{ text-align: left; }
+    #about-brand-{{ section.id }} .hiw-left .hiw-item{ justify-content: start; }
+
+    /* Nice, even icon chips */
+    #about-brand-{{ section.id }} .chip{ min-width: 34px; text-align: center; }
+    #about-brand-{{ section.id }} .chip svg{ width: 18px; height: 18px; display: block; margin: 2px auto 0; }
+
+
+    
+    /* Common Shapes: active highlight */
+    #about-brand-{{ section.id }} .shape-card{
+    border:1px solid #e5e7eb; border-radius:10px; padding:16px; text-align:center; transition: box-shadow .2s ease, border-color .2s ease, transform .15s ease;
+    }
+    #about-brand-{{ section.id }} .shape-card.is-active{
+    border-color:#111; box-shadow:0 10px 24px rgba(0,0,0,.10); transform: translateY(-2px);
+    }
+
+    #about-brand-{{ section.id }} #shapes .shape-grid{
+    display: grid;
+    gap: 22px;
+    grid-template-columns: 1fr;   /* always one column */
+    max-width: 780px;             /* matches How It Works width */
+    margin: 0 auto;
+    }
+
+    
+
+
+
+
+
+    /* CTA */
+    #about-brand-{{ section.id }} .btn{
+      display:inline-block; background:#000; color:#fff; border:1px solid #000;
+      padding:12px 20px; border-radius:999px; text-decoration:none; font-weight:700;
+      transition: transform .15s ease, background .2s ease;
+    }
+
+   /* Rock-solid centering for the CTA */
+    #about-brand-{{ section.id }} .cta-row{
+    display: grid !important;
+    place-items: center !important;  /* centers both horizontally & vertically */
+    width: 100%;
+    }
+
+    /* Make sure no float/margins from the theme push the button left */
+    #about-brand-{{ section.id }} .cta-row .btn{
+    float: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    display: inline-flex;           /* safe with Grid container */
+    align-items: center;
+    justify-content: center;
+    }
+
+
+
+    #about-brand-{{ section.id }} .btn:hover{ background:#111; transform: translateY(-1px); }
+
+    /* Mockup image */
+    #about-brand-{{ section.id }} .mockup{ border-radius:12px; box-shadow: 0 12px 28px rgba(0,0,0,.08); overflow:hidden; }
+    #about-brand-{{ section.id }} .mockup img{ display:block; width:100%; height:auto; }
+
+    /* Fixed graph */
+    #about-brand-{{ section.id }} .fixed-graph{
+      position: fixed; left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right));
+      bottom: max(16px, env(safe-area-inset-bottom)); margin:0 auto; background:#fff; border:2px solid #111; border-radius:10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.12); padding:16px; max-width:640px; height:260px;
+      transform: translateY(120%); opacity:0; transition: transform .45s ease, opacity .45s ease; z-index:20;
+    }
+    #about-brand-{{ section.id }} .fixed-graph.is-visible{ transform: translateY(0); opacity:1; }
+    @media (min-width: 700px){ #about-brand-{{ section.id }} .fixed-graph{ height:320px; } }
+
+    /* ensure center really centers even if theme rules compete */
+    #about-brand-{{ section.id }} .center,
+    #about-brand-{{ section.id }} .center p { text-align: center; }
+
+    /* Force the intro paragraph to center, even against theme RTE rules */
+    #about-brand-{{ section.id }} #intro p.center{
+    display: block;
+    text-align: center !important;   /* beats .rte p, etc. */
+    margin-left: auto !important;    /* centers the block (since it has a max-width) */
+    margin-right: auto !important;
+    max-width: var(--text-max);
+    }
+
+    /* optional: keep attribute lines nicely centered + consistent width */
+    #about-brand-{{ section.id }} .attrs p {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 40rem; /* tune if you want narrower/wider */
+    }
+
+
+  </style>
+
+  <div class="wrap">
+    <h1>About The Shapes of Stories</h1>
+
+    <!-- Intro (verbatim) -->
+    <section id="intro" style="margin-bottom: 40px;">
+      <p class="text-lg center" style="font-size: clamp(18px, 2.2vw, 20px);">
+        We love stories. We read, listen, and watch them for fun. It's by accident they become our obsession. 
+        We have Kurt Vonnegut to thank most. His simple idea captivated us.
+      </p>
+      <p class="center" style="font-size: clamp(20px, 2.6vw, 22px); font-weight: 700; margin: 16px 0 20px;">
+        Every story has a shape.
+      </p>
+
+      <!-- Basic Story Shape Graph (verbatim SVG structure) -->
+      <div class="center" style="margin: 0 0 24px;">
+        <div style="display:inline-block;background:#fff;border:2px solid #000;border-radius:10px;box-shadow:0 10px 15px -3px rgba(0,0,0,.10);padding:16px;max-width:640px;width:100%;">
+          <svg viewBox="0 0 400 300" width="100%" height="100%">
+            <defs><marker id="arrow-intro-{{ section.id }}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#000"/></marker></defs>
+            <line x1="20" y1="150" x2="380" y2="150" stroke="#000" stroke-width="2" marker-end="url(#arrow-intro-{{ section.id }})"/>
+            <line x1="50" y1="150" x2="50" y2="20"  stroke="#000" stroke-width="2" marker-end="url(#arrow-intro-{{ section.id }})"/>
+            <line x1="50" y1="150" x2="50" y2="280" stroke="#000" stroke-width="2" marker-end="url(#arrow-intro-{{ section.id }})"/>
+            <text x="20"  y="165" text-anchor="middle" fill="#000" font-size="14" font-weight="bold">B</text>
+            <text x="380" y="165" text-anchor="middle" fill="#000" font-size="14" font-weight="bold">E</text>
+            <text x="40"  y="15"  text-anchor="middle" fill="#000" font-size="14" font-weight="bold">G</text>
+            <text x="40"  y="295" text-anchor="middle" fill="#000" font-size="14" font-weight="bold">I</text>
+            <path d="M 60 180 Q 205 -20 350 180" fill="none" stroke="#000" stroke-width="3"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works (verbatim) -->
+    <section style="margin-bottom: 40px;">
+        <div class="hiw-wrap">
+        <h2>How It Works</h2>
+
+        <!-- Subsection 1 -->
+        <div class="hiw-sub">
+            <h3>Every story can be drawn on a simple graph.</h3>
+            {% comment %} <ul class="hiw-list">
+            <li class="hiw-item">
+                <code class="chip">⟷</code>
+                <span>The horizontal (BE) axis is <strong>Time</strong>, from Beginning to End.</span>
+            </li>
+            <li class="hiw-item">
+                <code class="chip">↕</code>
+                <span>The vertical (GI) axis is <strong>Fortune</strong>. Good is up, Ill is down.</span>
+            </li>
+            </ul> {% endcomment %}
+            <!-- BE / Time -->
+            <li class="hiw-item">
+            <code class="chip" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" />
+                <polyline points="6,9 3,12 6,15" fill="currentColor" />
+                <polyline points="18,9 21,12 18,15" fill="currentColor" />
+                </svg>
+            </code>
+            <span>The horizontal (BE) axis is <strong>Time</strong>, from Beginning to End.</span>
+            </li>
+
+            <!-- GI / Fortune -->
+            <li class="hiw-item">
+            <code class="chip" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" stroke-width="2" />
+                <polyline points="9,6 12,3 15,6" fill="currentColor" />
+                <polyline points="9,18 12,21 15,18" fill="currentColor" />
+                </svg>
+            </code>
+            <span>The vertical (GI) axis is <strong>Fortune</strong>. Good is up, Ill is down.</span>
+            </li>
+        </div>
+
+        <!-- Subsection 2 -->
+        <div class="hiw-sub">
+            <h3>A character's journey is made of a few simple movements.</h3>
+            <ul class="hiw-list hiw-left">
+            <li id="rise" class="hiw-item">
+                <code class="chip">↑</code>
+                <span><strong>Rise:</strong> A change for the better. The more arrows (<code class="chip">↑↑</code>, <code class="chip">↑↑↑</code>), the more sudden and dramatic the rise.</span>
+            </li>
+            <li id="fall" class="hiw-item">
+                <code class="chip">↓</code>
+                <span><strong>Fall:</strong> A change for the worse. The more arrows (<code class="chip">↓↓</code>, <code class="chip">↓↓↓</code>), the more sudden and catastrophic the fall.</span>
+            </li>
+            <li id="stasis" class="hiw-item">
+                <code class="chip">→</code>
+                <span><strong>Stasis:</strong> No change.</span>
+            </li>
+            </ul>
+        </div>
+    </div>
+    </section>
+
+
+    <!-- The Common Shapes (verbatim headings/labels) -->
+    <section id="shapes" style="margin-bottom: 40px;">
+      <h2>The Common Shapes</h2>
+      <p class="center muted" style="margin: 0 auto 18px; max-width: var(--text-max);">
+        History never repeats but it does rhyme. The same is true for stories.
+      </p>
+
+      <div style="display:grid;gap:22px;grid-template-columns: repeat(auto-fit, minmax(220px,1fr));">
+       
+        <div class="shape-grid">
+        
+        <div id="shape-0" class="shape-card" data-shape="0">
+        <h3>Rags to Riches</h3>
+        <code class="chip" style="font-size:18px;">↑</code>
+        <p class="muted" style="margin-top:10px;">A steady rise from humble beginnings to success.</p>
+        </div>
+
+        <div id="shape-1" class="shape-card" data-shape="1">
+        <h3>From Bad to Worse</h3>
+        <code class="chip" style="font-size:18px;">↓</code>
+        <p class="muted" style="margin-top:10px;">A steady decline ending in catastrophe.</p>
+        </div>
+
+        <div id="shape-2" class="shape-card" data-shape="2">
+        <h3>Man in Hole</h3>
+        <code class="chip" style="font-size:18px;">↓↑</code>
+        <p class="muted" style="margin-top:10px;">Fall into trouble, then climb back out.</p>
+        </div>
+
+        <div id="shape-3" class="shape-card" data-shape="3">
+        <h3>Icarus</h3>
+        <code class="chip" style="font-size:18px;">↑↓</code>
+        <p class="muted" style="margin-top:10px;">Rise to great heights, followed by a dramatic fall.</p>
+        </div>
+
+        <div id="shape-4" class="shape-card" data-shape="4">
+        <h3>Boy Meets Girl</h3>
+        <code class="chip" style="font-size:18px;">↑↓↑</code>
+        <p class="muted" style="margin-top:10px;">Boy meets girl. Boy loses girl. Boy gets girl back.</p>
+        </div>
+
+        <div id="shape-5" class="shape-card" data-shape="5">
+        <h3>Oedipus</h3>
+        <code class="chip" style="font-size:18px;">↓↑↓</code>
+        <p class="muted" style="margin-top:10px;">Fall, rise, then fall again.</p>
+        </div>
+
+        <div id="shape-6" class="shape-card" data-shape="6">
+        <h3>Cinderella</h3>
+        <code class="chip" style="font-size:18px;">→↑↓↑</code>
+        <p class="muted" style="margin-top:10px;">Initial hardship, rise to happiness, brief setback, then ultimate triumph.</p>
+        </div>
+
+    
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Our Designs (verbatim) -->
+    <section id="example" style="margin-bottom: 40px;">
+      <h2>Our Designs</h2>
+      <p class="center" style="margin: 0 auto 18px; max-width: var(--text-max); font-size: 18px;">
+        We transform stories into minimalist designs. 
+        Each piece captures the character's emotional journey built from key pieces of the narrative.
+      </p>
+
+      <div class="center" style="margin-bottom: 12px;">
+        <div class="mockup" style="display:inline-block; max-width: 640px; width:100%; margin-bottom: 12px;">
+          <img
+            src="https://cdn.shopify.com/s/files/1/0651/9029/7674/files/title-the-great-gatsby_protagonist-jay-gatsby_product-print_size-8x10_line-type-char_background-color-_0A1F3B_font-color-_F9D342_border-color-FFFFFF_font-Josefin_Sans_title-display-ye.png?v=1753752954"
+            alt="The Great Gatsby Design"
+            loading="lazy" decoding="async">
+        </div>
+
+        <div class="center attrs" style="line-height:1.5;">
+          <p class="text-lg"><strong class="muted">Story:</strong> The Great Gatsby</p>
+          <p class="text-lg"><strong class="muted">Author:</strong> F. Scott Fitzgerald</p>
+          <p class="text-lg"><strong class="muted">Protagonist:</strong> Jay Gatsby</p>
+          <p class="text-lg"><strong class="muted">Shape:</strong> ↑ ↓ (Icarus)</p>
+        </div>
+      </div>
+
+      <div class="cta-row" style="margin-top:16px;">
+        <a href="https://theshapesofstories.com/collections/all" class="btn">Explore the Collection</a>
+      </div>
+
+    </section>
+  </div>
+
+  {% if section.settings.enable_fixed_graph %}
+    <div class="fixed-graph" id="fixed-graph-{{ section.id }}" aria-live="polite">
+      <!-- Fixed Story Graph (structure kept, simplified transitions) -->
+      <svg viewBox="0 0 400 300" width="100%" height="100%" shape-rendering="crispEdges">
+    <defs>
+        <marker id="fg-arrow-{{ section.id }}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0 0 L10 5 L0 10 z" fill="#000"/>
+        </marker>
+    </defs>
+
+    <!-- Title and shape sigil (arrows) -->
+    <text id="fg-shape-title-{{ section.id }}"
+            x="200" y="24" text-anchor="middle"
+            font-size="18" font-weight="600" fill="#000"
+            font-family="{{ settings.type_header_font.family }}, Georgia, serif"
+            style="opacity:0; transition:opacity .25s ease"></text>
+    <text id="fg-shape-sigil-{{ section.id }}"
+            x="200" y="48" text-anchor="middle"
+            font-size="16" font-weight="600" fill="#000"
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+            style="opacity:0; transition:opacity .25s ease"></text>
+
+    <!-- Axes -->
+    <line x1="20" y1="150" x2="380" y2="150" stroke="#000" stroke-width="2" marker-end="url(#fg-arrow-{{ section.id }})"/>
+    <line x1="50" y1="150" x2="50" y2="20"  stroke="#000" stroke-width="2" marker-end="url(#fg-arrow-{{ section.id }})"/>
+    <line x1="50" y1="150" x2="50" y2="280" stroke="#000" stroke-width="2" marker-end="url(#fg-arrow-{{ section.id }})"/>
+
+    <!-- Axis labels (BE / GI) -->
+    <text x="20"  y="165" text-anchor="middle" font-size="12" font-weight="700">B</text>
+    <text x="380" y="165" text-anchor="middle" font-size="12" font-weight="700">E</text>
+    <text x="40"  y="15"  text-anchor="middle" font-size="12" font-weight="700">G</text>
+    <text x="40"  y="295" text-anchor="middle" font-size="12" font-weight="700">I</text>
+
+    <!-- Guide strokes -->
+    <path id="fg-rise-{{ section.id }}"   d="M 60 180 Q 90 70 150 50"  fill="none" stroke="#000" stroke-width="3" pathLength="100" style="opacity:.12;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1.1s ease"/>
+    <path id="fg-fall-{{ section.id }}"   d="M 150 50 Q 180 180 250 200" fill="none" stroke="#000" stroke-width="3" pathLength="100" style="opacity:.12;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1.1s ease .15s"/>
+    <path id="fg-stasis-{{ section.id }}" d="M 250 200 L 350 200"   fill="none" stroke="#000" stroke-width="3" pathLength="100" style="opacity:.12;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1.1s ease .3s"/>
+
+    <!-- Common shape paths (stay hidden until selected) -->
+    <path id="fg-shape-0-{{ section.id }}" d="M 60 240 L 350 60" fill="none" stroke="#000" stroke-width="3"
+            pathLength="100" style="opacity:1;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 900ms ease"/>
+    <path id="fg-shape-1-{{ section.id }}" d="M 60 60 L 350 240" fill="none" stroke="#000" stroke-width="3"
+            pathLength="100" style="opacity:1;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 900ms ease"/>
+    
+    <path id="fg-shape-2-{{ section.id }}"
+      d="M 60 120 Q 205 360 350 120"
+      fill="none" stroke="#000" stroke-width="3"
+      pathLength="100"
+      style="opacity:1;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 900ms ease"/>
+
+    
+    <path id="fg-shape-3-{{ section.id }}"
+      d="M 60 180 Q 205 -20 350 180"
+      fill="none" stroke="#000" stroke-width="3"
+      pathLength="100"
+      style="opacity:1;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 900ms ease"/>
+
+    <!-- 4) Boy Meets Girl  ↑ ↓ ↑  — smooth S: rise ➜ long dip ➜ clean rise -->
+    <path id="fg-shape-4-{{ section.id }}"
+      d="M 60 150
+         C 120 70,   200 70,   220 140
+         S 320 240,  350 115"
+      fill="none" stroke="#000" stroke-width="3"
+      pathLength="100"
+      style="opacity:1;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 900ms ease"/>
+
+    <!-- 5) Oedipus  ↓ ↑ ↓  — smooth opposite: dip ➜ peak ➜ soft fall -->
+    <path id="fg-shape-5-{{ section.id }}"
+      d="M 60 150
+        C 120 235, 200 235, 220 140   
+        S 300 70,  350 190"           
+      fill="none" stroke="#000" stroke-width="3"
+      pathLength="100"
+      style="opacity:1;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 900ms ease"/>
+
+
+
+
+    <path id="fg-shape-6-{{ section.id }}" d="M 60 220 L 100 220 L 200 80 L 220 140 Q 280 220 350 40" fill="none" stroke="#000" stroke-width="3"
+            pathLength="100" style="opacity:1;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 900ms ease"/>
+    </svg>
+
+    </div>
+
+    <script>
+    (function(){
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const root = document.getElementById('about-brand-{{ section.id }}');
+    const box  = document.getElementById('fixed-graph-{{ section.id }}');
+    if (!root || !box) return;
+
+    const cards = Array.from(root.querySelectorAll('.shape-card[data-shape]'));
+    if (!cards.length) return;
+
+    // shape name + symbol keyed by data-shape value (0..6)
+    const labels  = {
+        0:"Rags to Riches", 1:"From Bad to Worse", 2:"Man in Hole",
+        3:"Icarus", 4:"Boy Meets Girl", 5:"Oedipus", 6:"Cinderella"
+    };
+    const symbols = {
+        0:"↑", 1:"↓", 2:"↓↑", 3:"↑↓", 4:"↑↓↑", 5:"↓↑↓", 6:"→↑↓↑"
+    };
+
+    const titleEl = document.getElementById('fg-shape-title-{{ section.id }}');
+    const sigilEl = document.getElementById('fg-shape-sigil-{{ section.id }}');
+
+    // Map each card to the matching SVG path by its data-shape
+    const shapePaths = cards.map(card => {
+        const idx = card.dataset.shape;
+        return document.getElementById(`fg-shape-${idx}-{{ section.id }}`);
+    });
+
+    let active = -1;
+    let ticking = false;
+    let visiblyOn = false;
+
+    function computeVisible(){
+        const shapes  = root.querySelector('#shapes')?.getBoundingClientRect();
+        const example = root.querySelector('#example')?.getBoundingClientRect();
+        if (!shapes) return false;
+        const vh = window.innerHeight;
+        const shapesInView   = (shapes.top < vh * 0.66) && (shapes.bottom > 220);
+        const exampleArrives = example ? (example.top < vh * 0.35) : false;
+        return shapesInView && !exampleArrives;
+    }
+
+    function applyVisible(v){
+        visiblyOn = v;
+        box.classList.toggle('is-visible', v);
+        if (!v){
+        if (titleEl) titleEl.style.opacity = '0';
+        if (sigilEl) sigilEl.style.opacity = '0';
+        shapePaths.forEach(p => { if (p) p.style.strokeDashoffset = '100'; });
+        if (active >= 0 && cards[active]) cards[active].classList.remove('is-active');
+        active = -1;
+        }
+    }
+
+    function closestCardIndex(){
+        const centerY = window.innerHeight * 0.45;
+        let best = -1, bestDist = Infinity;
+        cards.forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        const mid = r.top + r.height/2;
+        const visible = r.bottom > 80 && r.top < window.innerHeight - 80;
+        if (!visible) return;
+        const d = Math.abs(mid - centerY);
+        if (d < bestDist){ bestDist = d; best = i; }
+        });
+        return best;
+    }
+
+    function setActive(cardIdx){
+        if (cardIdx === active || cardIdx < 0) return;
+
+        if (active >= 0) cards[active].classList.remove('is-active');
+        cards[cardIdx].classList.add('is-active');
+
+        // reset strokes
+        shapePaths.forEach(p => { if (p) p.style.strokeDashoffset = '100'; });
+
+        // which shape is this?
+        const shapeIdx = cards[cardIdx].dataset.shape;
+
+        // animate the matching path
+        const path = document.getElementById(`fg-shape-${shapeIdx}-{{ section.id }}`);
+        if (!reduce && path) requestAnimationFrame(() => { path.style.strokeDashoffset = '0'; });
+
+        // update title + sigil (arrows)
+        if (titleEl){
+        titleEl.textContent = labels[shapeIdx] || '';
+        requestAnimationFrame(() => { titleEl.style.opacity = '1'; });
+        }
+        if (sigilEl){
+        sigilEl.textContent = symbols[shapeIdx] || '';
+        requestAnimationFrame(() => { sigilEl.style.opacity = '1'; });
+        }
+
+        active = cardIdx;
+    }
+
+    function tick(){
+        const visNow = computeVisible();
+        if (visNow !== visiblyOn) applyVisible(visNow);
+        if (visiblyOn){
+        const idx = closestCardIndex();
+        if (idx >= 0) setActive(idx);
+        }
+        ticking = false;
+    }
+
+    function onScrollResize(){
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(tick);
+    }
+
+    const sec = root.querySelector('#shapes');
+    if (sec && 'IntersectionObserver' in window){
+        const io = new IntersectionObserver(() => onScrollResize(), { threshold:[0,0.1,0.5,1] });
+        io.observe(sec);
+    }
+    window.addEventListener('scroll', onScrollResize, { passive:true });
+    window.addEventListener('resize', onScrollResize, { passive:true });
+    onScrollResize();
+    })();
+    </script>
+
+
+
+
+
+  {% endif %}
+
+  {% schema %}
+  {
+    "name": "About — Brand (verbatim)",
+    "settings": [
+      { "type": "checkbox", "id": "enable_fixed_graph", "label": "Show fixed “story graph” on scroll", "default": true }
+    ],
+    "presets": [{ "name": "About — Brand (verbatim)", "category": "Text" }]
+  }
+  {% endschema %}
+</section>
