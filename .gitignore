@@ -160,3 +160,14 @@ data/
 .archive
 /archive
 archive/test.psd
+/data
+/archetypes_data
+/generated_posters
+/mockup_templates
+/output
+data/
+archetypes_data/
+generated_posters/
+mockup_templates/
+output/
+
