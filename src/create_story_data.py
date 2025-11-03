@@ -164,6 +164,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         if story_summary is not None:
             print("✅ Story Summary Created")
     else:
+        story_summary_llm_model = "#N/A"
         with open(story_summary_path, 'r') as f:
             story_summary_data = json.load(f)
         story_summary = story_summary_data.get("summary")

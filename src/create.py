@@ -14,15 +14,16 @@ from google.oauth2.service_account import Credentials
 
 
 
-def full_create(story_type, story_title, story_author, story_protagonist, story_year, story_summary_path, product_type, product_details, skip_story_create=False):
-
+def full_create(story_type, story_title, story_author, story_protagonist, story_year, story_summary_path, product_type, product_details, skip_story_create=False, build_story_summary=True):
+    print(skip_story_create)
     if skip_story_create == False:
         story_data_path = create_story_data(story_type=story_type, 
                         story_title=story_title, 
                         story_author=story_author,
                         story_protagonist=story_protagonist, 
                         story_year=story_year, 
-                        story_summary_path=story_summary_path)
+                        story_summary_path=story_summary_path,
+                        build_story_summary=build_story_summary)
     else:
         print("Skipping Story Create for ", story_title, " - ", story_protagonist)
         print("Finding Story Data...")
@@ -97,15 +98,22 @@ for row in rows:
     product_type = row.get("product_type")
     product_details = row.get("product_details")
     skip_story_create = row.get("skip_story_create")
+    build_story_summary = row.get("build_story_summary")
 
     if product_details == "":
         print("Setting product details to default.")
         product_details = {} #using default product details 
     
-    if skip_story_create == "True":
+    if skip_story_create == "TRUE":
         skip_story_create = True
     else: #default
         skip_story_create = False
+    
+    if build_story_summary == "TRUE":
+        build_story_summary = True
+    else: #default
+        build_story_summary = False
+
     
     if story_type == "" or story_title == "" or story_author == "" or story_protagonist == "" or story_year == "" or story_summary_path == "" or product_type == "":
         print("Skipping row. Missing required fields")
@@ -120,7 +128,8 @@ for row in rows:
         story_summary_path=story_summary_path,
         product_type=product_type,
         product_details=product_details,
-        skip_story_create=skip_story_create
+        skip_story_create=skip_story_create,
+        build_story_summary=build_story_summary
     )
 
 
