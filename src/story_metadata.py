@@ -526,7 +526,9 @@ def consolidate(openlib: Dict[str,Any], openlib_work: Dict[str,Any], gbooks: Dic
 # -----------------------
 # LLM normalization (optional)
 # -----------------------
-from langchain.prompts import PromptTemplate
+# from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from llm import load_config, get_llm, extract_json
 
 # Controlled vocab (seed; expand as you grow)
@@ -833,6 +835,10 @@ def get_story_metadata(story_json_path: str,
 
     # Remove the temporary "description" field before persisting
     consolidated.pop("description", None)
+
+    if consolidated == None:
+        print("❌ ERROR: LLM failed to normalize metadata")
+        raise ValueError("ERROR: LLM failed to normalize metadata")
 
     # 4) write back into story_data.json under "metadata"
     story["metadata"] = consolidated

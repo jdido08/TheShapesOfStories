@@ -1,11 +1,12 @@
 
 from llm import load_config, get_llm, extract_json
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
 import yaml
 import tiktoken
 import json 
 import os 
+
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 
 
@@ -238,6 +239,10 @@ The descriptions in the example output demonstrate the minimum expected level of
     #attempt to extact json (if needed)
     output_text = extract_json(output_text)
 
+    if output_text == "" or output_text == None or output_text == {}:
+        print("❌ ERROR: LLM failed to analyze story into components")
+        raise ValueError("ERROR: LLM failed to analyze story into components")
+
 
     return output_text
 
@@ -420,7 +425,7 @@ Your `final_grade` must be the more critical of the two assessments. A story can
 ---
 ## OUTPUT
 
-Provide your complete two-phase assessment in the following JSON format ONLY.
+Provide your complete two-phase assessment in the following JSON format ONLY. Output a single JSON object. Do not use Markdown fences or any prose.
 
 ```json
 {{

@@ -20,12 +20,15 @@
 import json 
 import time
 from llm import load_config, get_llm, extract_json
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
+# from langchain.chains import LLMChain
+# from langchain.prompts import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate
 import inflect
 import textwrap
 from paths import PATHS
+
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 
  # List is in priority order -- this is all possible summary sources will need to update in future 
@@ -43,7 +46,7 @@ def build_sources_block(story_summary_data) -> str:
 
     for key, value in story_summary_data.items():
         #print(key)
-        if key not in SUMMARY_SOURCES and key != "title" and key != "openlib":
+        if key not in SUMMARY_SOURCES and key != "title" and key != "openlib" and key!= "gutenberg":
             print("❌ ERROR: Unexpected Summary Source: ", key , " in ", story_summary_data.get("title", ""))
             raise ValueError("Need to Investigate ", key, " summary")
             return None 
@@ -209,6 +212,10 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
         output_text = output.content
     else:
         output_text = output
+    
+    if output_text == "" or output_text == None or output_text == {}:
+        print("❌ ERROR: LLM Build Story Summary")
+        raise ValueError("ERROR: LLM Build Story Summary")
 
     
     #save in 

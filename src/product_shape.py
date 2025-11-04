@@ -7,8 +7,10 @@ from shapely.geometry import Polygon
 from shapely.affinity import rotate as shapely_rotate
 import shapely.affinity
 from llm import load_config, get_llm, extract_json
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
+# from langchain.chains import LLMChain
+# from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 import yaml
 import copy
 from scipy.interpolate import CubicSpline

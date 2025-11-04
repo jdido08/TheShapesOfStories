@@ -1,6 +1,9 @@
 from llm import load_config, get_llm, extract_json
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
+# from langchain.chains import LLMChain
+# from langchain.prompts import PromptTemplate
+# from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from llm import load_config, get_llm, extract_json
 import yaml
 import tiktoken
@@ -171,6 +174,10 @@ Output:
         output_text = output.content
     else:
         output_text = output
+    
+    if output_text == "" or output_text == None or output_text == {}:
+        print("❌ ERROR: LLM Failed to Create Story Style")
+        raise ValueError("ERROR: LLM Failed to Create Story Style")
 
     #attempt to extact json (if needed)
     story_style = extract_json(output_text)

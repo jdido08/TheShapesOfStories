@@ -13,6 +13,7 @@ from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
+from langchain_classic.chains import LLMChain
 
 import gi
 gi.require_version("Pango", "1.0")
@@ -152,14 +153,14 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # get story summary from story summary path 
     #story_summary = get_story_summary(story_summary_path)
     if build_story_summary == True:
-        story_summary_llm_model = "gemini-2.5-pro"
+        story_summary_llm_model = "claude-sonnet-4-5"
         story_summary = get_story_summary(
             story_title=story_title, 
             story_author=story_author, 
             story_protagonist=story_protagonist, 
             story_summary_path=story_summary_path, 
             config_path=PATHS['config'],
-            llm_provider="google", 
+            llm_provider="anthropic", 
             llm_model=story_summary_llm_model)
         if story_summary is not None:
             print("✅ Story Summary Created")
@@ -173,7 +174,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
     # get story components --> don't use google you often get blocked
-    story_components_llm_model = "gemini-2.5-pro"
+    story_components_llm_model = "gpt-5-2025-08-07"
     story_components = get_story_components(
         config_path=PATHS['config'],
         story_title=story_title,
@@ -181,7 +182,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         author=story_author,
         year=story_year,
         protagonist=story_protagonist,
-        llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+        llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
         llm_model = story_components_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
     print("✅ Story Components Created")
@@ -270,8 +271,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
     #get story metadata
-    story_metadata_llm_provider = "anthropic"
-    story_metadata_llm_model = "claude-sonnet-4-5"
+    story_metadata_llm_provider = "google"
+    story_metadata_llm_model = "gemini-2.5-pro"
     get_story_metadata(
         story_json_path=story_data_file_path,
         use_llm="on",

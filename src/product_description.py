@@ -1,7 +1,9 @@
 # create_description.py
 from llm import load_config, get_llm, extract_json  # keep your existing helpers
-from langchain.chains import LLMChain               # parity with your imports
-from langchain.prompts import PromptTemplate        # parity with your imports
+# from langchain.chains import LLMChain               # parity with your imports
+# from langchain.prompts import PromptTemplate        # parity with your imports
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage
 
 import json
@@ -188,6 +190,10 @@ def create_description(
 
     # 3) Story JSON (source of truth)
     story = _load_story_data(story_json_or_path) or {}
+
+    if story == {}:
+        print("❌ ERROR: LLM Failed to Create Product Descriptions")
+        raise ValueError("ERROR: LLM Failed to Create Product Descriptions")
 
     title = story.get("title") or story.get("work_title") or ""
     author = story.get("author") or ""

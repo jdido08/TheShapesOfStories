@@ -15,7 +15,7 @@ from google.oauth2.service_account import Credentials
 
 
 def full_create(story_type, story_title, story_author, story_protagonist, story_year, story_summary_path, product_type, product_details, skip_story_create=False, build_story_summary=True):
-    print(skip_story_create)
+
     if skip_story_create == False:
         story_data_path = create_story_data(story_type=story_type, 
                         story_title=story_title, 

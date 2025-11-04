@@ -152,7 +152,9 @@ class MechanicalCheck:
 
 try:
     from llm import load_config, get_llm, extract_json  # project-local helper
-    from langchain.prompts import PromptTemplate
+    # from langchain.prompts import PromptTemplate
+    from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+    from langchain_core.output_parsers import StrOutputParser
     _LLM_AVAILABLE = True
 except Exception:
     _LLM_AVAILABLE = False
@@ -337,6 +339,9 @@ def grade_arc_text_accuracy(generated_analysis: Dict, canonical_summary: str = "
         ]
         out["text_accuracy"]["final_grade"] = "F"
         out["text_accuracy"]["final_justification"] = "LLM unavailable or parse error."
+
+        print("❌ ERROR: LLM failed to Grade Arc Text Accuracy")
+        raise ValueError("ERROR: LLM failed to Grade Arc Text Accuracy")
 
     # 2) Mechanical summary (FYI only)
     mech_all_pass = all(m.mechanical_pass for m in mechanical) if mechanical else True

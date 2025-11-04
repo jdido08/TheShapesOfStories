@@ -185,7 +185,7 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     product_symbolic_rep,  product_archetype = get_story_symbolic_and_archetype(product_story_components)
     if product_symbolic_rep != story_data.get("shape_symbolic_representation"):
         print("❌ Product Shape Failed")
-        print("ERROR: Product and Data Symbolic Represensation Data do NOT EQUAL for {title}")
+        print(f"ERROR: Product and Data Symbolic Represensation Data do NOT EQUAL for {title}")
         print(f"Story Symbolic Rep: {story_data.get('shape_symbolic_representation')}")
         print(f"Product Symbolic Rep: {product_symbolic_rep}")
         return 
@@ -213,8 +213,8 @@ def create_product_data(story_data_path, product_type="", product_details=""):
 
     
     #grad story text
-    llm_provider_assess_arc_text = "anthropic"
-    llm_model_assess_arc_text = "claude-sonnet-4-20250514"
+    llm_provider_assess_arc_text = "google"
+    llm_model_assess_arc_text = "gemini-2.5-pro"
     assess_arc_text(
         generated_analysis_path=product_data_path,
         config_path=PATHS['config'],
@@ -486,7 +486,7 @@ def create_print_11x14_product_data(story_data_path, title, protagonist, author,
                     recursive_mode = True, #if you want to recurisvely generate story
                     recursive_loops = 10000, #the number of iterations 
                     llm_provider = "anthropic",#"groq",#"openai", #anthropic",#"google" #for generating descriptors
-                    llm_model = "claude-sonnet-4-5",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
+                    llm_model = "claude-sonnet-4-5-nonthinking",#"meta-llama/llama-4-scout-17b-16e-instruct",#"gpt-4.1-2025-04-14", #"claude-3-5-sonnet-latest",#"gemini-2.5-pro-preview-03-25", #"claude-3-5-sonnet-latest", #for generating descriptors 
                     #llm_provider = "google", #"anthropic", #google", 
                     #llm_model = "gemini-2.5-pro-preview-05-06", #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
                     output_format=output_format #options png or svg
