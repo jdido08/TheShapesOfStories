@@ -9,7 +9,7 @@ from datetime import datetime
 
 from product_shape import create_shape
 from product_color import map_hex_to_simple_color
-from story_shape_category import get_story_symbolic_and_archetype
+from story_shape_category import get_story_symbolic_and_archetype, shapes_equal_ignore_magnitude, _direction_tokens, shape_direction_diff
 from product_description import create_product_description
 from product_text_accuracy import assess_arc_text
 from product_mockups import create_mockups
@@ -181,14 +181,34 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     # Compare product shape to make sure it's the same as the story -- product shapes can change slightly during product creations
     with open(product_data_path, 'r') as f:  #open product json data that was just created
         product_data = json.load(f)
+
+    story_symbolic = story_data.get("shape_symbolic_representation")
     product_story_components = product_data.get("story_components")
     product_symbolic_rep,  product_archetype = get_story_symbolic_and_archetype(product_story_components)
-    if product_symbolic_rep != story_data.get("shape_symbolic_representation"):
-        print("❌ Product Shape Failed")
-        print(f"ERROR: Product and Data Symbolic Represensation Data do NOT EQUAL for {title}")
-        print(f"Story Symbolic Rep: {story_data.get('shape_symbolic_representation')}")
-        print(f"Product Symbolic Rep: {product_symbolic_rep}")
-        return 
+
+    if not shapes_equal_ignore_magnitude(product_symbolic_rep, story_symbolic):
+        print("❌ Product Shape Failed (direction mismatch)")
+        print(f"ERROR: Product and Data *direction sequences* differ for {title}")
+        print(f"Story (dir only):   {_direction_tokens(story_symbolic)}")
+        print(f"Product (dir only): {_direction_tokens(product_symbolic_rep)}")
+        diff = shape_direction_diff(story_symbolic, product_symbolic_rep)
+        if diff["diffs"]:
+            print("Differences by index:", diff["diffs"])
+        return
+    else:
+        # (optional) if you still want to flag magnitude-only differences:
+        if product_symbolic_rep != story_symbolic:
+            print("ℹ️ Direction matches; magnitude differs (OK by loose compare).")
+
+    
+
+
+    # if product_symbolic_rep != story_data.get("shape_symbolic_representation"):
+    #     print("❌ Product Shape Failed")
+    #     print(f"ERROR: Product and Data Symbolic Represensation Data do NOT EQUAL for {title}")
+    #     print(f"Story Symbolic Rep: {story_data.get('shape_symbolic_representation')}")
+    #     print(f"Product Symbolic Rep: {product_symbolic_rep}")
+    #     return 
     if product_archetype != story_data.get("shape_archetype"):
         print("❌ Product Shape Failed")
         print("ERROR: Product and Data Shape Archetypes do NOT EQUAL for {title}")

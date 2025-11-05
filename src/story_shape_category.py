@@ -480,3 +480,61 @@ def get_story_symbolic_and_archetype(story_components: dict, simplify: bool = Tr
     return symbolic_rep,  archetype
 
  
+
+
+
+### ADDING 11/3/2025 to compare story and product shape but not considering magntidue
+
+import re
+
+# Matches runs of arrow glyphs (the shapes you generate use these three).
+_ARROWS_RE = re.compile(r"[↑↓→]+")
+
+def _direction_tokens(symbolic: str) -> list[str]:
+    """
+    Convert a symbolic shape string like '↓ ↑ ↓ ↑↑↑' into direction-only tokens:
+    - Any run of ups (↑ / ↑↑ / ↑↑↑) becomes '↑'
+    - Any run of downs (↓ / ↓↓ / ↓↓↓) becomes '↓'
+    - Any run of flats (→ / →→ / …) becomes '→'
+    Non-arrow characters (spaces, punctuation) are ignored.
+    """
+    if not symbolic:
+        return []
+    tokens = []
+    for chunk in _ARROWS_RE.findall(symbolic):
+        if "↑" in chunk:
+            tokens.append("↑")
+        elif "↓" in chunk:
+            tokens.append("↓")
+        else:
+            # fall back to flat for anything made of '→'
+            tokens.append("→")
+    return tokens
+
+def shapes_equal_ignore_magnitude(a: str, b: str) -> bool:
+    """
+    Return True if two symbolic representations have the same *direction sequence*
+    ignoring magnitude differences (↑ vs ↑↑ vs ↑↑↑), e.g.:
+
+        '↓ ↑ ↓ ↑↑↑'  ==  '↓ ↑ ↓ ↑↑'   -> True
+        '→ ↑ ↓'      ==  '→ ↑↓'       -> False (different step structure)
+        '↑ ↓ ↑'      ==  '↑ ↓ ↑ →'    -> False (extra flat at end)
+
+    This comparison treats only the order of directions as significant.
+    """
+    return _direction_tokens(a) == _direction_tokens(b)
+
+def shape_direction_diff(a: str, b: str) -> dict:
+    """
+    Optional helper: get a small diff summary for logging.
+    Returns which positions differ (by direction, not magnitude).
+    """
+    A, B = _direction_tokens(a), _direction_tokens(b)
+    maxlen = max(len(A), len(B))
+    diffs = []
+    for i in range(maxlen):
+        ai = A[i] if i < len(A) else None
+        bi = B[i] if i < len(B) else None
+        if ai != bi:
+            diffs.append({"index": i, "a": ai, "b": bi})
+    return {"a_tokens": A, "b_tokens": B, "diffs": diffs}

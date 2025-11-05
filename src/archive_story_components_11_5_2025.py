@@ -69,13 +69,17 @@ def analyze_story(config_path, author_name, story_title, protagonist, story_summ
    - Identify their initial circumstances and relationships
    - Look for early indicators of their emotional state
    - Note their primary motivations and desires
-2. Segment the story into components based on major changes in {protagonist}'s emotions.
-   - The number of components should be determined by the natural transitions in their emotional state
-   - Most stories will naturally fall into 4-8 components, though shorter or longer stories may fall outside this range
-   - Each significant change in their emotional state should mark the start of a new component
-   - As a general guideline, major emotional changes typically involve shifts of at least 3-4 points on the -10 to +10 scale
-   - Components can vary in length based on the pace of emotional change
-   - Avoid over-segmentation: only create new components for meaningful shifts in emotional state
+2) Segment the story into components based on major changes in {protagonist}’s emotions.
+    - Component budget: Aim for ≈5 components capturing the major emotional turns. Acceptable range: 4–6.
+    - Boundaries = real turns, not scene cuts: Create a new component only when there’s a meaningful emotional shift for {protagonist}.
+    - Delta threshold: Favor boundaries where net change is ≥3 points on the −10…+10 scale. Smaller oscillations are noise—merge them.
+    - Continuity: The start_score of each component must equal the previous component’s end_score (no teleports).
+    - Monotone within component: The emotional movement inside a component should be predominantly one direction (rise, fall, or near-flat).
+    - Time placement (guideline, not a rule): Use the full 0–100% timeline. Bias toward common waypoints only if they fit this story:
+        - Inciting ~10–20% • Midpoint ~45–60% • Low/High point ~70–85% • Resolution ~90–100%.
+        - If these don’t fit, prioritize narrative logic over these anchors.
+    - Avoid over-segmentation: Do not split for micro-wiggles, location changes, or character swaps. Merge adjacent micro-moves into the nearest major turn.
+    - Components may vary in length; longer spans are fine when the emotional direction is stable.
 3. Identify the emotional scores of each story component.
    - Scores must be whole numbers between -10 and +10 that reflect {protagonist}'s emotional state as evidenced in the story summary
    - Score changes must match the selected arc type

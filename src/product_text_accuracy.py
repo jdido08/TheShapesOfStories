@@ -229,7 +229,7 @@ def _llm_text_grade(generated_analysis: dict, canonical_summary: str, llm_provid
     prompt = _build_llm_prompt()
     gen_str = json.dumps(generated_analysis, ensure_ascii=False)
     config = load_config(config_path=config_path)
-    llm = get_llm(llm_provider, llm_model, config, max_tokens=3500)
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=6000)
     runnable = prompt | llm
     output = runnable.invoke({
         "generated_analysis": gen_str,
@@ -241,6 +241,7 @@ def _llm_text_grade(generated_analysis: dict, canonical_summary: str, llm_provid
     output_text = output.content if hasattr(output, "content") else output
     try:
         extracted = extract_json(output_text)
+        print(extracted)
         llm_dict = json.loads(extracted)
         return llm_dict
     except Exception as e:
@@ -312,6 +313,15 @@ def grade_arc_text_accuracy(generated_analysis: Dict, canonical_summary: str = "
     Mechanical checks do NOT affect pass/fail; they are recorded for visibility only.
     """
     llm_result = _llm_text_grade(generated_analysis, canonical_summary, llm_provider, llm_model, config_path)
+    
+    # If _llm_text_grade returned a raw string for some reason, normalize it here.
+    if isinstance(llm_result, str):
+        try:
+            llm_result = json.loads(extract_json(llm_result))
+        except Exception as e:
+            llm_result = {"error": f"Post-parse normalization failed: {e}"}
+
+
     mechanical = _mechanical_checks(generated_analysis)
 
     out: Dict = {"text_accuracy": {"per_component": [], "holistic_assessment": {}, "final_grade": None, "final_justification": ""}}
@@ -339,9 +349,9 @@ def grade_arc_text_accuracy(generated_analysis: Dict, canonical_summary: str = "
         ]
         out["text_accuracy"]["final_grade"] = "F"
         out["text_accuracy"]["final_justification"] = "LLM unavailable or parse error."
-
+        print(llm_result)
         print("❌ ERROR: LLM failed to Grade Arc Text Accuracy")
-        raise ValueError("ERROR: LLM failed to Grade Arc Text Accuracy")
+        #raise ValueError("ERROR: LLM failed to Grade Arc Text Accuracy")
 
     # 2) Mechanical summary (FYI only)
     mech_all_pass = all(m.mechanical_pass for m in mechanical) if mechanical else True

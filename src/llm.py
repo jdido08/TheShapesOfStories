@@ -115,11 +115,16 @@ def get_llm(provider: str, model: str, config: dict, max_tokens: int = 1024):
 
 import re, json
 
+
+import re, json
+import re, json
+
 def extract_json(text: str) -> str:
     """
     Extract a JSON object from model output, repairing common issues:
     - Strips ```json fences
     - Normalizes quotes and removes trailing commas
+    - Escapes unescaped inner double-quotes in the `description` field
     - Returns largest balanced JSON prefix
     - If JSON still invalid, truncates a dangling last element in `component_assessments`
     - Finally, appends missing closers as a last resort
@@ -147,6 +152,26 @@ def extract_json(text: str) -> str:
         return t
 
     s = _sanitize_common_issues(s)
+
+    # --- 3b) Escape *unescaped* inner " only inside description values ---
+    # We capture the description value up to the next JSON key we expect, or a closing brace.
+    # This lets us safely escape any raw " inside the value without touching the terminator.
+    desc_pattern = re.compile(
+        r'("description"\s*:\s*")'            # 1: opening `"description": "`
+        r'(.*?)'                               # 2: description content (greedy across lines)
+        r'"(?=\s*,\s*"(?:end_emotional_score|arc|end_time|emotional_transition|'
+        r'is_justified|reasoning|holistic_justification|final_justification)"|\s*[,}] )',
+        re.DOTALL
+    )
+
+    def _escape_unescaped_quotes_in_desc(m):
+        prefix = m.group(1)
+        content = m.group(2)
+        # Escape any " not already escaped
+        content = re.sub(r'(?<!\\)"', r'\"', content)
+        return prefix + content + '"'
+
+    s = re.sub(desc_pattern, _escape_unescaped_quotes_in_desc, s)
 
     # --- 4) Largest balanced JSON prefix (ignoring content inside strings) ---
     def _last_balanced_index(t: str) -> int:
@@ -196,15 +221,12 @@ def extract_json(text: str) -> str:
         pass
 
     # --- 5) Targeted repair: trim dangling last element in `component_assessments` ---
-    # We locate the array and keep only fully closed object elements.
     def _trim_dangling_last_array_item(json_text: str, array_key: str) -> str:
-        # Find the `"array_key": [`
         m = re.search(rf'"{re.escape(array_key)}"\s*:\s*\[', json_text)
         if not m:
-            return json_text  # nothing to do
+            return json_text
 
-        open_bracket_pos = m.end()  # position after '['
-        # Find the matching closing bracket for this array using depth over objects only
+        open_bracket_pos = m.end()
         i = open_bracket_pos
         n = len(json_text)
         in_str = False
@@ -230,8 +252,6 @@ def extract_json(text: str) -> str:
                 elif ch == "}":
                     if obj_depth > 0:
                         obj_depth -= 1
-                        # If object just closed and we're at array top-level,
-                        # mark a complete item end (might be followed by comma or ])
                         if obj_depth == 0:
                             last_complete_item_end = i + 1
                 elif ch == "]":
@@ -241,23 +261,17 @@ def extract_json(text: str) -> str:
             i += 1
 
         if array_close_pos is None:
-            # No closing bracket found; give up
             return json_text
 
-        # If the last complete item end is before the array close, we may have a dangling partial tail.
         if last_complete_item_end and last_complete_item_end < array_close_pos:
-            # Build new text: prefix + items up to last_complete_item_end
             prefix = json_text[:open_bracket_pos]
             items = json_text[open_bracket_pos:last_complete_item_end]
-            suffix = json_text[array_close_pos+1:]  # after the original ']'
-            # Remove any trailing comma from items
             items = re.sub(r",\s*$", "", items)
-            repaired = prefix + items + "]" + suffix
-            return repaired
+            suffix = json_text[array_close_pos+1:]
+            return prefix + items + "]" + suffix
         else:
             return json_text
 
-    # Try trimming the `component_assessments` array once (or twice if needed)
     for _ in range(2):
         s_try = _trim_dangling_last_array_item(s, "component_assessments")
         s_try = _sanitize_common_issues(s_try)
@@ -265,7 +279,7 @@ def extract_json(text: str) -> str:
             json.loads(s_try)
             return s_try
         except Exception:
-            s = s_try  # keep best effort and try again
+            s = s_try
 
     # --- 6) Final fallback: append missing closers based on counts (ignoring strings) ---
     def _count_pairs(t: str):
