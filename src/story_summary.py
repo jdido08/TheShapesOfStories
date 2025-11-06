@@ -29,6 +29,7 @@ from paths import PATHS
 
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from llm import extract_json
 
 
  # List is in priority order -- this is all possible summary sources will need to update in future 
@@ -126,6 +127,13 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
             - Keep tone factual and precise, not interpretive.
         </style>
     </context>
+                                  
+    <structure>
+        You must split the synthesis into two labeled sections:
+        1) <backstory> … </backstory> — ONLY events that occur before the on-page narrative begins (childhood, prior relationships, past wars, world/lore setup, flashbacks, expository context). Do not include any on-page present-timeline events.
+        2) <main_story> … </main_story> — The on-page narrative from the opening scene through the ending. Be strictly chronological and include the ending.
+        Keep both sections concise but complete. If there is no meaningful backstory, output "" for backstory.
+    </structure>
 
     {sources_block}
 
@@ -181,8 +189,12 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
     </quality_checks>
 
     <output>
-    Return ONLY the final synthesized summary as plain paragraphs.
-    Do not include labels, XML tags, commentary, or preambles—just the story itself.
+        Return a JSON object with EXACTLY these two string fields and nothing else (no code fences, no preamble, no trailing commentary):
+
+        {{
+        "backstory": "Only events that precede the on-page narrative. If none, use an empty string.",
+        "main_story": "The on-page narrative from the opening scene through the ending, strictly chronological."
+        }}
     </output>
     """).strip()
 
@@ -203,7 +215,7 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
         "title": story_title,
         "author": story_author,
         "protagonist": story_protagonist,
-        "sources_block": sources_block,
+        "sources_block": sources_block
     })
 
 
@@ -213,52 +225,56 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
     else:
         output_text = output
     
+    output_text = extract_json(output_text)
+    output_text = json.loads(output_text)
+
+    #print(output_text)
+    
     if output_text == "" or output_text == None or output_text == {}:
         print("❌ ERROR: LLM Build Story Summary")
         raise ValueError("ERROR: LLM Build Story Summary")
 
     
     #save in 
-    if (output_text or "").strip() != "":
-        summary_file_name = f'{story_title.lower().replace(" ", "-")}-{story_protagonist.lower().replace(" ", "-")}_summary.json'
-        summary_file_path = PATHS['story_summaries'] + "/" + summary_file_name
+    summary_file_name = f'{story_title.lower().replace(" ", "-")}-{story_protagonist.lower().replace(" ", "-")}_summary.json'
+    summary_file_path = PATHS['story_summaries'] + "/" + summary_file_name
 
-        summary_data = {
-            "title": story_title,
-            "author": story_author,
-            "protagonist": story_protagonist,
-            "summary": output_text.strip(),
-            "summary_sources": sources_used,
-            "summary_sources_file_path": story_summary_path
-        }
+    summary_data = {
+        "title": story_title,
+        "author": story_author,
+        "protagonist": story_protagonist,
+        "backstory": output_text['backstory'],
+        "summary": output_text['main_story'],
+        "summary_sources": sources_used,
+        "summary_sources_file_path": story_summary_path
+    }
 
-        with open(summary_file_path, 'w') as f:
-            json.dump(summary_data, f, indent=4)
-        
-        #wait a few seconds 
-        time.sleep(3)
-        print("✅ Story Summary Saved")
-    else:
-        print("❌ ERROR: No Story Summary Generated")
+    with open(summary_file_path, 'w') as f:
+        json.dump(summary_data, f, indent=4)
+    
+    #wait a few seconds 
+    time.sleep(3)
+    print("✅ Story Summary Saved")
+    
 
-    return (output_text or "").strip()
+    return output_text
 
 
-# story_title = "Les Miserables"
-# story_author = "Victor Hugo"
-# story_protagonist = "Jean Valjean"
-# #story_summary_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/les_miserables_composite_data.json"
-# story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/les_miserables_composite_data.json"
-# config_path=PATHS['config']
-# llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-# llm_model = "gemini-2.5-pro" #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2
+story_title = "The Great Gatsby"
+story_author = "F. Scott Fitzgerald"
+story_protagonist = "Jay Gatsby"
+#story_summary_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/les_miserables_composite_data.json"
+story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json"
+config_path=PATHS['config']
+llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+llm_model = "gemini-2.5-pro" #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2
 
-# get_story_summary(
-#     story_title = story_title,
-#     story_author = story_author,
-#     story_protagonist = story_protagonist,
-#     story_summary_path = story_summary_path,
-#     config_path=config_path,
-#     llm_provider = llm_provider,
-#     llm_model = llm_model
-# )
+get_story_summary(
+    story_title = story_title,
+    story_author = story_author,
+    story_protagonist = story_protagonist,
+    story_summary_path = story_summary_path,
+    config_path=config_path,
+    llm_provider = llm_provider,
+    llm_model = llm_model
+)

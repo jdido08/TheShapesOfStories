@@ -154,7 +154,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     #story_summary = get_story_summary(story_summary_path)
     if build_story_summary == True:
         story_summary_llm_model = "claude-sonnet-4-5"
-        story_summary = get_story_summary(
+        story_summary_data = get_story_summary(
             story_title=story_title, 
             story_author=story_author, 
             story_protagonist=story_protagonist, 
@@ -162,13 +162,17 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
             config_path=PATHS['config'],
             llm_provider="anthropic", 
             llm_model=story_summary_llm_model)
-        if story_summary is not None:
+        if story_summary_data is not None:
+            story_summary = story_summary_data.get("summary")
+            backstory = story_summary_data.get("backstory")
             print("✅ Story Summary Created")
     else:
         story_summary_llm_model = "#N/A"
         with open(story_summary_path, 'r') as f:
             story_summary_data = json.load(f)
         story_summary = story_summary_data.get("summary")
+        backstory = story_summary_data.get("backstory")
+
         print("✅ Story Summary Loaded")
 
 
@@ -179,6 +183,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         config_path=PATHS['config'],
         story_title=story_title,
         story_summary = story_summary,
+        backstory = backstory,
         author=story_author,
         year=story_year,
         protagonist=story_protagonist,

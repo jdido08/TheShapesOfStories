@@ -1,6 +1,6 @@
 11/5/2025:
 - revisit story components analysis (not getting the shapes I really want with current approach). I'm wondering if I need a 3 step approach:
     -> aggregate
-    -> normalize (e.g. get rid of background components; that should influence where persons starts). 
+    -> normalize (e.g. seperate out background components; that should influence where persons starts). 
     -> segement (story_components)
 - revisit story style components (maybe feed in popular book covers)
