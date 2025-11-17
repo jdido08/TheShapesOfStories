@@ -1465,17 +1465,17 @@ def fetch_goodreads_metadata_by_title(title) -> Optional[Dict[str, Any]]:
 # fetch_goodreads_metadata_by_title("Harry Potter and the Sorcerer's Stone")
 
 
-story_metadata_llm_provider = "google"
-story_metadata_llm_model = "gemini-2.5-pro"
-get_story_metadata(
-    story_json_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/crime-and-punishment-rodion-raskolnikov.json",
-    use_llm="on",
-    config_path=PATHS['config'],
-    llm_provider=story_metadata_llm_provider,
-    llm_model=story_metadata_llm_model
-)
-print("✅ Story MetaData")
-print("")
+# story_metadata_llm_provider = "google"
+# story_metadata_llm_model = "gemini-2.5-pro"
+# get_story_metadata(
+#     story_json_path="/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/crime-and-punishment-rodion-raskolnikov.json",
+#     use_llm="on",
+#     config_path=PATHS['config'],
+#     llm_provider=story_metadata_llm_provider,
+#     llm_model=story_metadata_llm_model
+# )
+# print("✅ Story MetaData")
+# print("")
 
 
    
