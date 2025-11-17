@@ -13,6 +13,7 @@ from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
+from story_cover import get_story_cover
 from langchain_classic.chains import LLMChain
 
 import gi
@@ -153,7 +154,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # get story summary from story summary path 
     #story_summary = get_story_summary(story_summary_path)
     if build_story_summary == True:
-        story_summary_llm_model = "claude-sonnet-4-5"
+        story_summary_llm_model = "claude-sonnet-4-5" #anthropic claude 4-5 seems to best 
         story_summary_data = get_story_summary(
             story_title=story_title, 
             story_author=story_author, 
@@ -162,15 +163,21 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
             config_path=PATHS['config'],
             llm_provider="anthropic", 
             llm_model=story_summary_llm_model)
-        if story_summary_data is not None:
-            story_summary = story_summary_data.get("summary")
-            backstory = story_summary_data.get("backstory")
+        
+        print(story_summary_data)
+
+        story_summary = story_summary_data.get("main_story", "")
+        backstory = story_summary_data.get("backstory", "")
+        if story_summary != "":
             print("✅ Story Summary Created")
+        else:
+             print("❌ Story Summary Failed")
+             return 
     else:
         story_summary_llm_model = "#N/A"
         with open(story_summary_path, 'r') as f:
             story_summary_data = json.load(f)
-        story_summary = story_summary_data.get("summary")
+        story_summary = story_summary_data.get("main_story")
         backstory = story_summary_data.get("backstory")
 
         print("✅ Story Summary Loaded")
@@ -178,12 +185,11 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
     # get story components --> don't use google you often get blocked
-    story_components_llm_model = "gpt-5-2025-08-07"
+    story_components_llm_model = "gpt-5-2025-08-07" ## openai gpt 5 seems to best for this 
     story_components = get_story_components(
         config_path=PATHS['config'],
         story_title=story_title,
         story_summary = story_summary,
-        backstory = backstory,
         author=story_author,
         year=story_year,
         protagonist=story_protagonist,
@@ -193,7 +199,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     print("✅ Story Components Created")
 
     #grade story components
-    story_components_grader_llm_model = "gemini-2.5-pro"
+    story_components_grader_llm_model = "gemini-2.5-pro" #google good for grading 
     story_component_grades = grade_story_components(
         config_path = PATHS['config'], 
         story_components=story_components, 
@@ -210,9 +216,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # get category of shape
     story_symbolic_rep,  story_archetype = get_story_symbolic_and_archetype(story_components)
     print("✅ Story Shape Category")
+
+    # get story cover
+    get_story_cover(story_data_file_path)
     
     # get stort style
-    story_style_llm_model = "claude-sonnet-4-5"
+    story_style_llm_model = "claude-sonnet-4-5" #claude sonnet good for style
     story_style = get_story_style(
         config_path = PATHS['config'],
         story_title = story_title, 

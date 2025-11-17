@@ -19,6 +19,7 @@ PATHS['product_designs'] = os.path.join(BASE_DIR, 'product_designs')
 PATHS['shapes_output'] = os.path.join(BASE_DIR, 'story_shapes')
 PATHS['supporting_designs'] = os.path.join(BASE_DIR, 'supporting_designs')
 PATHS['product_mockups'] = os.path.join(BASE_DIR, 'product_mockups')
+PATHS['story_covers'] = os.path.join(BASE_DIR, 'story_covers')
 PATHS['config'] = os.path.join(BASE_DIR, 'config.yaml')
 
 # --- Automatically create output directories if they don't exist ---

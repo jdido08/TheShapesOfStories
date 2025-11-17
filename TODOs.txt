@@ -1,3 +1,29 @@
+11/10/2025:
+ - cleaned up story summary --> seperating backstory and mainstory; only feeding main story summary into story components -- done
+ - need to revisit story components 
+    - make sure description capture events which describe the emotional change 
+- need to revisit story style to make sure:
+    - I capture import covers ==> I think it makes sense to use the covers on goodreads as those are the cover's folks are familar with
+    - I create a consistent branding experience --> the branding experience is that it just reflects the book covers 
+    - consider creating new mockup that actually shows the cover image of the book
+
+
+11/7/2025:
+- story summary 
+    --> divide into backstory and main_story 
+    --> only feed main_story into summary
+
+- story_components:
+    --> need to revisit --> need simpler shapes 
+
+
+- story_style:
+    - need more consistent aestic for brand 
+    - think about feeding in story covers 
+
+
+
+
 11/5/2025:
 - revisit story components analysis (not getting the shapes I really want with current approach). I'm wondering if I need a 3 step approach:
     -> aggregate

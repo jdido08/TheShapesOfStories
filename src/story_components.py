@@ -11,7 +11,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 
 #call LLM to get story components
-def analyze_story(config_path, author_name, story_title, protagonist, story_summary, backstory, llm_provider, llm_model):
+def analyze_story(config_path, author_name, story_title, protagonist, story_summary, llm_provider, llm_model):
     
 
     # The user_message includes placeholders that will be replaced by the function arguments
@@ -28,10 +28,6 @@ def analyze_story(config_path, author_name, story_title, protagonist, story_summ
 <protagonist>
 {protagonist}
 </protagonist>
-
-<backstory>
-{backstory}
-</backstory>
 
 <story_summary>
 {story_summary}
@@ -124,12 +120,9 @@ After your analysis, provide the final output in the following JSON format:
 - Include sensory details that contribute to understanding their experience
 
 ### Initial Emotional Score Guidelines:
-- Use the <backstory> (if present) to determine the protagonist’s emotional baseline immediately before the on-page narrative begins.
-- Anchor the initial baseline to the *last* emotional state implied by the backstory, not early childhood or distant history.
-- If the backstory shows mixed signals, choose the most proximate, dominant state and justify it in your internal reasoning (but do not include reasoning in the output).
-- If there is no meaningful backstory, infer the starting baseline from the opening circumstances of the <story_summary>.
-- The initial score must be a whole number between -10 and +10.
-
+- Carefully examine how {protagonist} is first presented in the story
+- Look for descriptive words indicating their initial emotional state
+- Consider their starting circumstances and relationships
 
 ## Important Notes:
 - The first component always has an end_time of 0, no description, and no arc.
@@ -214,7 +207,7 @@ The descriptions in the example output demonstrate the minimum expected level of
 """
     
     prompt = PromptTemplate(
-        input_variables=["author_name", "story_title", "protagonist", "story_summary", "backstory"],  # Define the expected inputs
+        input_variables=["author_name", "story_title", "protagonist", "story_summary"],  # Define the expected inputs
         template=prompt_template
     )
 
@@ -230,8 +223,7 @@ The descriptions in the example output demonstrate the minimum expected level of
             "author_name": author_name,
             "story_title": story_title,
             "protagonist": protagonist,
-            "story_summary": story_summary,
-            "backstory": backstory
+            "story_summary": story_summary
         })
         # If output is a AIMessage, its `response_metadata` might have info
         # if hasattr(output, "response_metadata"):
@@ -314,12 +306,12 @@ def num_tokens_from_string(string: str, model: str) -> int:
 
 
 # return story components 
-def get_story_components(config_path,story_title, story_summary, backstory, author, year, protagonist, 
+def get_story_components(config_path,story_title, story_summary, author, year, protagonist, 
                       llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
 
    
     #print(story_summary_source)
-    story_components = analyze_story(config_path=config_path, author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary, backstory=backstory,
+    story_components = analyze_story(config_path=config_path, author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
                                     llm_provider=llm_provider,llm_model=llm_model)
     
     story_components = extract_json(story_components)

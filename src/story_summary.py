@@ -244,7 +244,7 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
         "author": story_author,
         "protagonist": story_protagonist,
         "backstory": output_text['backstory'],
-        "summary": output_text['main_story'],
+        "main_story": output_text['main_story'],
         "summary_sources": sources_used,
         "summary_sources_file_path": story_summary_path
     }
