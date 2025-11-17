@@ -77,12 +77,11 @@ Input:
 - Story Title: {story_title}
 - Author: {author}
 - Protagonist: {protagonist}
-- Book Cover: You can see the front cover image attached to this prompt. Use it to infer color palette, visual motifs, and overall tone.
-
+- Book Cover: (see image attached)
 
 Analysis Framework:
 1. Story Elements
-   - The attached book cover image: its color palette, typography, composition, and any recognizable visual traditions (e.g., classic Penguin paperbacks, modern minimalists, vintage engravings)
+   - The book cover palette and historical visual traditions e.g. print design elements that audiences would recognize (if applicable)
    - Setting (time period, location, social context)
    - Dominant mood and atmosphere (consider the overall emotional landscape of the work and protagonist)
    - Core themes and the protagonist's journey
@@ -92,10 +91,8 @@ Analysis Framework:
    Colors must:
    - Work in both digital and print formats
    - Maintain impact under various lighting
-   - Meet accessibility standards i.e. 4.5:1 minimum contrast between background_color and font_color
+   - Meet accessibility standards (4.5:1 minimum contrast)
    - Connect meaningfully to story elements
-   - Be returned as hex codes in the form #RRGGBB
-
    
    Typography must:
    - Reflect story's period and tone
@@ -104,13 +101,12 @@ Analysis Framework:
    - Be commercially licensable
 
 Process:
-1. Analyze story elements and the attached book cover image
+1. Analyze story elements
 2. Develop color palette considering:
-   - The attached book cover image:
-    * Infer dominant and secondary colors from the actual cover.
-    * Prefer using one of the dominant cover colors for either the background or primary accent.
-    * You may slightly lighten, darken, or desaturate cover colors to satisfy readability and print safety.
-    * Avoid creating colors that clash strongly with the cover, unless strictly necessary for contrast.
+   - The book cover palette:
+     * Prefer using one of the dominant cover colors for either the background or primary accent.
+     * You may slightly lighten, darken, or desaturate cover colors to satisfy readability and print safety.
+     * Avoid creating colors that clash strongly with the cover, unless strictly necessary for contrast.
    - Story themes and setting
    - Symbolic significance
    - Technical requirements
@@ -123,6 +119,7 @@ Process:
   "design_rationale":"",
   "background_color": "",  
   "font_color": "",       
+  "border_color": "",     
   "font": ""            
 }}
 
@@ -136,6 +133,7 @@ Output:
   "design_rationale":"The passionate romance, tragic fate, and themes of youth and nobility are reflected in rich burgundy tones with gold accents, while the elegant serif typeface echoes both Renaissance Italy and timeless romance.",
   "background_color": "#8C1C13",
   "font_color": "#F4D03F",
+  "border_color": "#590D0D",
   "font": "Cormorant Garamond"
 }}
 
@@ -149,6 +147,7 @@ Output:
   "design_rationale": "Drawing from ancient Greek aesthetics and the epic's themes of divine warfare and mortal pride, the design pairs a deep bronze background with marble-white text. The classical typeface Trajan Pro evokes both heroic Roman inscriptions and timeless gravitas, while ensuring clarity in the curved narrative of warfare and honor.",
   "background_color": "#704214",
   "font_color": "#F5F5F5",
+  "border_color": "#463A2C",
   "font": "Trajan Pro"
 }}
 """

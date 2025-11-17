@@ -1,3 +1,9 @@
+11/17/2025:
+- incorporate artwork into story style selection
+- create mockup that includes the cover 
+- maybe rethink about how to specify story cover in creation pipeline 
+
+
 11/10/2025:
  - cleaned up story summary --> seperating backstory and mainstory; only feeding main story summary into story components -- done
  - need to revisit story components 
