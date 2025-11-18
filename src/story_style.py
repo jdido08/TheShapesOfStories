@@ -16,7 +16,26 @@ gi.require_version("PangoCairo", "1.0")
 
 from gi.repository import Pango, PangoCairo
 
+#VISION SUPPORT
+from langchain_core.messages import HumanMessage
+import base64
+import mimetypes
+from typing import Optional, Union, Dict, Any, List, Tuple
+
+
 #HELP FUNCTIONS -- CHECK IF FONT EXISTS
+
+## HELPER FUNCTIONS TO DECODE IMAGE
+def _encode_image_to_data_url(image_path: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
+    """Return (mime_type, base64_data) or (None, None) if no image."""
+    if not image_path:
+        return None, None
+    mime_type, _ = mimetypes.guess_type(image_path)
+    if not mime_type:
+        mime_type = "image/png"
+    with open(image_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("utf-8")
+    return mime_type, b64
 
 
 ## HELPER FUNCTIONS ###
@@ -65,10 +84,10 @@ def pango_font_exists(font_name):
 
 ###
 
-def get_story_style(config_path,story_title, author, protagonist, llm_provider, llm_model):
+def get_story_style(config_path, story_title, author, protagonist, llm_provider, llm_model, book_cover_path):
 
 
-    prompt_template = """
+    prompt_template = f"""
 # Story Style Guide Generator
 
 You are a design specialist combining expertise in literary analysis and visual design. Your task is to create a cohesive visual style for a story visualization that captures the essence of the narrative while maintaining aesthetic and technical excellence.
@@ -90,9 +109,9 @@ Analysis Framework:
 
 2. Design Requirements
    Colors must:
+   - Meet accessibility standards i.e. 4.5:1 minimum contrast between background_color and font_color
    - Work in both digital and print formats
    - Maintain impact under various lighting
-   - Meet accessibility standards i.e. 4.5:1 minimum contrast between background_color and font_color
    - Connect meaningfully to story elements
    - Be returned as hex codes in the form #RRGGBB
 
@@ -154,40 +173,67 @@ Output:
 """
 
 
-    prompt = PromptTemplate(
-        input_variables=["story_title", "author", "protagonist"],  # Define the expected inputs
-        template=prompt_template
-    )
+    # prompt = PromptTemplate(
+    #     input_variables=["story_title", "author", "protagonist"],  # Define the expected inputs
+    #     template=prompt_template
+    # )
 
 
-    config = load_config(config_path=config_path)
-    llm = get_llm(llm_provider, llm_model, config, max_tokens=1000)
+    # config = load_config(config_path=config_path)
+    # llm = get_llm(llm_provider, llm_model, config, max_tokens=1000)
 
-    # Instead of building an LLMChain, use the pipe operator:
-    runnable = prompt | llm
+    # # Instead of building an LLMChain, use the pipe operator:
+    # runnable = prompt | llm
 
-    # Then invoke with the required inputs:
-    output = runnable.invoke({
-        "story_title": story_title,
-        "author": author,
-        "protagonist": protagonist
-    })
+    # # Then invoke with the required inputs:
+    # output = runnable.invoke({
+    #     "story_title": story_title,
+    #     "author": author,
+    #     "protagonist": protagonist
+    # })
 
     #print(output)
 
     # If the output is an object with a 'content' attribute, extract it.
-    if hasattr(output, "content"):
-        output_text = output.content
-    else:
-        output_text = output
+    # if hasattr(output, "content"):
+    #     output_text = output.content
+    # else:
+    #     output_text = output
     
-    if output_text == "" or output_text == None or output_text == {}:
-        print("❌ ERROR: LLM Failed to Create Story Style")
-        raise ValueError("ERROR: LLM Failed to Create Story Style")
+    # if output_text == "" or output_text == None or output_text == {}:
+    #     print("❌ ERROR: LLM Failed to Create Story Style")
+    #     raise ValueError("ERROR: LLM Failed to Create Story Style")
 
     #attempt to extact json (if needed)
-    story_style = extract_json(output_text)
+    #story_style = extract_json(output_text)
     #print(story_style)
+
+
+    #VISIO SUPPORT
+    # 1) Load config + model (unchanged)
+    config = load_config(config_path)
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=8192)
+
+    # 2) Optional image
+    image_mime_type, base64_image = _encode_image_to_data_url(book_cover_path)
+
+    human_content = [{"type": "text", "text": prompt_template}]
+    if image_mime_type and base64_image:
+        human_content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:{image_mime_type};base64,{base64_image}"}
+        })
+    
+    message = HumanMessage(content=human_content)
+
+    # 6) Invoke the model exactly like you already do
+    response = llm.invoke([message])
+    response_text = response.content if hasattr(response, "content") else str(response)
+    story_style = extract_json(response_text)
+    print("STORY STYLE:")
+    print(story_style)
+
+
     return story_style
 
 
@@ -196,3 +242,16 @@ Output:
     # font_color = story_style['font_color']
     # border_color = story_style['border_color']
     # font = story_style['font']
+
+
+from paths import PATHS
+story_style_llm_model = "claude-sonnet-4-5" #claude sonnet good for style
+story_style = get_story_style(
+    config_path = PATHS['config'],
+    story_title = "The Catcher in the Rye", 
+    author = "J.D. Salinger",
+    protagonist = "Holden Caulfield", 
+    llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+    llm_model = story_style_llm_model, #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+    book_cover_path="/Users/johnmikedidonato/Downloads/5107.jpg"
+)
