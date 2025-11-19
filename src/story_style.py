@@ -245,14 +245,14 @@ Output:
     # font = story_style['font']
 
 
-from paths import PATHS
-story_style_llm_model = "claude-sonnet-4-5" #claude sonnet good for style
-story_style = get_story_style(
-    config_path = PATHS['config'],
-    story_title = "The Catcher in the Rye", 
-    author = "J.D. Salinger",
-    protagonist = "Holden Caulfield", 
-    llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-    llm_model = story_style_llm_model, #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-    book_cover_path="/Users/johnmikedidonato/Downloads/5107.jpg"
-)
+# from paths import PATHS
+# story_style_llm_model = "claude-sonnet-4-5" #claude sonnet good for style
+# story_style = get_story_style(
+#     config_path = PATHS['config'],
+#     story_title = "The Catcher in the Rye", 
+#     author = "J.D. Salinger",
+#     protagonist = "Holden Caulfield", 
+#     llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+#     llm_model = story_style_llm_model, #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+#     book_cover_path="/Users/johnmikedidonato/Downloads/5107.jpg"
+# )

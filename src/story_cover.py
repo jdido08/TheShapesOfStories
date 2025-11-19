@@ -588,16 +588,12 @@ def fetch_goodreads_cover_by_title(title: str, size: str = "l") -> Optional[Dict
     # find cover for story on goodreads by title 
     # save/download cover pictures in story_covers/
     # save path + other story cover data (e.g isbn, etc...) back to story data
-def get_story_cover(story_data_path):
+def get_story_cover(story_title):
 
-    with open(story_data_path, "r", encoding="utf-8") as f:
-        story_data = json.load(f)
-    
-    story_title = story_data["title"]
     cover_info = fetch_goodreads_cover_by_title(story_title, size="l")
     
     #determine story cover path and save 
-    story_cover_path = story_data['title'].lower().replace(' ', '-') + "-" + "coverg"
+    story_cover_path = story_title.lower().replace(' ', '-') + "-" + "coverg"
     story_cover_path = story_cover_path.replace("’", "'")   # Normalize the path to replace curly apostrophes with straight ones
     story_cover_path = story_cover_path.replace(",", "")    # Normalize the path to replace commas
     story_cover_path = os.path.join(PATHS["story_covers"], story_cover_path + ".jpg")     # Use the configured path
@@ -624,22 +620,10 @@ def get_story_cover(story_data_path):
 
 
      # 4) write back into story_data.json under "metadata"
-    try:
-        story_data["cover_data"] = cover_data
-        with open(story_data_path, "w", encoding="utf-8") as f:
-            json.dump(story_data, f, ensure_ascii=False, indent=2)
-        print("✅ Story Data Updated with Cover")
-    except:
-        print("❌ ERROR: Story Data Failed Updating")
-        return 
-    
-    time.sleep(3)
-    return 
+    return cover_data
 
 
-def manually_set_cover(story_data_path, cover_path):
-    with open(story_data_path, "r", encoding="utf-8") as f:
-        story_data = json.load(f)
+def manually_set_cover(story_title, cover_path):
 
     cover_data = {
             "cover_path_file": cover_path,
@@ -653,10 +637,7 @@ def manually_set_cover(story_data_path, cover_path):
             "asin": ""
         }
 
-    story_data["cover_data"] = cover_data
-    with open(story_data_path, "w", encoding="utf-8") as f:
-        json.dump(story_data, f, ensure_ascii=False, indent=2)
-    print("✅ Manually Set Story Cover")
+    return cover_data
 
 
 # test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/crime-and-punishment-rodion-raskolnikov.json"

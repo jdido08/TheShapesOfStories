@@ -219,9 +219,9 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
     # get story cover
     if story_cover_path == "":
-        get_story_cover(story_data_file_path)
+        cover_data = get_story_cover(story_title)
     else:
-        manually_set_cover(story_data_file_path, story_cover_path)
+        cover_data = manually_set_cover(story_title, story_cover_path)
    
     # get stort style
     story_style_llm_model = "claude-sonnet-4-5" #claude sonnet good for style
@@ -231,7 +231,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         author = story_author,
         protagonist = story_protagonist, 
         llm_provider = "anthropic", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-        llm_model = story_style_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+        llm_model = story_style_llm_model,#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+        book_cover_path=cover_data['cover_path_file']
     )
     story_style = json.loads(story_style)
     design_rationale        = story_style.get('design_rationale')
@@ -264,6 +265,8 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
             "font": design_font,
             "design_rationale":design_rationale
         },
+        "cover_data":cover_data,
+        "backstory":backstory,
         "summary": story_summary,
         "story_summary_sources_path":story_summary_path,
 
