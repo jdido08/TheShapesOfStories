@@ -61,6 +61,7 @@ worksheet = spreadsheet.worksheet("Create Story")
 # Get all rows from the sheet
 rows = worksheet.get_all_records()
 for row in rows:
+    print("starting...")
     
     #get input data
     story_type = row.get("story_type")

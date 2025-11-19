@@ -9,7 +9,7 @@ from datetime import datetime
 
 # imports from my code
 from story_style import get_story_style, pango_font_exists #move to this sheet
-from story_components import get_story_components, grade_story_components
+from story_components import get_story_components, grade_story_components, distill_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
@@ -186,7 +186,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
     # get story components --> don't use google you often get blocked
     story_components_llm_model = "gpt-5-2025-08-07" ## openai gpt 5 seems to best for this 
-    story_components = get_story_components(
+    story_components_detailed = get_story_components(
         config_path=PATHS['config'],
         story_title=story_title,
         story_summary = story_summary,
@@ -197,6 +197,18 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         llm_model = story_components_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
     print("✅ Story Components Created")
+
+    story_component_distill_llm_model = "gpt-5-2025-08-07"
+    story_components = distill_story_components(
+        config_path=PATHS['config'],
+        granular_components=story_components_detailed,
+        story_title=story_title,
+        author=story_author,
+        protagonist=story_protagonist,
+        llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+        llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+    )
+    print("✅ Story Components Distilled")
 
     #grade story components
     story_components_grader_llm_model = "gemini-2.5-pro" #google good for grading 
@@ -210,7 +222,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
         llm_model = story_components_grader_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
-    print("✅ Story Components Graded")
+    print("✅ Story Components Distilled")
 
     
     # get category of shape
@@ -257,6 +269,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         "story_type": story_type,
         "shape_symbolic_representation": story_symbolic_rep,
         "shape_archetype": story_archetype,
+        "story_components_detailed": story_components_detailed,
         "story_components": story_components,
         "default_style": {
             "background_color_hex": design_background_color,

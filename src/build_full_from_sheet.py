@@ -91,6 +91,7 @@ worksheet = spreadsheet.worksheet("Create Full")
 
 # Get all rows from the sheet
 rows = worksheet.get_all_records()
+print("starting...")
 for row in rows:
     
     #get input data

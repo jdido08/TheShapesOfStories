@@ -110,4 +110,28 @@ def create_product_support_data(product_data_path):
         f.write("\n")  # optional newline at EOF
     time.sleep(2)
 
+
+
+
+    with open(story_data_path, 'r') as f:
+        story_data = json.load(f)
+
+    #SAVE PRODUCT DESCRIPTION TO STORY DATA
+    #ONLY SAVE IF DESCRIPTION NOT PRESENT I.E. DON'T OVERWRITE DATA
+    if 'story_full_product_description_html' not in story_data:
+        print("DESCRIPTION DATA NOT IN STORY DATA SO ADDING")
+        story_data['story_full_product_description_html'] = product_data['product_description_html']
+        story_data['story_title_block_product_description_html'] = product_data['product_description_title_block_html']
+        story_data['story_story_behind_product_description_html'] = product_data['product_description_story_behind_html']
+        story_data['story_print_details_product_description_html'] = product_data['product_description_print_details_html']
+        story_data['story_ending_hook_product_description_html'] = product_data['product_description_ending_hook_html']   
+    else:
+        print("DESCRIPTION DATA ALREADY IN STORY DATA SO NOT ADDING")
+    
+    with open(story_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+        json.dump(story_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")  # optional newline at EOF
+    time.sleep(1)
+
+
     return product_data_path

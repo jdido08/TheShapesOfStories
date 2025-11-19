@@ -15,11 +15,13 @@ from google.oauth2.service_account import Credentials
 
 
 def build_product(story_data_path, product_type, product_details):
-
-
-    product_data_path = create_product_data(story_data_path=story_data_path,
+    product_data_path = create_product_data(
+                        story_data_path=story_data_path,
                         product_type=product_type, 
                         product_details=product_details)
+    
+    print(product_data_path)
+    return
 
 
 # Load credentials from the YAML file
@@ -49,21 +51,24 @@ sheet_id = "16tmqmaXRN_a_TV4iWdkHkJb4XPgc7dKKZZzd7dVtQs4"
 spreadsheet = client.open_by_key(sheet_id)
 worksheet = spreadsheet.worksheet("Create Product")
 
+print(worksheet)
 
 # Get all rows from the sheet
 rows = worksheet.get_all_records()
+print(rows)
 for row in rows:
     
     #get input data
-    story_data_path = row.get("story_summary_path")
+    story_data_path = row.get("story_data_path")
     product_type = row.get("product_type")
     product_details = row.get("product_details")
+
+    print(story_data_path)
+
 
     if product_details == "":
         print("Setting product details to default.")
         product_details = {} #using default product details 
-    
-
     
     if story_data_path == "" or product_type == "":
         print("Skipping row. Missing required fields")

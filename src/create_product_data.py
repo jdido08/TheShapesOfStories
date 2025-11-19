@@ -326,17 +326,18 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     with open(story_data_path, 'r') as f:
         story_data = json.load(f)
 
+    #REMOVING 11/18/2025
     #SAVE PRODUCT DESCRIPTION TO STORY DATA
     #ONLY SAVE IF DESCRIPTION NOT PRESENT I.E. DON'T OVERWRITE DATA
-    if 'story_full_product_description_html' not in story_data:
-        print("DESCRIPTION DATA NOT IN STORY DATA SO ADDING")
-        story_data['story_full_product_description_html'] = product_data['product_description_html']
-        story_data['story_title_block_product_description_html'] = product_data['product_description_title_block_html']
-        story_data['story_story_behind_product_description_html'] = product_data['product_description_story_behind_html']
-        story_data['story_print_details_product_description_html'] = product_data['product_description_print_details_html']
-        story_data['story_ending_hook_product_description_html'] = product_data['product_description_ending_hook_html']   
-    else:
-        print("DESCRIPTION DATA ALREADY IN STORY DATA SO NOT ADDING")
+    # if 'story_full_product_description_html' not in story_data:
+    #     print("DESCRIPTION DATA NOT IN STORY DATA SO ADDING")
+    #     story_data['story_full_product_description_html'] = product_data['product_description_html']
+    #     story_data['story_title_block_product_description_html'] = product_data['product_description_title_block_html']
+    #     story_data['story_story_behind_product_description_html'] = product_data['product_description_story_behind_html']
+    #     story_data['story_print_details_product_description_html'] = product_data['product_description_print_details_html']
+    #     story_data['story_ending_hook_product_description_html'] = product_data['product_description_ending_hook_html']   
+    # else:
+    #     print("DESCRIPTION DATA ALREADY IN STORY DATA SO NOT ADDING")
 
 
     #SAVE REFERENCE TO PRODUCT DATA IN STORY DATA

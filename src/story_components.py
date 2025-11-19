@@ -73,11 +73,11 @@ def analyze_story(config_path, author_name, story_title, protagonist, story_summ
    - Note their primary motivations and desires
 2. Segment the story into components based on major changes in {protagonist}'s emotions.
    - The number of components should be determined by the natural transitions in their emotional state
-   - Most stories will naturally fall into 4-8 components, though shorter or longer stories may fall outside this range
+   - Identify as many components as necessary to accurately track the protagonist's journey. Do not worry about the total number of components; accuracy is prioritized over brevity.
    - Each significant change in their emotional state should mark the start of a new component
-   - As a general guideline, major emotional changes typically involve shifts of at least 3-4 points on the -10 to +10 scale
+   - Create a new component for any discernible shift in emotional state (e.g., a shift of even 1 or 2 points). We want to capture the granular nuance of the journey.
    - Components can vary in length based on the pace of emotional change
-   - Avoid over-segmentation: only create new components for meaningful shifts in emotional state
+   - When in doubt, create a new segment. Capture the sequence of events precisely.
 3. Identify the emotional scores of each story component.
    - Scores must be whole numbers between -10 and +10 that reflect {protagonist}'s emotional state as evidenced in the story summary
    - Score changes must match the selected arc type
@@ -129,7 +129,8 @@ After your analysis, provide the final output in the following JSON format:
 - The first component (end_time = 0) is the baseline emotional state *before* any on-page events shift the protagonist’s emotions.
 - If the backstory implies a sharp change *into* the opening scene, do not reflect the change at end_time = 0; instead, start from the baseline and make the first change in the first arc that ends > 0.
 - Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
-- Emotional scores must be whole numbers between -10 and +10.
+- Emotional scores must be whole numbers between -10 and +10. 
+- If the emotional score remains the same (e.g., -5 to -5), the Arc Type MUST be "Linear Flat". You strictly cannot label an arc as "Increase" or "Decrease" if the score number does not change.
 - Adjacent components should not have the same emotional score unless using Linear Flat arc.
 - End times must be in ascending order and the final component must end at 100.
 - Each arc type must match the emotional change described:
@@ -158,42 +159,60 @@ Cinderella
 Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
 </story_summary>
 <ideal_output>
-{{{{
+{{
     "title": "Cinderella at the Ball",
     "protagonist": "Cinderella",
     "story_components": [
-        {{{{
+        {{
             "end_time": 0,
             "description": "#N/A",
             "end_emotional_score": -5,
             "arc": "#N/A"
-        }}}},
-        {{{{
-            "end_time": 30,
-            "description": "Cinderella weeps alone in the garden, heartbroken after her stepfamily mocks her desires and denies her chance to attend the ball. Her despair turns to wonder when her Fairy Godmother appears, transforming her circumstances through magical gifts: her pumpkin becomes a splendid carriage, mice become horses, and she receives a resplendent gown with glass slippers. Despite her rising hopes, she must bear the weight of the midnight deadline.",
-            "end_emotional_score": 2,
+        }},
+        {{
+            "end_time": 15,
+            "description": "Cinderella asks to attend the ball, hoping for a brief respite from her misery. Her stepmother and stepsisters cruelly mock her request and forbid her from going, crushing her tentative hope.",
+            "end_emotional_score": -7,
+            "arc": "Linear Decrease"
+        }},
+        {{
+            "end_time": 25,
+            "description": "Despite the ban, Cinderella tries to sew a dress from her mother's old things. However, right before the ball, her stepsisters discover her and physically rip the dress to shreds. Devastated and betrayed, she runs to the garden sobbing.",
+            "end_emotional_score": -9,
+            "arc": "Rapid-to-Gradual Decrease"
+        }},
+        {{
+            "end_time": 35,
+            "description": "The Fairy Godmother appears in the garden. Cinderella's despair turns to shock and then rising wonder as the pumpkin is transformed into a carriage and her rags into a gown.",
+            "end_emotional_score": 4,
             "arc": "Step-by-Step Increase"
-        }}}},
-        {{{{
+        }},
+        {{
             "end_time": 60,
-            "description": "Cinderella experiences a profound transformation as she arrives at the grand ball. Her kindness and radiant beauty draw the Prince's attention, and she finds herself, for the first time, being treated with admiration and respect. As she dances with the Prince throughout the evening, each moment fills her with increasing joy and wonder, allowing her to momentarily forget her life of servitude.",
-            "end_emotional_score": 8,
+            "description": "Cinderella enters the ball. She is overcome with joy as the Prince asks her to dance. For the first time in her life, she feels seen, admired, and deeply happy, forgetting her life of servitude completely.",
+            "end_emotional_score": 9,
             "arc": "Gradual-to-Rapid Increase"
-        }}}},
-        {{{{
-            "end_time": 75,
-            "description": "Cinderella's magical evening shatters as the clock strikes midnight. Panic overtakes her as she flees the palace, losing a glass slipper in her desperate rush to escape. Her brief taste of happiness ends abruptly as she races to prevent the revelation of her true identity, watching her transformed world revert to its ordinary state.",
-            "end_emotional_score": -3,
+        }},
+        {{
+            "end_time": 70,
+            "description": "The clock strikes midnight. The dream abruptly ends. Cinderella is seized by panic and anxiety as she flees the palace, losing her slipper and terrified of being discovered in her rags.",
+            "end_emotional_score": -2,
             "arc": "Straight Decrease"
-        }}}},
-        {{{{
+        }},
+        {{
+            "end_time": 90,
+            "description": "Back home, Cinderella resumes her chores. She is anxious and fearful as the Prince searches the kingdom, watching her stepsisters try to force the slipper on. She feels powerless, unsure if she should reveal herself.",
+            "end_emotional_score": -4,
+            "arc": "Linear Decrease"
+        }},
+        {{
             "end_time": 100,
-            "description": "Cinderella's hopes revive when the Prince begins searching for her with the glass slipper. Her moment of triumph arrives when she steps forward in her home to try on the slipper, and it fits perfectly. Her patient endurance is finally rewarded as she marries the Prince, rising from her life of servitude to find happiness, maintaining her gracious nature by forgiving her stepfamily.",
+            "description": "The Prince allows Cinderella to try the slipper. It fits perfectly. In a moment of pure vindication and relief, she is whisked away to marry the Prince, her kindness finally rewarded with a happily ever after.",
             "end_emotional_score": 10,
-            "arc": "Gradual-to-Rapid Increase"
-        }}}}
+            "arc": "Straight Increase"
+        }}
     ]
-}}}}
+}}
 </ideal_output>
 </example>
 
@@ -341,6 +360,340 @@ def get_story_components(config_path,story_title, story_summary, author, year, p
     
     return story_components["story_components"]
 
+
+# ## distill ganular components 
+# def distill_story_components(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+#     """
+#     Phase 2: Distills granular data into a macro-shape.
+#     """
+    
+#     prompt_template = """
+#     You are a Data Visualization Architect for Literature. 
+    
+#     I will provide you with a "Granular Emotional Arc" for the story "{story_title}" by {author} featuring the protagonist "{protagonist}".
+#     This data contains high-resolution emotional shifts, including minor fluctuations (narrative noise).
+    
+#     Your goal is to simplify this data into a "Macro Emotional Shape" that reveals the dominant trajectory of the narrative.
+
+#     ### INPUT DATA (Granular):
+#     {granular_components}
+    
+#     ### DISTILLATION RULES:
+    
+#     1. **Simplification & Timing:**
+#        - Condense the timeline into the *fewest components necessary* (typically 3-6) to truthfully represent the major structural movements.
+#        - Merge adjacent components that share a general directional trend.
+#        - **CRITICAL:** When merging components, the `end_time` of the new merged component must match the `end_time` of the *last* component in that group. Do not invent new timestamps.
+    
+#     2. **Narrative Synthesis (Show, Don't Tell):**
+#        - You must write a NEW description for each merged component.
+#        - **Selection Strategy:** Construct the description using specific event details *from the input components* that align with the **net direction** of the new arc.
+#          * If the merged arc is a **Decrease**, weave together the specific setbacks, failures, and conflicts from the input data.
+#          * If the merged arc is an **Increase**, weave together the victories, connections, and realizations.
+#        - **Style:** Do not explain *why* the emotion changed. Instead, **describe the events** that defined that period.
+    
+#     3. **Anchor Preservation:**
+#        - The Start Score (Time 0) MUST match the input exactly.
+#        - The End Score (Time 100) MUST match the input exactly.
+       
+#     4. **Arc Selection:**
+#        Choose the Arc Pattern that best fits the rate of change for the merged section:
+#        - Step-by-Step Increase/Decrease (Distinct stages)
+#        - Linear Increase/Decrease (Steady, consistent change)
+#        - Gradual-to-Rapid Increase/Decrease (Exponential change)
+#        - Rapid-to-Gradual Increase/Decrease (Logarithmic change)
+#        - Straight Increase/Decrease (Sudden, dramatic shift)
+#        - S-Curve Increase/Decrease (Complex/Organic shift)
+#        - Linear Flat (No emotional change)
+
+#     5. **VALIDATION RULES (Strict Enforcement):**
+#        - If the emotional score DOES NOT CHANGE (e.g., -5 to -5), the Arc Type MUST be "Linear Flat".
+#        - You strictly cannot label an arc as "Increase" or "Decrease" if the score number remains the same.
+    
+#     ### OUTPUT FORMAT (JSON ONLY):
+#     {{{{
+#         "title": "{story_title}",
+#         "protagonist": "{protagonist}",
+#         "story_components": [
+#             {{{{
+#                 "end_time": 0,
+#                 "description": "N/A",
+#                 "end_emotional_score": <int matches input>,
+#                 "arc": "N/A"
+#             }}}},
+#             {{{{
+#                 "end_time": <int>, 
+#                 "description": "<Narrative description of the defining events>",
+#                 "end_emotional_score": <int>,
+#                 "arc": "<Selected Arc Pattern>"
+#             }}}}
+#             ...
+#         ]
+#     }}}}
+#     """
+
+#     prompt = PromptTemplate(
+#         input_variables=["granular_components", "story_title", "author", "protagonist"],
+#         template=prompt_template
+#     )
+
+#     config = load_config(config_path=config_path)
+#     llm = get_llm(llm_provider, llm_model, config, max_tokens=4096)
+
+#     # Convert the list of dicts to a pretty JSON string for the prompt
+#     granular_json_str = json.dumps(granular_components, indent=2)
+
+#     runnable = prompt | llm
+
+#     try:
+#         output = runnable.invoke({
+#             "granular_components": granular_json_str,
+#             "story_title": story_title,
+#             "author":author,
+#             "protagonist": protagonist
+#         })
+#     except Exception as e:
+#         print(f"Error during Distillation LLM call: {e}")
+#         raise e
+
+#     if hasattr(output, "content"):
+#         output_text = output.content
+#     else:
+#         output_text = output
+
+#     output_text = extract_json(output_text)
+    
+#     try:
+#         result = json.loads(output_text)
+#     except json.JSONDecodeError:
+#         print("Error decoding JSON from distillation step.")
+#         return granular_components 
+    
+#     return result["story_components"]
+
+# def distill_story_components(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+#     """
+#     Phase 2: Aggressively distills granular data into a macro-shape.
+#     """
+    
+#     prompt_template = """
+#     You are a Data Visualization Architect for Literature. 
+    
+#     I will provide you with a "Granular Emotional Arc" for the story "{story_title}" by {author} featuring the protagonist "{protagonist}".
+#     This data contains {count} distinct components. This is TOO NOISY for our visualization.
+    
+#     Your goal is to aggressively compress this data into a "Macro Emotional Shape" consisting of ONLY 3 to 6 components.
+
+#     ### INPUT DATA (Granular):
+#     {granular_components}
+    
+#     ### DISTILLATION RULES (STRICT):
+    
+#     1. **The "Zoom Out" Rule:**
+#        - You MUST reduce the story to **between 3 and 6 components total**.
+#        - **Ignore local fluctuations:** If the protagonist fluctuates between -10 and -6 for several chapters (e.g., sad, then slightly less sad, then sad again), this is NOT a zig-zag. It is ONE single "Low/Descent" component.
+#        - **Merge aggressively:** You are creating a "Trend Line," not a plot summary. 
+#        - *Example:* A sequence of [-5, -8, -6, -9, -10] should become ONE component: A "Gradual Decrease" from -5 to -10.
+    
+#     2. **Narrative Synthesis:**
+#        - Write a NEW description for the merged timeline.
+#        - **Selection Strategy:** Only describe the events that contribute to the *overall trend* of the section.
+#        - If you merge a "High" moment into a "Low" trend, **ignore the high moment in the description**. (e.g., If you merge the "Nuns" scene into the "Breakdown" sequence, do not mention the nuns. Focus on the breakdown).
+    
+#     3. **Anchor Preservation:**
+#        - The Start Score (Time 0) MUST match the input exactly.
+#        - The End Score (Time 100) MUST match the input exactly.
+       
+#     4. **Arc Selection:**
+#        Choose the Arc Pattern that best fits the rate of change for the merged section:
+#        - Step-by-Step Increase/Decrease
+#        - Linear Increase/Decrease
+#        - Gradual-to-Rapid Increase/Decrease
+#        - Rapid-to-Gradual Increase/Decrease
+#        - Straight Increase/Decrease
+#        - S-Curve Increase/Decrease (Ideal for long merged sections)
+#        - Linear Flat
+
+#     5. **VALIDATION RULES:**
+#        - If the merged score numbers are the same (e.g. Start -8, End -8), the Arc MUST be "Linear Flat".
+    
+#     ### OUTPUT FORMAT (JSON ONLY):
+#     {{{{
+#         "title": "{story_title}",
+#         "protagonist": "{protagonist}",
+#         "story_components": [
+#             {{{{
+#                 "end_time": 0,
+#                 "description": "N/A",
+#                 "end_emotional_score": <int matches input>,
+#                 "arc": "N/A"
+#             }}}},
+#             {{{{
+#                 "end_time": <int>, 
+#                 "description": "<Narrative description of the dominant trend>",
+#                 "end_emotional_score": <int>,
+#                 "arc": "<Selected Arc Pattern>"
+#             }}}}
+#             ...
+#         ]
+#     }}}}
+#     """
+
+#     prompt = PromptTemplate(
+#         input_variables=["granular_components", "story_title", "protagonist", "author", "count"],
+#         template=prompt_template
+#     )
+
+#     config = load_config(config_path=config_path)
+#     llm = get_llm(llm_provider, llm_model, config, max_tokens=4096)
+
+#     # Calculate count to shame the LLM into compressing
+#     count = len(granular_components)
+#     granular_json_str = json.dumps(granular_components, indent=2)
+
+#     runnable = prompt | llm
+
+#     try:
+#         output = runnable.invoke({
+#             "granular_components": granular_json_str,
+#             "story_title": story_title,
+#             "protagonist": protagonist,
+#             "author": author,
+#             "count": count
+#         })
+#     except Exception as e:
+#         print(f"Error during Distillation LLM call: {e}")
+#         raise e
+
+#     if hasattr(output, "content"):
+#         output_text = output.content
+#     else:
+#         output_text = output
+
+#     output_text = extract_json(output_text)
+    
+#     try:
+#         result = json.loads(output_text)
+#     except json.JSONDecodeError:
+#         print("Error decoding JSON from distillation step.")
+#         return granular_components 
+    
+#     # Final Safety Check: If it didn't compress, print a warning
+#     if len(result["story_components"]) > 8:
+#         print(f"⚠️ WARNING: Distillation failed to compress significantly (Count: {len(result['story_components'])})")
+
+#     return result["story_components"]
+
+def distill_story_shape(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+    """
+    Phase 2: Aggressively distills granular data into a macro-shape with dense, trend-focused descriptions.
+    """
+    
+    prompt_template = """
+    You are a Data Visualization Architect for Literature. 
+    
+    I will provide you with a "Granular Emotional Arc" for the story "{story_title}" by {author} featuring the protagonist "{protagonist}".
+    This data contains {count} distinct components.
+    
+    Your goal is to aggressively compress the SHAPE (3-6 points) while preserving the RICH DETAIL of the story in the text.
+
+    ### INPUT DATA (Granular):
+    {granular_components}
+    
+    ### DISTILLATION RULES (STRICT):
+    
+    1. **The "Zoom Out" Rule (Shape Compression):**
+       - You MUST reduce the story to **between 3 and 6 components total**.
+       - **Ignore local fluctuations:** A sequence of [-5, -8, -6, -9] should become ONE single "Descent" component.
+       - **Merge aggressively:** Create a "Trend Line," not a plot summary.
+    
+    2. **Narrative Synthesis (High Density + Net Direction):**
+       - You must write a NEW description for the merged timeline.
+       - **Selection Strategy (The Filter):** Construct the description using ONLY specific event details *from the input components* that align with the **net direction** of the new arc.
+         * If the merged arc is a **Decrease**, you must weave together the setbacks, failures, and conflicts, *ignoring* any minor positive moments that occurred within that span (unless they serve as ironic contrast).
+         * If the merged arc is an **Increase**, weave together the victories, connections, and realizations.
+       - **Concrete Density:** Do not summarize abstractly (e.g. "Bad things happened"). Instead, **list the specific names, locations, and actions** that drove the trend.
+       - *Goal:* A dense narrative paragraph that explains *specifically* what events caused this part of the line to go up or down.
+    
+    3. **Visual Readability (Narrative Weight):**
+       - The timeline (0-100) represents **Emotional Duration**, not just literal page count.
+       - **The "10% Floor":** If a component represents a distinct, sustained emotional state (especially an Ending, Epilogue, or Aftermath), it must span **at least 10-15 units** on the timeline to be visually legible.
+       - **Action:** You are authorized to adjust the `end_time` of preceding components to make room for a significant ending.
+       
+    4. **Arc Selection:**
+       Choose the Arc Pattern that best fits the rate of change for the merged section:
+       - **Step-by-Step Increase/Decrease:** Emotions change in distinct, noticeable stages.
+       - **Linear Increase/Decrease:** Consistent, steady change in emotional state.
+       - **Gradual-to-Rapid Increase/Decrease:** Change starts slowly, then accelerates (Exponential).
+       - **Rapid-to-Gradual Increase/Decrease:** Change starts quickly, then slows down (Logarithmic).
+       - **Straight Increase/Decrease:** Sudden, dramatic change in emotions (Vertical shift).
+       - **S-Curve Increase/Decrease:** Change follows an 'S' shape (slow-fast-slow). Good for bridging large gaps.
+       - **Linear Flat:** No change in emotions.
+
+    5. **VALIDATION RULES:**
+       - If the merged score numbers are the same (e.g. Start -8, End -8), the Arc MUST be "Linear Flat".
+    
+    ### OUTPUT FORMAT (JSON ONLY):
+    {{{{
+        "title": "{story_title}",
+        "protagonist": "{protagonist}",
+        "story_components": [
+            {{{{
+                "end_time": 0,
+                "description": "N/A",
+                "end_emotional_score": <int matches input>,
+                "arc": "N/A"
+            }}}},
+            {{{{
+                "end_time": <int>, 
+                "description": "<DENSE narrative paragraph of specific events matching the trend>",
+                "end_emotional_score": <int>,
+                "arc": "<Selected Arc Pattern>"
+            }}}}
+            ...
+        ]
+    }}}}
+    """
+
+    prompt = PromptTemplate(
+        input_variables=["granular_components", "story_title", "protagonist", "author", "count"],
+        template=prompt_template
+    )
+
+    config = load_config(config_path=config_path)
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=4096)
+
+    count = len(granular_components)
+    granular_json_str = json.dumps(granular_components, indent=2)
+
+    runnable = prompt | llm
+
+    try:
+        output = runnable.invoke({
+            "granular_components": granular_json_str,
+            "story_title": story_title,
+            "protagonist": protagonist,
+            "author": author,
+            "count": count
+        })
+    except Exception as e:
+        print(f"Error during Distillation LLM call: {e}")
+        raise e
+
+    if hasattr(output, "content"):
+        output_text = output.content
+    else:
+        output_text = output
+
+    output_text = extract_json(output_text)
+    
+    try:
+        result = json.loads(output_text)
+    except json.JSONDecodeError:
+        print("Error decoding JSON from distillation step.")
+        return granular_components 
+    
+    return result["story_components"]
 
 
 #review / grade accuracy of story components
@@ -502,3 +855,155 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 
 
 
+story_components_detailed = [
+    {
+      "end_time": 0,
+      "description": "#N/A",
+      "end_emotional_score": -5,
+      "arc": "#N/A",
+      "modified_end_time": 0,
+      "modified_end_emotional_score": -5
+    },
+    {
+      "end_time": 8,
+      "description": "Holden, already expelled and having bungled the fencing team's equipment, skips the big game and trudges to Mr. Spencer's. The lecture—\"life is a game\"—lands as condescension. He fidgets, resents the pity, and bolts with relief, the encounter confirming his sense that adults are phony and that he's failing out of everything.",
+      "end_emotional_score": -6,
+      "arc": "Linear Decrease",
+      "modified_end_time": 8,
+      "modified_end_emotional_score": -6
+    },
+    {
+      "end_time": 15,
+      "description": "Back in the dorm, his red hunting cap gives him a fragile, private comfort, but Ackley's grating presence needles him. Stradlater's casual date with Jane Gallagher stirs anxious protectiveness and jealousy. Holden pours himself into writing about Allie's baseball glove—tender, mournful memories—leaving him raw and exposed.",
+      "end_emotional_score": -7,
+      "arc": "Gradual-to-Rapid Decrease",
+      "modified_end_time": 15,
+      "modified_end_emotional_score": -7
+    },
+    {
+      "end_time": 20,
+      "description": "Stradlater sneers at the composition; when he hints he might have fooled around with Jane, Holden explodes. The fight is brief and humiliating—he's pinned and bloodied. The dorm feels unendurable, and he impulsively decides to leave Pencey that night, hollow and angry.",
+      "end_emotional_score": -9,
+      "arc": "Straight Decrease",
+      "modified_end_time": 20,
+      "modified_end_emotional_score": -9
+    },
+    {
+      "end_time": 28,
+      "description": "On the train to New York, he reinvents himself as \"Rudolf Schmidt,\" flattering Mrs. Morrow about her son. The lies give him a perverse, fleeting buoyancy. In the hotel, voyeuristic glimpses across the courtyard are titillating and sad. Rebuffed by Faith Cavendish, he's left alone with the city's neon and his own ache.",
+      "end_emotional_score": -8,
+      "arc": "Rapid-to-Gradual Increase",
+      "modified_end_time": 28,
+      "modified_end_emotional_score": -8
+    },
+    {
+      "end_time": 40,
+      "description": "At the Lavender Room he dances well and briefly enjoys Bernice's company, but is abandoned with the tab. At Ernie's, the crowd's pretension and Lillian Simmons's phoniness drive him out. Maurice sells him a prostitute; faced with Sunny, he panics, pays to talk instead, and is then shaken down. Maurice punches him; Holden fantasizes melodramatic revenge and even suicide before dawn.",
+      "end_emotional_score": -10,
+      "arc": "Gradual-to-Rapid Decrease",
+      "modified_end_time": 40,
+      "modified_end_emotional_score": -10
+    },
+    {
+      "end_time": 52,
+      "description": "After a fitful sleep, small human connections rekindle him: an earnest chat with two nuns about Romeo and Juliet, pressing donations on them; hunting for \"Little Shirley Beans\" for Phoebe; and a little boy's off-key \"If a body catch a body…,\" which oddly soothes him. These kindnesses and signs of innocence lift the heaviness.",
+      "end_emotional_score": -6,
+      "arc": "Step-by-Step Increase",
+      "modified_end_time": 52,
+      "modified_end_emotional_score": -6
+    },
+    {
+      "end_time": 60,
+      "description": "He meets Sally Hayes, is dazzled, then repelled by her polish and social climbing. After the Lunts' play and a phony reunion with a boy from Andover, he spirals. At Radio City's rink and over lunch, he rants that he's fed up with everything and blurts a fantasy of running away to a New England cabin. Sally's refusal triggers his cruel \"royal pain in the ass,\" and he storms off.",
+      "end_emotional_score": -8,
+      "arc": "Rapid-to-Gradual Decrease",
+      "modified_end_time": 60,
+      "modified_end_emotional_score": -8
+    },
+    {
+      "end_time": 66,
+      "description": "He numbs himself with the Christmas show's spectacle and a dreary movie, then meets Carl Luce at the Wicker Bar. Holden's fixation on sex annoys Luce—\"typical Caulfield conversation\"—who briskly advises a psychiatrist and leaves. Holden gets very drunk and flails at forming any genuine contact.",
+      "end_emotional_score": -9,
+      "arc": "Linear Decrease",
+      "modified_end_time": 66,
+      "modified_end_emotional_score": -9
+    },
+    {
+      "end_time": 74,
+      "description": "In Central Park, the ducks' disappearance becomes an emblem of his own fear of vanishing. He breaks Phoebe's record, is seized by diarrhea, and staggers through crosswalks convinced he will die each time. Exhausted and near-delirious, he decides to go home to see Phoebe.",
+      "end_emotional_score": -10,
+      "arc": "Gradual-to-Rapid Decrease",
+      "modified_end_time": 74,
+      "modified_end_emotional_score": -10
+    },
+    {
+      "end_time": 82,
+      "description": "Sneaking into his parents' apartment, he wakes Phoebe. She is stricken that he's flunked again and demands to know what he likes. He fumbles—Allie, the nuns, a dead boy at Elkton Hills—then articulates his one true wish: to be \"the catcher in the rye,\" saving children from tumbling over a cliff. This confession, and Phoebe's presence, give him a rare sense of purpose and love.",
+      "end_emotional_score": -5,
+      "arc": "Gradual-to-Rapid Increase",
+      "modified_end_time": 82,
+      "modified_end_emotional_score": -5
+    },
+    {
+      "end_time": 88,
+      "description": "At Mr. Antolini's, he finds a concerned adult who speaks seriously of a \"fall\" ahead and quotes Stekel about living humbly rather than dying nobly. The sober talk feels like guidance, not a lecture. Holden, bone-tired, falls asleep with a faint sense of being looked after.",
+      "end_emotional_score": -4,
+      "arc": "Linear Increase",
+      "modified_end_time": 88,
+      "modified_end_emotional_score": -4
+    },
+    {
+      "end_time": 90,
+      "description": "He wakes to Mr. Antolini patting his head in the dark. Startled and mistrustful, he interprets it as a sexual advance, panics, and flees into the night, clutching at his bags and the last shreds of trust.",
+      "end_emotional_score": -8,
+      "arc": "Straight Decrease",
+      "modified_end_time": 90,
+      "modified_end_emotional_score": -8
+    },
+    {
+      "end_time": 92,
+      "description": "He dozes at Grand Central and wakes to Monday with mounting dread. Convinced he should run west and live as a deaf-mute to avoid phoniness, he drifts deeper into isolation while drafting a goodbye to Phoebe.",
+      "end_emotional_score": -9,
+      "arc": "Linear Decrease",
+      "modified_end_time": 92,
+      "modified_end_emotional_score": -9
+    },
+    {
+      "end_time": 96,
+      "description": "He meets Phoebe at the museum to say goodbye. She insists on coming with him; he refuses, she goes silent and furious. Confronted with her hurt, he abandons the runaway fantasy and agrees to stay—choosing connection over flight.",
+      "end_emotional_score": -7,
+      "arc": "Linear Increase",
+      "modified_end_time": 96,
+      "modified_end_emotional_score": -7
+    },
+    {
+      "end_time": 98,
+      "description": "At the zoo's carousel, he buys Phoebe a ticket and watches in the rain as she rides, reaching for the gold ring. He lets her try, accepting risk. Something breaks open; he cries and says he is happy, soaking in a simple, undiluted joy he's chased all along.",
+      "end_emotional_score": 2,
+      "arc": "Gradual-to-Rapid Increase",
+      "modified_end_time": 98,
+      "modified_end_emotional_score": 2
+    },
+    {
+      "end_time": 100,
+      "description": "A year later in the California sanitarium, he won't say how he got sick. He's supposed to go back to school, unsure if anything will change. Telling the story makes him miss people—Stradlater, Ackley, even Maurice—softening his edges, but uncertainty and melancholy remain.",
+      "end_emotional_score": -1,
+      "arc": "Linear Decrease",
+      "modified_end_time": 100,
+      "modified_end_emotional_score": -1
+    }
+  ]
+
+from paths import PATHS
+story_component_distill_llm_model = "gpt-5-2025-08-07"
+story_components = distill_story_components(
+    config_path=PATHS['config'],
+    granular_components=story_components_detailed,
+    story_title="The Catcher in the Rye",
+    author="J.D. Salinger",
+    protagonist="Holden Caulfield",
+    llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+    llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+)
+print("DISTILLED STORY COMPONENTS")
+print(story_components)

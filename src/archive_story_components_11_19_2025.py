@@ -1,0 +1,504 @@
+
+from llm import load_config, get_llm, extract_json
+import yaml
+import tiktoken
+import json 
+import os 
+
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+
+
+#call LLM to get story components
+def analyze_story(config_path, author_name, story_title, protagonist, story_summary, llm_provider, llm_model):
+    
+
+    # The user_message includes placeholders that will be replaced by the function arguments
+    prompt_template = """You are a world-class literary scholar and expert in story analysis. Your task is to analyze a story through the emotional journey of {protagonist}. Please carefully read and analyze the following story summary:
+
+<author_name>
+{author_name}
+</author_name>
+
+<story_title>
+{story_title}
+</story_title>
+
+<protagonist>
+{protagonist}
+</protagonist>
+
+<story_summary>
+{story_summary}
+</story_summary>
+
+
+
+## Framework Overview:
+1. Story Timeline: The narrative is viewed on a scale from 0 to 100, representing the percentage of progress through the story.
+2. Story Components: The story is segmented into components defined by {protagonist}'s emotional journey.
+3. Continuity: Each story component starts where the previous one ended, ensuring a seamless emotional journey.
+4. Emotional Arcs: {protagonist}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
+
+
+## Emotional Arcs
+### Types of Emotional Arcs:
+1. Increase: The protagonist's emotional state improves by the end of the arc.
+2. Decrease: The protagonist's emotional state worsens by the end of the arc.
+3. Flat: The protagonist's emotional state remains unchanged by the end of the arc.
+
+### Specific Emotional Arc Patterns:
+1. Step-by-Step Increase/Decrease: Emotions change in distinct, noticeable stages
+   Example: A character moving from fear (-5) to uncertainty (-2) to hope (+2) to joy (+6)
+2. Linear Increase/Decrease: Consistent, steady change in emotional state
+   Example: A character's growing dread as they approach danger, declining steadily from +3 to -4
+3. Gradual-to-Rapid Increase/Decrease: Change starts slowly, then accelerates
+   Example: A slow build of suspicion that suddenly turns to shocking realization
+4. Rapid-to-Gradual Increase/Decrease: Change starts quickly, then slows down
+   Example: An immediate burst of joy that settles into content satisfaction
+5. Straight Increase/Decrease: Sudden, dramatic change in emotions
+   Example: An unexpected tragedy causing immediate shift from +5 to -8
+6. S-Curve Increase/Decrease: Change follows an 'S' shape (slow-fast-slow)
+   Example: Gradually accepting good news, rapid excitement, then settling into happiness
+7. Linear Flat: No change in emotions
+   Example: Maintaining determined focus throughout a challenging task
+
+## Analysis Guidelines
+
+### Analysis Steps:
+1. Understand {protagonist}'s starting position in the story.
+   - Identify their initial circumstances and relationships
+   - Look for early indicators of their emotional state
+   - Note their primary motivations and desires
+2. Segment the story into components based on major changes in {protagonist}'s emotions.
+   - The number of components should be determined by the natural transitions in their emotional state
+   - Most stories will naturally fall into 4-8 components, though shorter or longer stories may fall outside this range
+   - Each significant change in their emotional state should mark the start of a new component
+   - As a general guideline, major emotional changes typically involve shifts of at least 3-4 points on the -10 to +10 scale
+   - Components can vary in length based on the pace of emotional change
+   - Avoid over-segmentation: only create new components for meaningful shifts in emotional state
+3. Identify the emotional scores of each story component.
+   - Scores must be whole numbers between -10 and +10 that reflect {protagonist}'s emotional state as evidenced in the story summary
+   - Score changes must match the selected arc type
+4. For each story component:
+   - Identify the portion of the story summary that shows {protagonist}'s experience
+   - Focus on events and details that reveal their emotional state
+   - Note their actions, reactions, and key interactions
+   - Use these details to write a description that centers on their journey
+5. Identify the emotional arcs which connect story components.
+
+After your analysis, provide the final output in the following JSON format:
+
+{{{{
+    "title": "Story Title",
+    "protagonist": "Protagonist",
+    "story_components": [
+        {{{{
+            "end_time": 0,
+            "description": "#N/A",
+            "end_emotional_score": initial_score,
+            "arc": "#N/A"
+        }}}},
+        {{{{
+            "end_time": percentage,
+            "description": "Detailed description of events in this component",
+            "end_emotional_score": score,
+            "arc": "Arc Type"
+        }}}},
+    ]
+}}}}
+
+### Story Component Description Guidelines:
+- Each description must be derived directly from the provided story summary
+- Center the description on {protagonist}'s experience and perspective
+- Describe events primarily in terms of their impact on {protagonist}
+- Include their actions, reactions, and emotional responses
+- Detail settings as they relate to their experience
+- Include other characters mainly through their interaction with or impact on {protagonist}
+- Quote or closely paraphrase passages that reveal their emotional state
+- Include sensory details that contribute to understanding their experience
+
+### Initial Emotional Score Guidelines:
+- Carefully examine how {protagonist} is first presented in the story
+- Look for descriptive words indicating their initial emotional state
+- Consider their starting circumstances and relationships
+
+## Important Notes:
+- The first component always has an end_time of 0, no description, and no arc.
+- The first component (end_time = 0) is the baseline emotional state *before* any on-page events shift the protagonist’s emotions.
+- If the backstory implies a sharp change *into* the opening scene, do not reflect the change at end_time = 0; instead, start from the baseline and make the first change in the first arc that ends > 0.
+- Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
+- Emotional scores must be whole numbers between -10 and +10.
+- Adjacent components should not have the same emotional score unless using Linear Flat arc.
+- End times must be in ascending order and the final component must end at 100.
+- Each arc type must match the emotional change described:
+  * Increase arcs must show higher end scores than start scores
+  * Decrease arcs must show lower end scores than start scores
+  * Flat arcs must maintain the same score
+- Double-check your analysis for accuracy and internal consistency before providing the final JSON output.
+
+Please proceed with your analysis and provide the JSON output. ONLY respond with the JSON and nothing else.
+
+____________________
+
+EXAMPLE:
+
+<example>
+<author_name>
+Charles Perrault
+</author_name>
+<story_title>
+Cinderella at the Ball
+</story_title>
+<protagonist>
+Cinderella
+</protagonist>
+<story_summary>
+Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
+</story_summary>
+<ideal_output>
+{{{{
+    "title": "Cinderella at the Ball",
+    "protagonist": "Cinderella",
+    "story_components": [
+        {{{{
+            "end_time": 0,
+            "description": "#N/A",
+            "end_emotional_score": -5,
+            "arc": "#N/A"
+        }}}},
+        {{{{
+            "end_time": 30,
+            "description": "Cinderella weeps alone in the garden, heartbroken after her stepfamily mocks her desires and denies her chance to attend the ball. Her despair turns to wonder when her Fairy Godmother appears, transforming her circumstances through magical gifts: her pumpkin becomes a splendid carriage, mice become horses, and she receives a resplendent gown with glass slippers. Despite her rising hopes, she must bear the weight of the midnight deadline.",
+            "end_emotional_score": 2,
+            "arc": "Step-by-Step Increase"
+        }}}},
+        {{{{
+            "end_time": 60,
+            "description": "Cinderella experiences a profound transformation as she arrives at the grand ball. Her kindness and radiant beauty draw the Prince's attention, and she finds herself, for the first time, being treated with admiration and respect. As she dances with the Prince throughout the evening, each moment fills her with increasing joy and wonder, allowing her to momentarily forget her life of servitude.",
+            "end_emotional_score": 8,
+            "arc": "Gradual-to-Rapid Increase"
+        }}}},
+        {{{{
+            "end_time": 75,
+            "description": "Cinderella's magical evening shatters as the clock strikes midnight. Panic overtakes her as she flees the palace, losing a glass slipper in her desperate rush to escape. Her brief taste of happiness ends abruptly as she races to prevent the revelation of her true identity, watching her transformed world revert to its ordinary state.",
+            "end_emotional_score": -3,
+            "arc": "Straight Decrease"
+        }}}},
+        {{{{
+            "end_time": 100,
+            "description": "Cinderella's hopes revive when the Prince begins searching for her with the glass slipper. Her moment of triumph arrives when she steps forward in her home to try on the slipper, and it fits perfectly. Her patient endurance is finally rewarded as she marries the Prince, rising from her life of servitude to find happiness, maintaining her gracious nature by forgiving her stepfamily.",
+            "end_emotional_score": 10,
+            "arc": "Gradual-to-Rapid Increase"
+        }}}}
+    ]
+}}}}
+</ideal_output>
+</example>
+
+Note About Example Output:
+The descriptions in the example output demonstrate the minimum expected level of detail for story components. Each description should:
+- Center on the protagonist's experience and emotional journey
+- Include concrete details that reveal the protagonist's state of mind
+- Use language that reflects the protagonist's perspective
+- Capture interactions primarily through their impact on the protagonist
+
+"""
+    
+    prompt = PromptTemplate(
+        input_variables=["author_name", "story_title", "protagonist", "story_summary"],  # Define the expected inputs
+        template=prompt_template
+    )
+
+
+    config = load_config(config_path=config_path)
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=8192)
+
+    # Instead of building an LLMChain, use the pipe operator:
+    runnable = prompt | llm
+
+    try:
+        output = runnable.invoke({
+            "author_name": author_name,
+            "story_title": story_title,
+            "protagonist": protagonist,
+            "story_summary": story_summary
+        })
+        # If output is a AIMessage, its `response_metadata` might have info
+        # if hasattr(output, "response_metadata"):
+        #     print("LLM Response Metadata:", output.response_metadata)
+
+    except Exception as e:
+        print(f"Error during LLM call: {e}")
+        if hasattr(e, 'response') and hasattr(e.response, 'prompt_feedback'): # Example for some libraries
+            print("Prompt Feedback:", e.response.prompt_feedback)
+
+    # If the output is an object with a 'content' attribute, extract it.
+    if hasattr(output, "content"):
+        output_text = output.content
+    else:
+        output_text = output
+
+    #attempt to extact json (if needed)
+    output_text = extract_json(output_text)
+
+    if output_text == "" or output_text == None or output_text == {}:
+        print("❌ ERROR: LLM failed to analyze story into components")
+        raise ValueError("ERROR: LLM failed to analyze story into components")
+
+
+    return output_text
+
+
+def validate_story_arcs(data): #data should be json object
+    
+    # Initialize an empty list to store validation results
+    validation_results = []
+    
+    # Previous emotional score for comparison; start with the first component
+    title = data['title']
+    prev_score = data['story_components'][0]['end_emotional_score']
+    
+    # Iterate through story components, starting from the second one
+    for component in data['story_components'][1:]:
+        current_score = component['end_emotional_score']
+        arc = component['arc']
+        end_time = component['end_time']
+        expected_change = None
+        
+        # Determine expected change based on the arc description
+        if "Increase" in arc:
+            expected_change = "increase"
+        elif "Decrease" in arc:
+            expected_change = "decrease"
+        elif "Flat" in arc:
+            expected_change = "flat"
+        
+        # Determine actual change
+        actual_change = None
+        if current_score > prev_score:
+            actual_change = "increase"
+        elif current_score < prev_score:
+            actual_change = "decrease"
+        else:
+            actual_change = "flat"
+        
+        # Compare expected change with actual change
+        matches_description = expected_change == actual_change
+        
+        if(matches_description == False):
+            error_string = f'ERROR: In {title} at end_time: {end_time} arc specified was: {expected_change} but actual score change was: {actual_change}'
+            raise ValueError(error_string)
+        
+        # Update previous score for the next iteration
+        prev_score = current_score
+    
+    return "valid"
+
+
+def num_tokens_from_string(string: str, model: str) -> int:
+    """Returns the number of tokens in a text string."""
+    #encoding = tiktoken.get_encoding(encoding_name)
+    encoding = tiktoken.encoding_for_model(model)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
+
+# return story components 
+def get_story_components(config_path,story_title, story_summary, author, year, protagonist, 
+                      llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+
+   
+    #print(story_summary_source)
+    story_components = analyze_story(config_path=config_path, author_name=author, story_title=story_title, protagonist=protagonist, story_summary=story_summary,
+                                    llm_provider=llm_provider,llm_model=llm_model)
+    
+    story_components = extract_json(story_components)
+    # print(story_components)
+    story_components = json.loads(story_components)
+    #print(story_components)
+
+    #chekc if story_component are valid
+    story_components_validity = validate_story_arcs(story_components) #call to confirm story_components are valid
+
+    #check if right protagonist was chosen
+    if story_components['protagonist'] != protagonist:
+        print("LLM designated protagonist as: ", story_components['protagonist'], " but I specified protagonist as: ", protagonist)
+        print("PLEASE RESOLVE")
+        raise ValueError
+
+    #check if right author was chosen
+    if story_components['title'] != story_title:
+        print("LLM designated title as: ", story_components['title'], " but I specified title as: ", story_title)
+        print("PLEASE RESOLVE")
+        raise ValueError
+   
+    #end modified times -- needed for product creation
+    for component in story_components["story_components"]:
+        component['modified_end_time'] = component['end_time']
+        component['modified_end_emotional_score'] = component['end_emotional_score']
+    
+    return story_components["story_components"]
+
+
+
+#review / grade accuracy of story components
+def grade_story_components(config_path: str, story_components: dict, canonical_summary: str, title:str, author: str, protagonist: str, llm_provider: str, llm_model: str) -> dict:
+  """
+  Grades the accuracy of a story's emotional shape using a two-phase analysis.
+
+  Phase 1 (Bottom-Up): Verifies that each emotional transition is factually justified.
+  Phase 2 (Top-Down): Assesses the holistic accuracy of the entire emotional arc,
+  checking for correct proportions, pacing, and identification of key turning points.
+
+  Args:
+      config_path (str): Path to the LLM configuration file.
+      generated_analysis (dict): The generated story JSON.
+      canonical_summary (str): An objective, external summary of the story.
+      llm_provider (str): The LLM provider to use.
+      llm_model (str): The specific LLM model to use (e.g., 'gpt-4-turbo').
+
+  Returns:
+      dict: A detailed dictionary with both component-level and holistic assessments.
+  """
+  
+  # --- 1. Prepare Inputs for the Prompt ---
+  simplified_components = []
+  # Start with the initial state as the first component for the prompt
+  initial_component = story_components[0]
+  simplified_components.append({
+      "end_time": initial_component.get("end_time"),
+      "description": "Initial State",
+      "end_emotional_score": initial_component.get("end_emotional_score")
+  })
+  for component in story_components:
+      if component.get("end_time") > 0:
+          simplified_components.append({
+              "end_time": component.get("end_time"),
+              "description": component.get("description"),
+              "end_emotional_score": component.get("end_emotional_score")
+          })
+          
+  analysis_to_grade = {
+      "title": title,
+      "protagonist": protagonist,
+      "story_components_with_scores": simplified_components
+  }
+  generated_analysis_str = json.dumps(analysis_to_grade, indent=4)
+
+  # --- 2. Define the Two-Phase Prompt ---
+  prompt_template = """
+You are an expert literary scholar specializing in narrative theory and the quantitative analysis of story structures. You are trained to evaluate character arcs with academic rigor, objectivity, and precision. 
+
+Your task is to perform a rigorous two-phase quality assessment of a story's emotional shape.
+
+
+---
+## INPUT DATA
+
+### 1. Generated Story Analysis
+This JSON contains the proposed emotional scores for {protagonist} from {author}'s {title} and the text descriptions for each story segment. 
+Emotional scores range from euphoric (+10) to depressed (-10), based on {protagonist}'s direct experiences and reactions to events in each story segment.
+{generated_analysis}
+
+### 2. Canonical Story Summary (External Ground Truth)
+This text is the source of truth for the story's events.
+"{canonical_summary}"
+
+---
+## FRAMEWORK FOR JUDGMENT (Your Analytical Rubric)
+
+You must apply the following principles when assessing the emotional scores:
+1.  **Anchoring:** Scores must be anchored to the protagonist's emotional stakes. +10 represents ultimate triumph/euphoria; -10 represents ultimate despair/tragedy (e.g., death, total failure).
+2.  **Proportionality:** The *magnitude* of a score change must be proportional to the *magnitude* of the causal event. A minor setback should not cause a 10-point drop.
+3.  **Narrative Weight:** The story's most pivotal moment (the climax or point of no return) should be clearly identifiable in the trajectory, often marked by the largest emotional shift.
+
+---
+## ASSESSMENT & INSTRUCTIONS
+
+### Phase 1: Bottom-Up Component Validation
+For each emotional transition, determine if the event in the `description` factually justifies the change in `end_emotional_score` according to the `Canonical Story Summary`.
+
+### Phase 2: Top-Down Holistic Review
+After completing Phase 1, evaluate the entire emotional journey using the `FRAMEWORK FOR JUDGMENT`.
+-   Is the shape **proportional** and well-paced?
+-   Are the scores correctly **anchored** to the story's stakes?
+-   Does the shape give appropriate **narrative weight** to the climax?
+
+### Final Grade
+Your `final_grade` must be the more critical of the two assessments. A story can have factually correct components but a holistically incorrect shape.
+
+---
+## OUTPUT
+
+Provide your complete two-phase assessment in the following JSON format ONLY. Output a single JSON object. Do not use Markdown fences or any prose.
+
+```json
+{{
+"shape_accuracy": {{
+  "component_assessments": [
+    {{
+      "end_time": 40, 
+      "emotional_transition": "1 -> 8",
+      "is_justified": true,
+      "reasoning": "The reunion with Daisy after years of obsession justifies a significant rise to euphoria."
+    }},
+    {{
+      "end_time": 55,
+      "emotional_transition": "8 -> 4",
+      "is_justified": true,
+      "reasoning": "Daisy's negative reaction to the party correctly tempers Gatsby's euphoria, justifying a moderate fall."
+    }}
+  ],
+  "holistic_assessment": {{
+      "holistic_grade": "A|B|C|D|F",
+      "holistic_justification": "The overall shape brilliantly captures the Icarus-like rise fueled by hope and the subsequent, catastrophic collapse into tragedy. The proportions feel correct, with the final fall being the most significant move."
+  }},
+  "final_grade": "A|B|C|D|F",
+  "final_justification": "The final grade is A because both the individual components are logically sound and the overall shape accurately reflects the tragic spirit and proportions of the novel."
+}}
+}}
+"""
+
+  prompt = PromptTemplate(
+      input_variables=["generated_analysis", "canonical_summary", "title", "author", "protagonist"],
+      template=prompt_template
+  )
+  config = load_config(config_path=config_path)
+  llm = get_llm(llm_provider, llm_model, config, max_tokens=4000) # Increased tokens for the more detailed analysis
+  runnable = prompt | llm
+  output = runnable.invoke({
+        "generated_analysis": generated_analysis_str,
+        "canonical_summary": canonical_summary,
+        "title": title,
+        "author": author,
+        "protagonist": protagonist
+    })
+
+  if hasattr(output, "content"):
+      output_text = output.content
+  else:
+      output_text = output
+
+  ## --- FIXES ARE IN THIS FINAL SECTION --- ##
+
+  extracted_text = extract_json(output_text)
+    
+  try:
+      # The `extracted_text` is a string; we load it into our dictionary.
+      grades_dict = json.loads(extracted_text)
+  except (json.JSONDecodeError, TypeError) as e:
+      print(f"Error parsing JSON from LLM output: {e}")
+      print(f"Raw extracted text was: {extracted_text}")
+      # Return a dictionary with an error state to prevent crashes downstream
+      return {"error": "Failed to parse LLM response as JSON."}
+    
+
+  #MAYBE ADD SOME CHECKS IF STORY COMPONENTS ACCURATE OR NOT
+
+  # 3. UPDATED to return the dictionary `grades_dict`.
+  return grades_dict
+
+
+
