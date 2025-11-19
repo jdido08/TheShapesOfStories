@@ -5,6 +5,8 @@ from printify_publish_product        import publish_product_on_printify
 from shopify_create_product          import create_shopify_product
 from shopify_create_product_variant  import create_shopify_product_variant
 from shopify_product_variant_mockups import add_shopify_product_variant_mockups
+from create_product_support_data     import create_product_support_data
+
 
 import yaml
 import os
@@ -19,6 +21,8 @@ def publish_product(product_data_path):
     with open(product_data_path, "r", encoding="utf-8") as f:
         product_data = json.load(f)
     story_data_path = product_data['story_data_path']
+
+    create_product_support_data(product_data_path)
 
     publish_product_on_printify(product_data_path=product_data_path)
 

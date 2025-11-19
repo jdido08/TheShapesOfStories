@@ -218,17 +218,18 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     print("✅ Product Shape matches Story Shape")
 
 
+    #PUTTING IN CREATE_PRODUCT_SUPPORT_DATA.py 11/18/2026
     #description and save to product path
-    llm_provider_product_description = "google"
-    llm_model_product_description = "gemini-2.5-pro"
-    create_product_description(
-        image_path=product_design_path,
-        story_json_or_path=product_data_path,
-        config_path=PATHS['config'],
-        llm_provider = llm_provider_product_description,
-        llm_model = llm_model_product_description
-    )
-    print("✅ Product Description")
+    # llm_provider_product_description = "google"
+    # llm_model_product_description = "gemini-2.5-pro"
+    # create_product_description(
+    #     image_path=product_design_path,
+    #     story_json_or_path=product_data_path,
+    #     config_path=PATHS['config'],
+    #     llm_provider = llm_provider_product_description,
+    #     llm_model = llm_model_product_description
+    # )
+    # print("✅ Product Description")
 
 
     
@@ -250,68 +251,67 @@ def create_product_data(story_data_path, product_type="", product_details=""):
     else:
         print("❌ Product Text Failed; Grade: ", final_grade)
 
+    #putting in create_product_support_data 11/18/2025
+    # create_mockups(
+    #     product_data_path=product_data_path,
+    #     product_design_path=product_design_path,
+    #     mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
+    #     output_dir=PATHS['product_mockups'] 
+    # )
+    # print("✅ Product Mockups")
 
-    create_mockups(
-        product_data_path=product_data_path,
-        product_design_path=product_design_path,
-        mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
-        output_dir=PATHS['product_mockups'] 
-    )
-    print("✅ Product Mockups")
 
-
-
+    #PUTTING IN CREATE_PRODUCT_SUPPORT_DATA 11/18/2025
     #create supporting product designs -- line and svg versions: line - png, line - svg, char - svg
-    supporting_designs = [
-         {
-            "line_type":"char",
-            "output_format":"png"
-        },
-        {
-            "line_type":"line",
-            "output_format":"png"
-        },
-        {
-            "line_type":"line",
-            "output_format":"svg"
-        },
-        {
-            "line_type":"char",
-            "output_format":"svg"
-        }
-    ]
-    supporting_design_file_paths = []
+    # supporting_designs = [
+    #      {
+    #         "line_type":"char",
+    #         "output_format":"png"
+    #     },
+    #     {
+    #         "line_type":"line",
+    #         "output_format":"png"
+    #     },
+    #     {
+    #         "line_type":"line",
+    #         "output_format":"svg"
+    #     },
+    #     {
+    #         "line_type":"char",
+    #         "output_format":"svg"
+    #     }
+    # ]
+    # supporting_design_file_paths = []
 
-    with open(product_data_path, 'r') as f:  #open product json data that was just created
-        product_data = json.load(f)
-    if product_type == "print":
-        if print_size == "11x14":
-            for supporting_design in supporting_designs:
-                product_data_path, product_design_path = create_print_11x14_product_data(
-                    story_data_path=story_data_path,
-                    title=title,
-                    protagonist=protagonist,
-                    author=author,
-                    year=year,
-                    background_color_hex=background_color_hex,
-                    font_color_hex=font_color_hex,
-                    font=font,
-                    line_type = supporting_design['line_type'],
-                    output_format=supporting_design['output_format'],
-                    output_dir=PATHS['supporting_designs']
-                )
-                supporting_design_file_paths.append(product_design_path)
-                print("✅ ", supporting_design['line_type'], " - ", supporting_design['output_format'])
-        else:
-            print("ERROR: Only 11x14 print supported today")
-            return
-    else:
-        print("ERROR: Only print supported today")
-        return
+    # with open(product_data_path, 'r') as f:  #open product json data that was just created
+    #     product_data = json.load(f)
+    # if product_type == "print":
+    #     if print_size == "11x14":
+    #         for supporting_design in supporting_designs:
+    #             product_data_path, product_design_path = create_print_11x14_product_data(
+    #                 story_data_path=story_data_path,
+    #                 title=title,
+    #                 protagonist=protagonist,
+    #                 author=author,
+    #                 year=year,
+    #                 background_color_hex=background_color_hex,
+    #                 font_color_hex=font_color_hex,
+    #                 font=font,
+    #                 line_type = supporting_design['line_type'],
+    #                 output_format=supporting_design['output_format'],
+    #                 output_dir=PATHS['supporting_designs']
+    #             )
+    #             supporting_design_file_paths.append(product_design_path)
+    #             print("✅ ", supporting_design['line_type'], " - ", supporting_design['output_format'])
+    #     else:
+    #         print("ERROR: Only 11x14 print supported today")
+    #         return
+    # else:
+    #     print("ERROR: Only print supported today")
+    #     return
     
     #make final saves to product_data josn
-    product_data['all_design_file_paths'] = supporting_design_file_paths
-    product_data['llm_models']['product_description'] = llm_model_product_description
+   
     product_data['llm_models']['assess_arc_text'] = llm_model_assess_arc_text
     product_data['product_type'] = product_type
     product_data['story_data_path'] = story_data_path

@@ -5,6 +5,8 @@ from printify_publish_product        import publish_product_on_printify
 from shopify_create_product          import create_shopify_product
 from shopify_create_product_variant  import create_shopify_product_variant
 from shopify_product_variant_mockups import add_shopify_product_variant_mockups
+from create_product_support_data     import create_product_support_data
+
 
 import yaml
 import os
@@ -40,6 +42,9 @@ def full_create(story_type, story_title, story_author, story_protagonist, story_
     product_data_path = create_product_data(story_data_path=story_data_path,
                         product_type=product_type, 
                         product_details=product_details)
+    
+
+    create_product_support_data(product_data_path=product_data_path)
 
 
     publish_product_on_printify(product_data_path=product_data_path)
