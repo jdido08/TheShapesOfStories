@@ -80,8 +80,7 @@ client = gspread.authorize(credentials)
 #link https://docs.google.com/spreadsheets/d/16tmqmaXRN_a_TV4iWdkHkJb4XPgc7dKKZZzd7dVtQs4/edit?usp=sharing
 sheet_id = "16tmqmaXRN_a_TV4iWdkHkJb4XPgc7dKKZZzd7dVtQs4"
 spreadsheet = client.open_by_key(sheet_id)
-worksheet = spreadsheet.worksheet("Create")
-
+worksheet = spreadsheet.worksheet("Create Full")
 
 
 # Get all rows from the sheet

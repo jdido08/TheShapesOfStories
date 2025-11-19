@@ -109,11 +109,12 @@ Analysis Framework:
 
 2. Design Requirements
    Colors must:
-   - Meet accessibility standards i.e. 4.5:1 minimum contrast between background_color and font_color
    - Work in both digital and print formats
-   - Maintain impact under various lighting
    - Connect meaningfully to story elements
+   - Maintain impact under various lighting
    - Be returned as hex codes in the form #RRGGBB
+   - Meet accessibility standards i.e. 4.5:1 minimum contrast between background_color and font_color
+
 
    
    Typography must:
