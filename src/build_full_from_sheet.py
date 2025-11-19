@@ -16,7 +16,7 @@ from google.oauth2.service_account import Credentials
 
 
 
-def full_create(story_type, story_title, story_author, story_protagonist, story_year, story_summary_path, product_type, product_details, skip_story_create=False, build_story_summary=True):
+def full_create(story_type, story_title, story_author, story_protagonist, story_year, story_summary_path, product_type, product_details, skip_story_create=False, build_story_summary=True, story_cover_path=""):
 
     if skip_story_create == False:
         story_data_path = create_story_data(story_type=story_type, 
@@ -25,7 +25,8 @@ def full_create(story_type, story_title, story_author, story_protagonist, story_
                         story_protagonist=story_protagonist, 
                         story_year=story_year, 
                         story_summary_path=story_summary_path,
-                        build_story_summary=build_story_summary)
+                        build_story_summary=build_story_summary,
+                        story_cover_path=story_cover_path)
     else:
         print("Skipping Story Create for ", story_title, " - ", story_protagonist)
         print("Finding Story Data...")
@@ -99,6 +100,7 @@ for row in rows:
     story_protagonist = row.get("story_protagonist")
     story_year = row.get("story_year")
     story_summary_path = row.get("story_summary_path")
+    cover_path = row.get("cover_path")
     product_type = row.get("product_type")
     product_details = row.get("product_details")
     skip_story_create = row.get("skip_story_create")
@@ -130,6 +132,7 @@ for row in rows:
         story_protagonist=story_protagonist, 
         story_year=story_year, 
         story_summary_path=story_summary_path,
+        cover_path=cover_path,
         product_type=product_type,
         product_details=product_details,
         skip_story_create=skip_story_create,

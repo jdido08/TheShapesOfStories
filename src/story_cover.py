@@ -637,9 +637,30 @@ def get_story_cover(story_data_path):
     return 
 
 
+def manually_set_cover(story_data_path, cover_path):
+    with open(story_data_path, "r", encoding="utf-8") as f:
+        story_data = json.load(f)
 
-test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/crime-and-punishment-rodion-raskolnikov.json"
-get_story_cover(test_path)
+    cover_data = {
+            "cover_path_file": cover_path,
+            "cover_url_used":"",
+            "goodreads_book_id": "",
+            "page_url": "",
+            "canonical_url": "",
+            "page_url": "",
+            "isbn13": "",
+            "isbn10": "",
+            "asin": ""
+        }
+
+    story_data["cover_data"] = cover_data
+    with open(story_data_path, "w", encoding="utf-8") as f:
+        json.dump(story_data, f, ensure_ascii=False, indent=2)
+    print("✅ Manually Set Story Cover")
+
+
+# test_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/crime-and-punishment-rodion-raskolnikov.json"
+# get_story_cover(test_path)
 
 
 

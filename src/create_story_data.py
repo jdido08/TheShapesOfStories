@@ -13,7 +13,7 @@ from story_components import get_story_components, grade_story_components
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
-from story_cover import get_story_cover
+from story_cover import get_story_cover, manually_set_cover
 from langchain_classic.chains import LLMChain
 
 import gi
@@ -133,7 +133,7 @@ import sys
 # print("All paths configured successfully.")
 
 
-def create_story_data(story_type, story_title, story_author,story_protagonist, story_year, story_summary_path, build_story_summary=True):
+def create_story_data(story_type, story_title, story_author,story_protagonist, story_year, story_summary_path, build_story_summary=True, story_cover_path=""):
     print("Story: ", story_title, " - ", story_protagonist)
 
     # create story data file name --> [story_title]-[story_protagonist].json
@@ -218,8 +218,11 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     print("✅ Story Shape Category")
 
     # get story cover
-    get_story_cover(story_data_file_path)
-    
+    if story_cover_path == "":
+        get_story_cover(story_data_file_path)
+    else:
+        manually_set_cover(story_data_file_path, story_cover_path)
+   
     # get stort style
     story_style_llm_model = "claude-sonnet-4-5" #claude sonnet good for style
     story_style = get_story_style(
