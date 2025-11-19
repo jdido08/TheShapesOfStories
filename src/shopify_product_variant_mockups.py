@@ -4,6 +4,7 @@ import base64
 import os
 import json
 import requests, yaml, time
+import datetime
 
 
 from PIL import Image, ImageOps
@@ -769,6 +770,15 @@ def add_shopify_product_variant_mockups(product_data_path: str) -> Dict[str, Any
         "count_uploaded": len(uploaded_urls),
     }
     print(f"✅ Uploaded {len(uploaded_urls)} mockups; attached 1 primary to variant; metafields written.")
+    
+    product_data['shopify_published_product'] = True
+    product_data['shopify_create_timestamp'] = str(datetime.datetime.now())
+
+    with open(product_data_path, "w", encoding="utf-8") as f:     # save it back to the same file
+        json.dump(product_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")  # optional newline at EOF
+    time.sleep(2)
+
     return result
 
 
