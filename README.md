@@ -25,3 +25,10 @@ The system follows a proprietary, multi-step process to generate a story shape:
     * Generates a continuous, curved path representing the emotional scores over the story's timeline.
     * Uses an LLM to generate concise, descriptive text phrases for each story component. These phrases are carefully crafted to fit the exact length of their corresponding curve segment.
 3.  **Rendering**: The final artwork is rendered using the Cairo graphics library. The system meticulously places the generated text along the curve, adjusting spacing and orientation to ensure readability. It then adds the title, protagonist's name, and applies the specified colors and fonts to produce the final image file.
+
+
+  2.3) Distilled Component **Description Synthesis:**
+       For each distilled component, write a new description.
+       - The new description should match the emotional trajectory (change or stasis) of the distilled component i.e. the description should strictly describe events that explain the emotional change of the distilled component
+       - The new description should be created strictly from the descriptions of the underlying detailed components the distilled component is created from. The description should include as many specific concrete events (names, places, actions) as possible and must be in chronological order.
+       - If a distilled component is created from multiple underlying detailed components that have differing emotional arcs directions (i.e. some are up and some are down) then only focus on the descriptions which aligns with the emotional change of the distilled component UNLESS the distilled component arc is "Linear Flat" in which case use all the underlying detailed components regardless of arc direction/trajectory.

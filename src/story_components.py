@@ -362,278 +362,100 @@ def get_story_components(config_path,story_title, story_summary, author, year, p
 
 
 # ## distill ganular components 
-# def distill_story_components(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
-#     """
-#     Phase 2: Distills granular data into a macro-shape.
-#     """
-    
-#     prompt_template = """
-#     You are a Data Visualization Architect for Literature. 
-    
-#     I will provide you with a "Granular Emotional Arc" for the story "{story_title}" by {author} featuring the protagonist "{protagonist}".
-#     This data contains high-resolution emotional shifts, including minor fluctuations (narrative noise).
-    
-#     Your goal is to simplify this data into a "Macro Emotional Shape" that reveals the dominant trajectory of the narrative.
 
-#     ### INPUT DATA (Granular):
-#     {granular_components}
-    
-#     ### DISTILLATION RULES:
-    
-#     1. **Simplification & Timing:**
-#        - Condense the timeline into the *fewest components necessary* (typically 3-6) to truthfully represent the major structural movements.
-#        - Merge adjacent components that share a general directional trend.
-#        - **CRITICAL:** When merging components, the `end_time` of the new merged component must match the `end_time` of the *last* component in that group. Do not invent new timestamps.
-    
-#     2. **Narrative Synthesis (Show, Don't Tell):**
-#        - You must write a NEW description for each merged component.
-#        - **Selection Strategy:** Construct the description using specific event details *from the input components* that align with the **net direction** of the new arc.
-#          * If the merged arc is a **Decrease**, weave together the specific setbacks, failures, and conflicts from the input data.
-#          * If the merged arc is an **Increase**, weave together the victories, connections, and realizations.
-#        - **Style:** Do not explain *why* the emotion changed. Instead, **describe the events** that defined that period.
-    
-#     3. **Anchor Preservation:**
-#        - The Start Score (Time 0) MUST match the input exactly.
-#        - The End Score (Time 100) MUST match the input exactly.
-       
-#     4. **Arc Selection:**
-#        Choose the Arc Pattern that best fits the rate of change for the merged section:
-#        - Step-by-Step Increase/Decrease (Distinct stages)
-#        - Linear Increase/Decrease (Steady, consistent change)
-#        - Gradual-to-Rapid Increase/Decrease (Exponential change)
-#        - Rapid-to-Gradual Increase/Decrease (Logarithmic change)
-#        - Straight Increase/Decrease (Sudden, dramatic shift)
-#        - S-Curve Increase/Decrease (Complex/Organic shift)
-#        - Linear Flat (No emotional change)
+# keep high and lows 
+# consolidate
 
-#     5. **VALIDATION RULES (Strict Enforcement):**
-#        - If the emotional score DOES NOT CHANGE (e.g., -5 to -5), the Arc Type MUST be "Linear Flat".
-#        - You strictly cannot label an arc as "Increase" or "Decrease" if the score number remains the same.
-    
-#     ### OUTPUT FORMAT (JSON ONLY):
-#     {{{{
-#         "title": "{story_title}",
-#         "protagonist": "{protagonist}",
-#         "story_components": [
-#             {{{{
-#                 "end_time": 0,
-#                 "description": "N/A",
-#                 "end_emotional_score": <int matches input>,
-#                 "arc": "N/A"
-#             }}}},
-#             {{{{
-#                 "end_time": <int>, 
-#                 "description": "<Narrative description of the defining events>",
-#                 "end_emotional_score": <int>,
-#                 "arc": "<Selected Arc Pattern>"
-#             }}}}
-#             ...
-#         ]
-#     }}}}
-#     """
+#visual weight
+#zoom out
+#events that explain the net movement;  descriptions to match the shape of the curve.
 
-#     prompt = PromptTemplate(
-#         input_variables=["granular_components", "story_title", "author", "protagonist"],
-#         template=prompt_template
-#     )
 
-#     config = load_config(config_path=config_path)
-#     llm = get_llm(llm_provider, llm_model, config, max_tokens=4096)
+# visual weight --> 3 stage of processing 
 
-#     # Convert the list of dicts to a pretty JSON string for the prompt
-#     granular_json_str = json.dumps(granular_components, indent=2)
+import json
+from langchain_core.prompts import PromptTemplate
+from llm import load_config, get_llm, extract_json
 
-#     runnable = prompt | llm
 
-#     try:
-#         output = runnable.invoke({
-#             "granular_components": granular_json_str,
-#             "story_title": story_title,
-#             "author":author,
-#             "protagonist": protagonist
-#         })
-#     except Exception as e:
-#         print(f"Error during Distillation LLM call: {e}")
-#         raise e
-
-#     if hasattr(output, "content"):
-#         output_text = output.content
-#     else:
-#         output_text = output
-
-#     output_text = extract_json(output_text)
-    
-#     try:
-#         result = json.loads(output_text)
-#     except json.JSONDecodeError:
-#         print("Error decoding JSON from distillation step.")
-#         return granular_components 
-    
-#     return result["story_components"]
-
-# def distill_story_components(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
-#     """
-#     Phase 2: Aggressively distills granular data into a macro-shape.
-#     """
-    
-#     prompt_template = """
-#     You are a Data Visualization Architect for Literature. 
-    
-#     I will provide you with a "Granular Emotional Arc" for the story "{story_title}" by {author} featuring the protagonist "{protagonist}".
-#     This data contains {count} distinct components. This is TOO NOISY for our visualization.
-    
-#     Your goal is to aggressively compress this data into a "Macro Emotional Shape" consisting of ONLY 3 to 6 components.
-
-#     ### INPUT DATA (Granular):
-#     {granular_components}
-    
-#     ### DISTILLATION RULES (STRICT):
-    
-#     1. **The "Zoom Out" Rule:**
-#        - You MUST reduce the story to **between 3 and 6 components total**.
-#        - **Ignore local fluctuations:** If the protagonist fluctuates between -10 and -6 for several chapters (e.g., sad, then slightly less sad, then sad again), this is NOT a zig-zag. It is ONE single "Low/Descent" component.
-#        - **Merge aggressively:** You are creating a "Trend Line," not a plot summary. 
-#        - *Example:* A sequence of [-5, -8, -6, -9, -10] should become ONE component: A "Gradual Decrease" from -5 to -10.
-    
-#     2. **Narrative Synthesis:**
-#        - Write a NEW description for the merged timeline.
-#        - **Selection Strategy:** Only describe the events that contribute to the *overall trend* of the section.
-#        - If you merge a "High" moment into a "Low" trend, **ignore the high moment in the description**. (e.g., If you merge the "Nuns" scene into the "Breakdown" sequence, do not mention the nuns. Focus on the breakdown).
-    
-#     3. **Anchor Preservation:**
-#        - The Start Score (Time 0) MUST match the input exactly.
-#        - The End Score (Time 100) MUST match the input exactly.
-       
-#     4. **Arc Selection:**
-#        Choose the Arc Pattern that best fits the rate of change for the merged section:
-#        - Step-by-Step Increase/Decrease
-#        - Linear Increase/Decrease
-#        - Gradual-to-Rapid Increase/Decrease
-#        - Rapid-to-Gradual Increase/Decrease
-#        - Straight Increase/Decrease
-#        - S-Curve Increase/Decrease (Ideal for long merged sections)
-#        - Linear Flat
-
-#     5. **VALIDATION RULES:**
-#        - If the merged score numbers are the same (e.g. Start -8, End -8), the Arc MUST be "Linear Flat".
-    
-#     ### OUTPUT FORMAT (JSON ONLY):
-#     {{{{
-#         "title": "{story_title}",
-#         "protagonist": "{protagonist}",
-#         "story_components": [
-#             {{{{
-#                 "end_time": 0,
-#                 "description": "N/A",
-#                 "end_emotional_score": <int matches input>,
-#                 "arc": "N/A"
-#             }}}},
-#             {{{{
-#                 "end_time": <int>, 
-#                 "description": "<Narrative description of the dominant trend>",
-#                 "end_emotional_score": <int>,
-#                 "arc": "<Selected Arc Pattern>"
-#             }}}}
-#             ...
-#         ]
-#     }}}}
-#     """
-
-#     prompt = PromptTemplate(
-#         input_variables=["granular_components", "story_title", "protagonist", "author", "count"],
-#         template=prompt_template
-#     )
-
-#     config = load_config(config_path=config_path)
-#     llm = get_llm(llm_provider, llm_model, config, max_tokens=4096)
-
-#     # Calculate count to shame the LLM into compressing
-#     count = len(granular_components)
-#     granular_json_str = json.dumps(granular_components, indent=2)
-
-#     runnable = prompt | llm
-
-#     try:
-#         output = runnable.invoke({
-#             "granular_components": granular_json_str,
-#             "story_title": story_title,
-#             "protagonist": protagonist,
-#             "author": author,
-#             "count": count
-#         })
-#     except Exception as e:
-#         print(f"Error during Distillation LLM call: {e}")
-#         raise e
-
-#     if hasattr(output, "content"):
-#         output_text = output.content
-#     else:
-#         output_text = output
-
-#     output_text = extract_json(output_text)
-    
-#     try:
-#         result = json.loads(output_text)
-#     except json.JSONDecodeError:
-#         print("Error decoding JSON from distillation step.")
-#         return granular_components 
-    
-#     # Final Safety Check: If it didn't compress, print a warning
-#     if len(result["story_components"]) > 8:
-#         print(f"⚠️ WARNING: Distillation failed to compress significantly (Count: {len(result['story_components'])})")
-
-#     return result["story_components"]
-
-def distill_story_shape(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+def distill_story_components(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
     """
-    Phase 2: Aggressively distills granular data into a macro-shape with dense, trend-focused descriptions.
+    Phase 2: Aggressively distills granular data into a macro-shape.
     """
     
     prompt_template = """
-    You are a Data Visualization Architect for Literature. 
+    You are a world-class literary scholar and expert in story analysis. 
     
-    I will provide you with a "Granular Emotional Arc" for the story "{story_title}" by {author} featuring the protagonist "{protagonist}".
-    This data contains {count} distinct components.
+    Below is a detailed analysis of "{story_title}" by {author} that's focused specifically on the emotional journey of {protagonist} from the story. 
     
-    Your goal is to aggressively compress the SHAPE (3-6 points) while preserving the RICH DETAIL of the story in the text.
+    Your task is:
+    1. carefully review the provided detailed analysis, THEN
+    2. simplify and distill the analysis, THEN
+    3. output the distilled analysis 
+ 
+    The simplified and distilled output will be used to help visualize the essence of {protagonist}'s emotional journey. The current detailed analysis is too noisy.
 
-    ### INPUT DATA (Granular):
+    Please carefully follow the instructions below. 
+
+    # 1.) REVIEW DETAILED ANALYSIS
+    Carefully review the provided detailed analysis using the framework provided.
+
+    ## ANALYSIS FRAMEWORK
+    The detailed analysis follows the following framework:
+    1. Story Timeline: The narrative is viewed on a scale from 0 to 100, representing the percentage of progress through the story.
+    2. Story Components: The story is segmented into components defined by {protagonist}'s emotional journey.
+    3. Continuity: Each story component starts where the previous one ended, ensuring a seamless emotional journey.
+    4. Emotional Arcs: {protagonist}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
+
+    ## DETAILED ANALYSIS (INPUT DATA):
     {granular_components}
-    
-    ### DISTILLATION RULES (STRICT):
-    
-    1. **The "Zoom Out" Rule (Shape Compression):**
-       - You MUST reduce the story to **between 3 and 6 components total**.
-       - **Ignore local fluctuations:** A sequence of [-5, -8, -6, -9] should become ONE single "Descent" component.
-       - **Merge aggressively:** Create a "Trend Line," not a plot summary.
-    
-    2. **Narrative Synthesis (High Density + Net Direction):**
-       - You must write a NEW description for the merged timeline.
-       - **Selection Strategy (The Filter):** Construct the description using ONLY specific event details *from the input components* that align with the **net direction** of the new arc.
-         * If the merged arc is a **Decrease**, you must weave together the setbacks, failures, and conflicts, *ignoring* any minor positive moments that occurred within that span (unless they serve as ironic contrast).
-         * If the merged arc is an **Increase**, weave together the victories, connections, and realizations.
-       - **Concrete Density:** Do not summarize abstractly (e.g. "Bad things happened"). Instead, **list the specific names, locations, and actions** that drove the trend.
-       - *Goal:* A dense narrative paragraph that explains *specifically* what events caused this part of the line to go up or down.
-    
-    3. **Visual Readability (Narrative Weight):**
-       - The timeline (0-100) represents **Emotional Duration**, not just literal page count.
-       - **The "10% Floor":** If a component represents a distinct, sustained emotional state (especially an Ending, Epilogue, or Aftermath), it must span **at least 10-15 units** on the timeline to be visually legible.
-       - **Action:** You are authorized to adjust the `end_time` of preceding components to make room for a significant ending.
-       
-    4. **Arc Selection:**
-       Choose the Arc Pattern that best fits the rate of change for the merged section:
-       - **Step-by-Step Increase/Decrease:** Emotions change in distinct, noticeable stages.
-       - **Linear Increase/Decrease:** Consistent, steady change in emotional state.
-       - **Gradual-to-Rapid Increase/Decrease:** Change starts slowly, then accelerates (Exponential).
-       - **Rapid-to-Gradual Increase/Decrease:** Change starts quickly, then slows down (Logarithmic).
-       - **Straight Increase/Decrease:** Sudden, dramatic change in emotions (Vertical shift).
-       - **S-Curve Increase/Decrease:** Change follows an 'S' shape (slow-fast-slow). Good for bridging large gaps.
-       - **Linear Flat:** No change in emotions.
 
-    5. **VALIDATION RULES:**
-       - If the merged score numbers are the same (e.g. Start -8, End -8), the Arc MUST be "Linear Flat".
+    # 2.) SIMPLIFY AND DISTILL ANALYSIS 
+
+    2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
+       - You MUST reduce the story to **between 3 and 6 components total**.
+       - **Identify Major Inflection Points:** Only create a new component when the narrative's emotional direction **significantly reverses** (e.g. a sustained rise hits a peak and turns into a fall).
+       - **Filter out Noise:** If the protagonist fluctuates slightly (e.g., -5 to -8 to -6 to -9), this is NOT a zig-zag. It is ONE single "Decrease" trend. Ignore the minor blips.
+       - **The "Stasis" Rule:** If the narrative feels static or stuck, and the score changes only negligibly (e.g. +/- 1 point), you MUST adjust the end_emotional_score to match the previous component's score exactly to create a flat line.
+       - **Merge Aggressively:** Create a broad "Trend Line" that connects the Start, the Major Turning Points (Peaks/Valleys), and the End.
+       - **Preserve the Start:** Keep the first component (end_time 0) exactly as is.
+       - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+
+    2.2) Distilled Component **Arc Selection:**
+       For each distilled component, choose the emotional arc pattern that best fits the rate of change for distilled component. Here are the following choices:
+       a. Step-by-Step Increase/Decrease: Emotions change in distinct, noticeable stages
+       b. Linear Increase/Decrease: Consistent, steady change in emotional state
+       c. Gradual-to-Rapid Increase/Decrease: Change starts slowly, then accelerates
+       d. Rapid-to-Gradual Increase/Decrease: Change starts quickly, then slows down
+       e. Straight Increase/Decrease: Sudden, dramatic change in emotions
+       f. S-Curve Increase/Decrease: Change follows an 'S' shape (slow-fast-slow)
+       g. Linear Flat: No change in emotions
+
+    2.3) Distilled Component **Description Synthesis:**
+       For each distilled component, write a new description.
+       - **Focus on Events** The description must be a chronological sequence of concrete actions and plot beats. Do not use abstract emotional summaries like "misery deepens" or "hope is crushed." Instead, state exactly what happened.
+       - **Source Material:** Construct the description strictly from the events detailed in the underlying components which make up the distilled component.
+       - **Alignment:** Select events that justify the specific emotional arc of this distilled component i.e. the new description should reflect the emotional trajectory (change or stasis) of the distilled component
+         * If the arc is "Increase," focus on the positive events/wins.
+         * If the arc is "Decrease," focus on the negative events/losses.
+         * EXCEPTION: If the arc is "Linear Flat" (Stasis), you must include the full sequence of events (both good and bad) to show the lack of net progress.
     
-    ### OUTPUT FORMAT (JSON ONLY):
+    2.4)  Double Check according to the following **TECHNICAL & VALIDATION RULES (CRITICAL):**
+       - **Anchor Check:** Ensure the Start Score (Time 0) and End Score (Time 100) match the input data exactly.
+       - Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
+       - Emotional scores must be whole numbers between -10 and +10. 
+       - If the emotional score remains the same (e.g., -5 to -5), the Arc Type MUST be "Linear Flat". You strictly cannot label an arc as "Increase" or "Decrease" if the score number does not change.
+       - Adjacent components should not have the same emotional score unless using Linear Flat arc.
+       - End times must be in ascending order and the final component must end at 100.
+       - Each arc type must match the emotional change described:
+        * Increase arcs must show higher end scores than start scores
+        * Decrease arcs must show lower end scores than start scores
+        * Flat arcs must maintain the same score
+       - Double-check your analysis for accuracy and internal consistency before providing the final JSON output.
+
+    # 3.) OUTPUT DISTILLED ANALYSIS
+    Please output your distilled analysis in the following format (JSON ONLY):
+    
     {{{{
         "title": "{story_title}",
         "protagonist": "{protagonist}",
@@ -646,13 +468,115 @@ def distill_story_shape(config_path, granular_components, story_title, author, p
             }}}},
             {{{{
                 "end_time": <int>, 
-                "description": "<DENSE narrative paragraph of specific events matching the trend>",
+                "description": "<Narrative description of the dominant trend>",
                 "end_emotional_score": <int>,
                 "arc": "<Selected Arc Pattern>"
             }}}}
             ...
         ]
     }}}}
+
+    EXAMPLE:
+
+    <example>
+    <author_name>Charles Perrault</author_name>
+    <story_title>Cinderella at the Ball</story_title>
+    <protagonist>Cinderella</protagonist>
+    <detailed_analysis_(input_data)>
+    {{
+        "title": "Cinderella at the Ball",
+        "protagonist": "Cinderella",
+        "story_components": [
+            {{
+                "end_time": 0,
+                "description": "#N/A",
+                "end_emotional_score": -5,
+                "arc": "#N/A"
+            }},
+            {{
+                "end_time": 15,
+                "description": "Cinderella asks to attend the ball, hoping for a brief respite from her misery. Her stepmother and stepsisters cruelly mock her request and forbid her from going, crushing her tentative hope.",
+                "end_emotional_score": -7,
+                "arc": "Linear Decrease"
+            }},
+            {{
+                "end_time": 25,
+                "description": "Despite the ban, Cinderella tries to sew a dress from her mother's old things. However, right before the ball, her stepsisters discover her and physically rip the dress to shreds. Devastated and betrayed, she runs to the garden sobbing.",
+                "end_emotional_score": -9,
+                "arc": "Rapid-to-Gradual Decrease"
+            }},
+            {{
+                "end_time": 35,
+                "description": "The Fairy Godmother appears in the garden. Cinderella's despair turns to shock and then rising wonder as the pumpkin is transformed into a carriage and her rags into a gown.",
+                "end_emotional_score": 4,
+                "arc": "Step-by-Step Increase"
+            }},
+            {{
+                "end_time": 60,
+                "description": "Cinderella enters the ball. She is overcome with joy as the Prince asks her to dance. For the first time in her life, she feels seen, admired, and deeply happy, forgetting her life of servitude completely.",
+                "end_emotional_score": 9,
+                "arc": "Gradual-to-Rapid Increase"
+            }},
+            {{
+                "end_time": 70,
+                "description": "The clock strikes midnight. The dream abruptly ends. Cinderella is seized by panic and anxiety as she flees the palace, losing her slipper and terrified of being discovered in her rags.",
+                "end_emotional_score": -2,
+                "arc": "Straight Decrease"
+            }},
+            {{
+                "end_time": 90,
+                "description": "Back home, Cinderella resumes her chores. She is anxious and fearful as the Prince searches the kingdom, watching her stepsisters try to force the slipper on. She feels powerless, unsure if she should reveal herself.",
+                "end_emotional_score": -4,
+                "arc": "Linear Decrease"
+            }},
+            {{
+                "end_time": 100,
+                "description": "The Prince allows Cinderella to try the slipper. It fits perfectly. In a moment of pure vindication and relief, she is whisked away to marry the Prince, her kindness finally rewarded with a happily ever after.",
+                "end_emotional_score": 10,
+                "arc": "Straight Increase"
+            }}
+        ]
+    }}
+    </detailed_analysis_(input_data)>
+    <ideal_output>
+    {{
+        "title": "Cinderella at the Ball",
+        "protagonist": "Cinderella",
+        "story_components": [
+            {{
+                "end_time": 0,
+                "description": "N/A",
+                "end_emotional_score": -5,
+                "arc": "N/A"
+            }},
+            {{
+                "end_time": 25,
+                "description": "Cinderella asks to attend the ball but is mocked and forbidden by her stepmother. She attempts to sew a dress from her mother's old things, but her stepsisters discover her, rip the dress to shreds, and leave her sobbing in the garden.",
+                "end_emotional_score": -9,
+                "arc": "Linear Decrease"
+            }},
+            {{
+                "end_time": 60,
+                "description": "The Fairy Godmother transforms a pumpkin into a carriage and rags into a gown. Cinderella enters the ball, dances with the Prince, and is admired by the entire court, forgetting her life of servitude.",
+                "end_emotional_score": 9,
+                "arc": "Step-by-Step Increase"
+            }},
+            {{
+                "end_time": 90,
+                "description": "The clock strikes midnight, forcing Cinderella to flee and lose a glass slipper. Back in her rags, she resumes chores while the Prince searches the kingdom; she watches helplessly as her stepsisters try to force their feet into the slipper.",
+                "end_emotional_score": -4,
+                "arc": "Straight Decrease"
+            }},
+            {{
+                "end_time": 100,
+                "description": "The Prince allows Cinderella to try the slipper, and it fits perfectly. She reveals her identity, leaves her stepfamily behind, and marries the Prince.",
+                "end_emotional_score": 10,
+                "arc": "Gradual-to-Rapid Increase"
+            }}
+        ]
+    }}
+    </ideal_output>
+    </example>
     """
 
     prompt = PromptTemplate(
@@ -663,6 +587,7 @@ def distill_story_shape(config_path, granular_components, story_title, author, p
     config = load_config(config_path=config_path)
     llm = get_llm(llm_provider, llm_model, config, max_tokens=4096)
 
+    # Calculate count to shame the LLM into compressing
     count = len(granular_components)
     granular_json_str = json.dumps(granular_components, indent=2)
 
@@ -693,7 +618,12 @@ def distill_story_shape(config_path, granular_components, story_title, author, p
         print("Error decoding JSON from distillation step.")
         return granular_components 
     
+    # Final Safety Check: If it didn't compress, print a warning
+    if len(result["story_components"]) > 8:
+        print(f"⚠️ WARNING: Distillation failed to compress significantly (Count: {len(result['story_components'])})")
+
     return result["story_components"]
+
 
 
 #review / grade accuracy of story components
