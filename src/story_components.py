@@ -437,12 +437,13 @@ def distill_story_components(config_path, granular_components, story_title, auth
 
     2.3) Distilled Component **Description Synthesis:**
        For each distilled component, write a new description.
-       - **Focus on Events** The description must be a chronological sequence of concrete actions and plot beats. Do not use abstract emotional summaries like "misery deepens" or "hope is crushed." Instead, state exactly what happened.
+       - **Focus on Events:** The description must be a chronological sequence of concrete actions and plot beats focused on {protagonist}'s experience and perspective. Do not use abstract emotional summaries; instead, state exactly what happens using specific details (e.g. specific proper names, settings, and physical actions).
        - **Source Material:** Construct the description strictly from the events detailed in the underlying components which make up the distilled component.
        - **Alignment:** Select events that justify the specific emotional arc of this distilled component i.e. the new description should reflect the emotional trajectory (change or stasis) of the distilled component
          * If the arc is "Increase," focus on the positive events/wins.
          * If the arc is "Decrease," focus on the negative events/losses.
          * EXCEPTION: If the arc is "Linear Flat" (Stasis), you must include the full sequence of events (both good and bad) to show the lack of net progress.
+       - **Naming & Clarity:** **Use {protagonist}'s name explicitly.** Do not rely on pronouns (e.g. "He" or "She") to start the description. Ensure the protagonist is clearly identified as the subject of the actions.
     
     2.4)  Double Check according to the following **TECHNICAL & VALIDATION RULES (CRITICAL):**
        - **Anchor Check:** Ensure the Start Score (Time 0) and End Score (Time 100) match the input data exactly.
@@ -961,15 +962,15 @@ story_components_detailed = [
   ]
 
 from paths import PATHS
-story_component_distill_llm_model = "gpt-5-2025-08-07"#"gemini-3-pro-preview" #"gpt-5-2025-08-07"
+story_component_distill_llm_model = "gemini-3-pro-preview" #"gpt-5-2025-08-07"
 story_components = distill_story_components(
     config_path=PATHS['config'],
     granular_components=story_components_detailed,
     story_title="The Catcher in the Rye",
     author="J.D. Salinger",
     protagonist="Holden Caulfield",
-    llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+    llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
     llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
 )
 print("DISTILLED STORY COMPONENTS")
-#print(story_components)
+print(story_components)
