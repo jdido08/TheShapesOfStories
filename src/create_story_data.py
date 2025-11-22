@@ -185,7 +185,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
     # get story components --> don't use google you often get blocked
-    story_components_llm_model = "gpt-5-2025-08-07" ## openai gpt 5 seems to best for this 
+    story_components_llm_model = "gemini-3-pro-preview" ## openai gpt 5 seems to best for this 
     story_components_detailed = get_story_components(
         config_path=PATHS['config'],
         story_title=story_title,
@@ -193,19 +193,19 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         author=story_author,
         year=story_year,
         protagonist=story_protagonist,
-        llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+        llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
         llm_model = story_components_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
     print("✅ Story Components Created")
 
-    story_component_distill_llm_model = "gpt-5-2025-08-07"
+    story_component_distill_llm_model = "gemini-3-pro-preview" #"gpt-5-2025-08-07"
     story_components = distill_story_components(
         config_path=PATHS['config'],
         granular_components=story_components_detailed,
         story_title=story_title,
         author=story_author,
         protagonist=story_protagonist,
-        llm_provider = "openai", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+        llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
         llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
     print("✅ Story Components Distilled")

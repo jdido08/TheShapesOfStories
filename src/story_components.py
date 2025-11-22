@@ -259,6 +259,23 @@ The descriptions in the example output demonstrate the minimum expected level of
     else:
         output_text = output
 
+    if hasattr(output, "content"):
+        # Check if content is a list (Google/LangChain edge case)
+        if isinstance(output.content, list):
+            # Extract text from all blocks
+            text_parts = []
+            for block in output.content:
+                if isinstance(block, dict) and "text" in block:
+                    text_parts.append(block["text"])
+                elif isinstance(block, str):
+                    text_parts.append(block)
+            output_text = "".join(text_parts)
+        else:
+            # Standard string content
+            output_text = str(output.content)
+    else:
+        output_text = str(output)
+
     #attempt to extact json (if needed)
     output_text = extract_json(output_text)
 
@@ -628,14 +645,30 @@ def distill_story_components(config_path, granular_components, story_title, auth
         print(f"Error during Distillation LLM call: {e}")
         raise e
 
+    # if hasattr(output, "content"):
+    #     output_text = output.content
+    # else:
+    #     output_text = output
+
+    #attempt to extact json (if needed)
     if hasattr(output, "content"):
-        output_text = output.content
+        # Check if content is a list (Google/LangChain edge case)
+        if isinstance(output.content, list):
+            # Extract text from all blocks
+            text_parts = []
+            for block in output.content:
+                if isinstance(block, dict) and "text" in block:
+                    text_parts.append(block["text"])
+                elif isinstance(block, str):
+                    text_parts.append(block)
+            output_text = "".join(text_parts)
+        else:
+            # Standard string content
+            output_text = str(output.content)
     else:
-        output_text = output
+        output_text = str(output)
 
-    print(output)
-
-    #output_text = extract_json(output_text)
+    output_text = extract_json(output_text)
     
     try:
         result = json.loads(output_text)
@@ -643,7 +676,7 @@ def distill_story_components(config_path, granular_components, story_title, auth
         # Added 'e' here so you can see the actual error if it happens again
         print(f"Error decoding JSON from distillation step: {e}")
         print(f"Raw Text causing error: {output_text[:200]}...") 
-        return granular_components 
+        return "ERROR!" 
     
     
     # Final Safety Check: If it didn't compress, print a warning
@@ -821,7 +854,7 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
   return grades_dict
 
 
-
+#TESTING!
 story_components_detailed = [
     {
       "end_time": 0,
@@ -961,16 +994,17 @@ story_components_detailed = [
     }
   ]
 
-from paths import PATHS
-story_component_distill_llm_model = "gemini-3-pro-preview" #"gpt-5-2025-08-07"
-story_components = distill_story_components(
-    config_path=PATHS['config'],
-    granular_components=story_components_detailed,
-    story_title="The Catcher in the Rye",
-    author="J.D. Salinger",
-    protagonist="Holden Caulfield",
-    llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-    llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
-)
-print("DISTILLED STORY COMPONENTS")
-print(story_components)
+
+# from paths import PATHS
+# story_component_distill_llm_model = "gemini-3-pro-preview" #"gpt-5-2025-08-07"
+# story_components = distill_story_components(
+#     config_path=PATHS['config'],
+#     granular_components=story_components_detailed,
+#     story_title="The Catcher in the Rye",
+#     author="J.D. Salinger",
+#     protagonist="Holden Caulfield",
+#     llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+#     llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+# )
+# print("DISTILLED STORY COMPONENTS")
+# print(story_components)
