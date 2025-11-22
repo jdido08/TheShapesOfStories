@@ -394,6 +394,88 @@ import json
 from langchain_core.prompts import PromptTemplate
 from llm import load_config, get_llm, extract_json
 
+def clean_distilled_scores(components):
+    """
+    Forces mathematical flatness if the LLM labeled the arc as 'Flat'.
+    """
+    # We skip index 0 because it's the start point
+    for i in range(1, len(components)):
+        prev_score = components[i-1]['end_emotional_score']
+        curr_score = components[i]['end_emotional_score']
+        arc_label = components[i]['arc']
+
+        # If LLM says Flat, but scores aren't equal, SNAP to previous score
+        if "Flat" in arc_label and curr_score != prev_score:
+            print(f"Adjusting Component {i}: Label is Flat, snapping score {curr_score} to {prev_score}")
+            components[i]['end_emotional_score'] = prev_score
+            
+    return components
+
+
+def enforce_minimum_duration(components, min_duration=10):
+    """
+    Ensures every component takes up at least `min_duration` (e.g., 10%) of the x-axis.
+    Works backwards from the end to adjust timing.
+    """
+    # We iterate backwards from the last component down to the second component
+    # (We don't touch component 0 as it is time 0)
+    
+    # Start at the last component
+    for i in range(len(components) - 1, 0, -1):
+        current_end = components[i]['end_time']
+        prev_end = components[i-1]['end_time']
+        
+        duration = current_end - prev_end
+        
+        if duration < min_duration:
+            # Calculate how much we need to shift back
+            needed = min_duration - duration
+            
+            # The new end time for the PREVIOUS component
+            new_prev_end = prev_end - needed
+            
+            # Safety check: Don't push back below 0 or below the component before that
+            limit = 0
+            if i > 1:
+                limit = components[i-2]['end_time'] + min_duration # Ensure that one has space too? 
+                # Or simpler: just limit to components[i-2]['end_time']
+                limit = components[i-2]['end_time']
+            
+            if new_prev_end > limit:
+                print(f"Adjusting timing: Component {i} was {duration}%, stealing {needed}% from previous.")
+                components[i-1]['end_time'] = int(new_prev_end)
+            else:
+                # If we can't steal enough space, we compress as much as possible 
+                # without overlapping the previous one.
+                components[i-1]['end_time'] = int(limit) + 1 # +1 to avoid exact overlap if desired
+
+    return components
+
+#review / grade accuracy of story components
+#VERSION 1
+# 2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
+#    - You MUST reduce the story to **between 3 and 6 components total**.
+#    - **Identify Major Inflection Points:** Only create a new component when the narrative's emotional direction **significantly reverses** (e.g. a sustained rise hits a peak and turns into a fall).
+#    - **Filter out Noise:** If the protagonist fluctuates slightly (e.g., -5 to -8 to -6 to -9), this is NOT a zig-zag. It is ONE single "Decrease" trend. Ignore the minor blips.
+#    - **The "Stasis" Rule:** If the narrative feels static or stuck, and the score changes only negligibly (e.g. +/- 1 point), you MUST adjust the end_emotional_score to match the previous component's score exactly to create a flat line.
+#    - **Merge Aggressively:** Create a broad "Trend Line" that connects the Start, the Major Turning Points (Peaks/Valleys), and the End.
+#    - **Preserve the Start:** Keep the first component (end_time 0) exactly as is.
+#    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+
+#VERSION 2
+    # 2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
+    #    - You MUST reduce the story to **between 3 and 6 components total**.
+    #    - **Define Components by Direction (Slope):** A single component represents a continuous trend in one direction (Up, Down, or Flat).
+    #      * If the score goes -2 -> -5 -> -9, that is ONE "Decrease" component. Merge them.
+    #      * If the score goes -9 -> -2, that is a NEW "Increase" component.
+    #    - **Preserve the Vertices (Peaks & Valleys):** When merging components, you must preserve the *magnitude* of the emotional extreme.
+    #      * Example: If inputs are Score -5 (Start) -> Score -7 (Middle) -> Score -9 (Low Point), the merged component MUST end at -9. Do not average them.
+    #    - **Filter out Noise:** Ignore minor fluctuations that do not alter the macro-trend.
+    #      * Example: -5 -> -8 -> -6 -> -9 is a "Decrease" trend. The brief jump to -6 is noise. The trend is from -5 down to -9.
+    #    - **The "Stasis" Rule:** If the emotional score varies by only +/- 1 point over a long duration (e.g. -5 to -6 to -5), treat this as "Linear Flat" and flatten the score to the baseline.
+    #    - **Preserve the Start:** Keep the first component (end_time 0) exactly as is.
+    #    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+
 
 def distill_story_components(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
     """
@@ -430,17 +512,16 @@ def distill_story_components(config_path, granular_components, story_title, auth
     # 2.) SIMPLIFY AND DISTILL ANALYSIS 
 
     2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
-       - You MUST reduce the story to **between 3 and 6 components total**.
-       - **Define Components by Direction (Slope):** A single component represents a continuous trend in one direction (Up, Down, or Flat).
-         * If the score goes -2 -> -5 -> -9, that is ONE "Decrease" component. Merge them.
-         * If the score goes -9 -> -2, that is a NEW "Increase" component.
-       - **Preserve the Vertices (Peaks & Valleys):** When merging components, you must preserve the *magnitude* of the emotional extreme.
-         * Example: If inputs are Score -5 (Start) -> Score -7 (Middle) -> Score -9 (Low Point), the merged component MUST end at -9. Do not average them.
-       - **Filter out Noise:** Ignore minor fluctuations that do not alter the macro-trend.
-         * Example: -5 -> -8 -> -6 -> -9 is a "Decrease" trend. The brief jump to -6 is noise. The trend is from -5 down to -9.
-       - **The "Stasis" Rule:** If the emotional score varies by only +/- 1 point over a long duration (e.g. -5 to -6 to -5), treat this as "Linear Flat" and flatten the score to the baseline.
-       - **Preserve the Start:** Keep the first component (end_time 0) exactly as is.
-       - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+        - You MUST reduce the story to between 3 and 5 components total. (Target 3 or 4 for most stories).
+        - Define Components by Structural Trend: Do not simply track every change in direction. Look for the dominant trajectory.
+        - The "False Reversal" Rule: If the emotional score reverses direction briefly but then returns to its previous trajectory, IGNORE the reversal.
+            - Example (False Summit): If the score goes -5 (Start) -> -2 (Brief Hope) -> -9 (New Low), this is NOT three components (Down, Up, Down). This is ONE "Decrease" component from -5 to -9. The rise to -2 was a "False Summit" and should be smoothed out.
+            - Example (False Bottom): If the score goes +5 (Start) -> +2 (Brief Scare) -> +8 (New High), this is ONE "Increase" component from +5 to +8.
+        - Preserve the Global Vertices: You must preserve the Absolute Lowest Point (Nadir) and Absolute Highest Point (Climax) of the narrative.
+        - Ensure the distilled shape hits these exact extremes at the correct time.
+        - The "Stasis" Rule: If the emotional score varies by only +/- 1 point over a long duration, or if the character is "stuck" in a situation, treat this as "Linear Flat."
+        - Preserve the Start: Keep the first component (end_time 0) exactly as is.
+        - Preserve the End: The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
 
     2.2) Distilled Component **Arc Selection:**
        For each distilled component, choose the emotional arc pattern that best fits the rate of change for distilled component. Here are the following choices:
@@ -616,21 +697,22 @@ def distill_story_components(config_path, granular_components, story_title, auth
     # Calculate count to shame the LLM into compressing
     granular_json_str = json.dumps(granular_components, indent=2)
 
-    try:
-        final_rendered_prompt = prompt.format(
-            granular_components=granular_json_str,
-            story_title=story_title,
-            protagonist=protagonist,
-            author=author
-        )
-        print("\n" + "="*40)
-        print("DEBUG: ACTUAL PROMPT SENT TO LLM")
-        print("="*40)
-        print(final_rendered_prompt)
-        print("="*40 + "\n")
-    except Exception as e:
-        print(f"❌ Error formatting prompt: {e}")
-        # This usually happens if you have a syntax error in the template 
+    #test to see what prompt actually looks like
+    # try:
+    #     final_rendered_prompt = prompt.format(
+    #         granular_components=granular_json_str,
+    #         story_title=story_title,
+    #         protagonist=protagonist,
+    #         author=author
+    #     )
+    #     print("\n" + "="*40)
+    #     print("DEBUG: ACTUAL PROMPT SENT TO LLM")
+    #     print("="*40)
+    #     print(final_rendered_prompt)
+    #     print("="*40 + "\n")
+    # except Exception as e:
+    #     print(f"❌ Error formatting prompt: {e}")
+    #     # This usually happens if you have a syntax error in the template 
 
     runnable = prompt | llm
 
@@ -683,19 +765,54 @@ def distill_story_components(config_path, granular_components, story_title, auth
     if len(result["story_components"]) > 8:
         print(f"⚠️ WARNING: Distillation failed to compress significantly (Count: {len(result['story_components'])})")
 
-    return result["story_components"]
+    return result
 
 
 
-#review / grade accuracy of story components
-# 2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
-#    - You MUST reduce the story to **between 3 and 6 components total**.
-#    - **Identify Major Inflection Points:** Only create a new component when the narrative's emotional direction **significantly reverses** (e.g. a sustained rise hits a peak and turns into a fall).
-#    - **Filter out Noise:** If the protagonist fluctuates slightly (e.g., -5 to -8 to -6 to -9), this is NOT a zig-zag. It is ONE single "Decrease" trend. Ignore the minor blips.
-#    - **The "Stasis" Rule:** If the narrative feels static or stuck, and the score changes only negligibly (e.g. +/- 1 point), you MUST adjust the end_emotional_score to match the previous component's score exactly to create a flat line.
-#    - **Merge Aggressively:** Create a broad "Trend Line" that connects the Start, the Major Turning Points (Peaks/Valleys), and the End.
-#    - **Preserve the Start:** Keep the first component (end_time 0) exactly as is.
-#    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+
+
+def get_distilled_story_components(config_path, story_components_detailed, story_title, story_author, story_protagonist, 
+                      llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+
+   
+    #print(story_summary_source)
+    story_components = distill_story_components(
+        config_path=config_path,
+        granular_components=story_components_detailed,
+        story_title=story_title,
+        author=story_author,
+        protagonist=story_protagonist,
+        llm_provider = llm_provider, #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+        llm_model = llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
+    )
+
+    # 4. Process the list of components
+    final_components = story_components["story_components"]
+
+    #POST PROCESSING 
+    #handle issues with "Flat" Arc Types:
+    final_components = clean_distilled_scores(final_components)
+
+    #handle issues where components don't hit minium lenght -- fixing  "Visual Weight" of shape
+    final_components = enforce_minimum_duration(final_components)
+
+    #chekc if story_component are valid
+    story_components_validity = validate_story_arcs(story_components) #call to confirm story_components are valid
+
+    #check if right protagonist was chosen
+    if story_components.get('protagonist') != story_protagonist:
+         print(f"WARNING: LLM returned protagonist {story_components.get('protagonist')} vs expected {story_protagonist}")
+
+
+    # 5. Add modified times -- needed for product creation
+    for component in final_components:
+        component['modified_end_time'] = component['end_time']
+        component['modified_end_emotional_score'] = component['end_emotional_score']
+    
+    return final_components
+
+
+
 
 def grade_story_components(config_path: str, story_components: dict, canonical_summary: str, title:str, author: str, protagonist: str, llm_provider: str, llm_model: str) -> dict:
   """
@@ -855,154 +972,154 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 
 
 #TESTING!
-story_components_detailed = [
-    {
-      "end_time": 0,
-      "description": "#N/A",
-      "end_emotional_score": -5,
-      "arc": "#N/A",
-      "modified_end_time": 0,
-      "modified_end_emotional_score": -5
-    },
-    {
-      "end_time": 8,
-      "description": "Holden, already expelled and having bungled the fencing team's equipment, skips the big game and trudges to Mr. Spencer's. The lecture—\"life is a game\"—lands as condescension. He fidgets, resents the pity, and bolts with relief, the encounter confirming his sense that adults are phony and that he's failing out of everything.",
-      "end_emotional_score": -6,
-      "arc": "Linear Decrease",
-      "modified_end_time": 8,
-      "modified_end_emotional_score": -6
-    },
-    {
-      "end_time": 15,
-      "description": "Back in the dorm, his red hunting cap gives him a fragile, private comfort, but Ackley's grating presence needles him. Stradlater's casual date with Jane Gallagher stirs anxious protectiveness and jealousy. Holden pours himself into writing about Allie's baseball glove—tender, mournful memories—leaving him raw and exposed.",
-      "end_emotional_score": -7,
-      "arc": "Gradual-to-Rapid Decrease",
-      "modified_end_time": 15,
-      "modified_end_emotional_score": -7
-    },
-    {
-      "end_time": 20,
-      "description": "Stradlater sneers at the composition; when he hints he might have fooled around with Jane, Holden explodes. The fight is brief and humiliating—he's pinned and bloodied. The dorm feels unendurable, and he impulsively decides to leave Pencey that night, hollow and angry.",
-      "end_emotional_score": -9,
-      "arc": "Straight Decrease",
-      "modified_end_time": 20,
-      "modified_end_emotional_score": -9
-    },
-    {
-      "end_time": 28,
-      "description": "On the train to New York, he reinvents himself as \"Rudolf Schmidt,\" flattering Mrs. Morrow about her son. The lies give him a perverse, fleeting buoyancy. In the hotel, voyeuristic glimpses across the courtyard are titillating and sad. Rebuffed by Faith Cavendish, he's left alone with the city's neon and his own ache.",
-      "end_emotional_score": -8,
-      "arc": "Rapid-to-Gradual Increase",
-      "modified_end_time": 28,
-      "modified_end_emotional_score": -8
-    },
-    {
-      "end_time": 40,
-      "description": "At the Lavender Room he dances well and briefly enjoys Bernice's company, but is abandoned with the tab. At Ernie's, the crowd's pretension and Lillian Simmons's phoniness drive him out. Maurice sells him a prostitute; faced with Sunny, he panics, pays to talk instead, and is then shaken down. Maurice punches him; Holden fantasizes melodramatic revenge and even suicide before dawn.",
-      "end_emotional_score": -10,
-      "arc": "Gradual-to-Rapid Decrease",
-      "modified_end_time": 40,
-      "modified_end_emotional_score": -10
-    },
-    {
-      "end_time": 52,
-      "description": "After a fitful sleep, small human connections rekindle him: an earnest chat with two nuns about Romeo and Juliet, pressing donations on them; hunting for \"Little Shirley Beans\" for Phoebe; and a little boy's off-key \"If a body catch a body…,\" which oddly soothes him. These kindnesses and signs of innocence lift the heaviness.",
-      "end_emotional_score": -6,
-      "arc": "Step-by-Step Increase",
-      "modified_end_time": 52,
-      "modified_end_emotional_score": -6
-    },
-    {
-      "end_time": 60,
-      "description": "He meets Sally Hayes, is dazzled, then repelled by her polish and social climbing. After the Lunts' play and a phony reunion with a boy from Andover, he spirals. At Radio City's rink and over lunch, he rants that he's fed up with everything and blurts a fantasy of running away to a New England cabin. Sally's refusal triggers his cruel \"royal pain in the ass,\" and he storms off.",
-      "end_emotional_score": -8,
-      "arc": "Rapid-to-Gradual Decrease",
-      "modified_end_time": 60,
-      "modified_end_emotional_score": -8
-    },
-    {
-      "end_time": 66,
-      "description": "He numbs himself with the Christmas show's spectacle and a dreary movie, then meets Carl Luce at the Wicker Bar. Holden's fixation on sex annoys Luce—\"typical Caulfield conversation\"—who briskly advises a psychiatrist and leaves. Holden gets very drunk and flails at forming any genuine contact.",
-      "end_emotional_score": -9,
-      "arc": "Linear Decrease",
-      "modified_end_time": 66,
-      "modified_end_emotional_score": -9
-    },
-    {
-      "end_time": 74,
-      "description": "In Central Park, the ducks' disappearance becomes an emblem of his own fear of vanishing. He breaks Phoebe's record, is seized by diarrhea, and staggers through crosswalks convinced he will die each time. Exhausted and near-delirious, he decides to go home to see Phoebe.",
-      "end_emotional_score": -10,
-      "arc": "Gradual-to-Rapid Decrease",
-      "modified_end_time": 74,
-      "modified_end_emotional_score": -10
-    },
-    {
-      "end_time": 82,
-      "description": "Sneaking into his parents' apartment, he wakes Phoebe. She is stricken that he's flunked again and demands to know what he likes. He fumbles—Allie, the nuns, a dead boy at Elkton Hills—then articulates his one true wish: to be \"the catcher in the rye,\" saving children from tumbling over a cliff. This confession, and Phoebe's presence, give him a rare sense of purpose and love.",
-      "end_emotional_score": -5,
-      "arc": "Gradual-to-Rapid Increase",
-      "modified_end_time": 82,
-      "modified_end_emotional_score": -5
-    },
-    {
-      "end_time": 88,
-      "description": "At Mr. Antolini's, he finds a concerned adult who speaks seriously of a \"fall\" ahead and quotes Stekel about living humbly rather than dying nobly. The sober talk feels like guidance, not a lecture. Holden, bone-tired, falls asleep with a faint sense of being looked after.",
-      "end_emotional_score": -4,
-      "arc": "Linear Increase",
-      "modified_end_time": 88,
-      "modified_end_emotional_score": -4
-    },
-    {
-      "end_time": 90,
-      "description": "He wakes to Mr. Antolini patting his head in the dark. Startled and mistrustful, he interprets it as a sexual advance, panics, and flees into the night, clutching at his bags and the last shreds of trust.",
-      "end_emotional_score": -8,
-      "arc": "Straight Decrease",
-      "modified_end_time": 90,
-      "modified_end_emotional_score": -8
-    },
-    {
-      "end_time": 92,
-      "description": "He dozes at Grand Central and wakes to Monday with mounting dread. Convinced he should run west and live as a deaf-mute to avoid phoniness, he drifts deeper into isolation while drafting a goodbye to Phoebe.",
-      "end_emotional_score": -9,
-      "arc": "Linear Decrease",
-      "modified_end_time": 92,
-      "modified_end_emotional_score": -9
-    },
-    {
-      "end_time": 96,
-      "description": "He meets Phoebe at the museum to say goodbye. She insists on coming with him; he refuses, she goes silent and furious. Confronted with her hurt, he abandons the runaway fantasy and agrees to stay—choosing connection over flight.",
-      "end_emotional_score": -7,
-      "arc": "Linear Increase",
-      "modified_end_time": 96,
-      "modified_end_emotional_score": -7
-    },
-    {
-      "end_time": 98,
-      "description": "At the zoo's carousel, he buys Phoebe a ticket and watches in the rain as she rides, reaching for the gold ring. He lets her try, accepting risk. Something breaks open; he cries and says he is happy, soaking in a simple, undiluted joy he's chased all along.",
-      "end_emotional_score": 2,
-      "arc": "Gradual-to-Rapid Increase",
-      "modified_end_time": 98,
-      "modified_end_emotional_score": 2
-    },
-    {
-      "end_time": 100,
-      "description": "A year later in the California sanitarium, he won't say how he got sick. He's supposed to go back to school, unsure if anything will change. Telling the story makes him miss people—Stradlater, Ackley, even Maurice—softening his edges, but uncertainty and melancholy remain.",
-      "end_emotional_score": -1,
-      "arc": "Linear Decrease",
-      "modified_end_time": 100,
-      "modified_end_emotional_score": -1
-    }
-  ]
+# story_components_detailed = [
+#     {
+#       "end_time": 0,
+#       "description": "#N/A",
+#       "end_emotional_score": -5,
+#       "arc": "#N/A",
+#       "modified_end_time": 0,
+#       "modified_end_emotional_score": -5
+#     },
+#     {
+#       "end_time": 8,
+#       "description": "Holden, already expelled and having bungled the fencing team's equipment, skips the big game and trudges to Mr. Spencer's. The lecture—\"life is a game\"—lands as condescension. He fidgets, resents the pity, and bolts with relief, the encounter confirming his sense that adults are phony and that he's failing out of everything.",
+#       "end_emotional_score": -6,
+#       "arc": "Linear Decrease",
+#       "modified_end_time": 8,
+#       "modified_end_emotional_score": -6
+#     },
+#     {
+#       "end_time": 15,
+#       "description": "Back in the dorm, his red hunting cap gives him a fragile, private comfort, but Ackley's grating presence needles him. Stradlater's casual date with Jane Gallagher stirs anxious protectiveness and jealousy. Holden pours himself into writing about Allie's baseball glove—tender, mournful memories—leaving him raw and exposed.",
+#       "end_emotional_score": -7,
+#       "arc": "Gradual-to-Rapid Decrease",
+#       "modified_end_time": 15,
+#       "modified_end_emotional_score": -7
+#     },
+#     {
+#       "end_time": 20,
+#       "description": "Stradlater sneers at the composition; when he hints he might have fooled around with Jane, Holden explodes. The fight is brief and humiliating—he's pinned and bloodied. The dorm feels unendurable, and he impulsively decides to leave Pencey that night, hollow and angry.",
+#       "end_emotional_score": -9,
+#       "arc": "Straight Decrease",
+#       "modified_end_time": 20,
+#       "modified_end_emotional_score": -9
+#     },
+#     {
+#       "end_time": 28,
+#       "description": "On the train to New York, he reinvents himself as \"Rudolf Schmidt,\" flattering Mrs. Morrow about her son. The lies give him a perverse, fleeting buoyancy. In the hotel, voyeuristic glimpses across the courtyard are titillating and sad. Rebuffed by Faith Cavendish, he's left alone with the city's neon and his own ache.",
+#       "end_emotional_score": -8,
+#       "arc": "Rapid-to-Gradual Increase",
+#       "modified_end_time": 28,
+#       "modified_end_emotional_score": -8
+#     },
+#     {
+#       "end_time": 40,
+#       "description": "At the Lavender Room he dances well and briefly enjoys Bernice's company, but is abandoned with the tab. At Ernie's, the crowd's pretension and Lillian Simmons's phoniness drive him out. Maurice sells him a prostitute; faced with Sunny, he panics, pays to talk instead, and is then shaken down. Maurice punches him; Holden fantasizes melodramatic revenge and even suicide before dawn.",
+#       "end_emotional_score": -10,
+#       "arc": "Gradual-to-Rapid Decrease",
+#       "modified_end_time": 40,
+#       "modified_end_emotional_score": -10
+#     },
+#     {
+#       "end_time": 52,
+#       "description": "After a fitful sleep, small human connections rekindle him: an earnest chat with two nuns about Romeo and Juliet, pressing donations on them; hunting for \"Little Shirley Beans\" for Phoebe; and a little boy's off-key \"If a body catch a body…,\" which oddly soothes him. These kindnesses and signs of innocence lift the heaviness.",
+#       "end_emotional_score": -6,
+#       "arc": "Step-by-Step Increase",
+#       "modified_end_time": 52,
+#       "modified_end_emotional_score": -6
+#     },
+#     {
+#       "end_time": 60,
+#       "description": "He meets Sally Hayes, is dazzled, then repelled by her polish and social climbing. After the Lunts' play and a phony reunion with a boy from Andover, he spirals. At Radio City's rink and over lunch, he rants that he's fed up with everything and blurts a fantasy of running away to a New England cabin. Sally's refusal triggers his cruel \"royal pain in the ass,\" and he storms off.",
+#       "end_emotional_score": -8,
+#       "arc": "Rapid-to-Gradual Decrease",
+#       "modified_end_time": 60,
+#       "modified_end_emotional_score": -8
+#     },
+#     {
+#       "end_time": 66,
+#       "description": "He numbs himself with the Christmas show's spectacle and a dreary movie, then meets Carl Luce at the Wicker Bar. Holden's fixation on sex annoys Luce—\"typical Caulfield conversation\"—who briskly advises a psychiatrist and leaves. Holden gets very drunk and flails at forming any genuine contact.",
+#       "end_emotional_score": -9,
+#       "arc": "Linear Decrease",
+#       "modified_end_time": 66,
+#       "modified_end_emotional_score": -9
+#     },
+#     {
+#       "end_time": 74,
+#       "description": "In Central Park, the ducks' disappearance becomes an emblem of his own fear of vanishing. He breaks Phoebe's record, is seized by diarrhea, and staggers through crosswalks convinced he will die each time. Exhausted and near-delirious, he decides to go home to see Phoebe.",
+#       "end_emotional_score": -10,
+#       "arc": "Gradual-to-Rapid Decrease",
+#       "modified_end_time": 74,
+#       "modified_end_emotional_score": -10
+#     },
+#     {
+#       "end_time": 82,
+#       "description": "Sneaking into his parents' apartment, he wakes Phoebe. She is stricken that he's flunked again and demands to know what he likes. He fumbles—Allie, the nuns, a dead boy at Elkton Hills—then articulates his one true wish: to be \"the catcher in the rye,\" saving children from tumbling over a cliff. This confession, and Phoebe's presence, give him a rare sense of purpose and love.",
+#       "end_emotional_score": -5,
+#       "arc": "Gradual-to-Rapid Increase",
+#       "modified_end_time": 82,
+#       "modified_end_emotional_score": -5
+#     },
+#     {
+#       "end_time": 88,
+#       "description": "At Mr. Antolini's, he finds a concerned adult who speaks seriously of a \"fall\" ahead and quotes Stekel about living humbly rather than dying nobly. The sober talk feels like guidance, not a lecture. Holden, bone-tired, falls asleep with a faint sense of being looked after.",
+#       "end_emotional_score": -4,
+#       "arc": "Linear Increase",
+#       "modified_end_time": 88,
+#       "modified_end_emotional_score": -4
+#     },
+#     {
+#       "end_time": 90,
+#       "description": "He wakes to Mr. Antolini patting his head in the dark. Startled and mistrustful, he interprets it as a sexual advance, panics, and flees into the night, clutching at his bags and the last shreds of trust.",
+#       "end_emotional_score": -8,
+#       "arc": "Straight Decrease",
+#       "modified_end_time": 90,
+#       "modified_end_emotional_score": -8
+#     },
+#     {
+#       "end_time": 92,
+#       "description": "He dozes at Grand Central and wakes to Monday with mounting dread. Convinced he should run west and live as a deaf-mute to avoid phoniness, he drifts deeper into isolation while drafting a goodbye to Phoebe.",
+#       "end_emotional_score": -9,
+#       "arc": "Linear Decrease",
+#       "modified_end_time": 92,
+#       "modified_end_emotional_score": -9
+#     },
+#     {
+#       "end_time": 96,
+#       "description": "He meets Phoebe at the museum to say goodbye. She insists on coming with him; he refuses, she goes silent and furious. Confronted with her hurt, he abandons the runaway fantasy and agrees to stay—choosing connection over flight.",
+#       "end_emotional_score": -7,
+#       "arc": "Linear Increase",
+#       "modified_end_time": 96,
+#       "modified_end_emotional_score": -7
+#     },
+#     {
+#       "end_time": 98,
+#       "description": "At the zoo's carousel, he buys Phoebe a ticket and watches in the rain as she rides, reaching for the gold ring. He lets her try, accepting risk. Something breaks open; he cries and says he is happy, soaking in a simple, undiluted joy he's chased all along.",
+#       "end_emotional_score": 2,
+#       "arc": "Gradual-to-Rapid Increase",
+#       "modified_end_time": 98,
+#       "modified_end_emotional_score": 2
+#     },
+#     {
+#       "end_time": 100,
+#       "description": "A year later in the California sanitarium, he won't say how he got sick. He's supposed to go back to school, unsure if anything will change. Telling the story makes him miss people—Stradlater, Ackley, even Maurice—softening his edges, but uncertainty and melancholy remain.",
+#       "end_emotional_score": -1,
+#       "arc": "Linear Decrease",
+#       "modified_end_time": 100,
+#       "modified_end_emotional_score": -1
+#     }
+#   ]
 
 
 # from paths import PATHS
 # story_component_distill_llm_model = "gemini-3-pro-preview" #"gpt-5-2025-08-07"
-# story_components = distill_story_components(
+# story_components = get_distilled_story_components(
 #     config_path=PATHS['config'],
-#     granular_components=story_components_detailed,
+#     story_components_detailed=story_components_detailed,
 #     story_title="The Catcher in the Rye",
-#     author="J.D. Salinger",
-#     protagonist="Holden Caulfield",
+#     story_author="J.D. Salinger",
+#     story_protagonist="Holden Caulfield",
 #     llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
 #     llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
 # )
