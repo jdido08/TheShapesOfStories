@@ -1027,8 +1027,14 @@ def create_shape_single_pass(
                 adjust_spacing=component['adjust_spacing']
             )
 
-            min_space_multipler = min(component['spaces_width_multiplier'].values())
-            max_space_multipler = max(component['spaces_width_multiplier'].values())
+            # Around line 1030 in create_shape_single_pass
+            if component['spaces_width_multiplier']:  # Check if dict is not empty
+                min_space_multipler = min(component['spaces_width_multiplier'].values())
+                max_space_multipler = max(component['spaces_width_multiplier'].values())
+            else:
+                # No spaces in the text, so no spacing multipliers to check
+                min_space_multipler = 1.0
+                max_space_multipler = 1.0
             #print(curve_length_status)
             # Check if curve too short/long, do your recursion logic...
             if curve_length_status == "curve_too_short":
