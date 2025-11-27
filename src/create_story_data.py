@@ -202,6 +202,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     story_components = get_distilled_story_components(
         config_path=PATHS['config'],
         story_components_detailed=story_components_detailed,
+        story_summary=story_summary,
         story_title=story_title,
         story_author=story_author,
         story_protagonist=story_protagonist,
@@ -209,6 +210,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         llm_model = story_component_distill_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
     print("✅ Story Components Distilled")
+    print(story_components)
 
     #grade story components
     story_components_grader_llm_model = "gemini-2.5-pro" #google good for grading 

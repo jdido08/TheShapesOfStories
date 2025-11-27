@@ -394,62 +394,84 @@ import json
 from langchain_core.prompts import PromptTemplate
 from llm import load_config, get_llm, extract_json
 
-def clean_distilled_scores(components):
+def clean_distilled_scores(components, tolerance=1, strict=False):
     """
     Forces mathematical flatness if the LLM labeled the arc as 'Flat'.
+    
+    Args:
+        components: List of story components
+        tolerance: Maximum acceptable score deviation for Flat arcs (default: 1)
+        strict: If True, raises error for large deviations. If False, logs warning (default: False)
     """
-    # We skip index 0 because it's the start point
     for i in range(1, len(components)):
         prev_score = components[i-1]['end_emotional_score']
         curr_score = components[i]['end_emotional_score']
         arc_label = components[i]['arc']
 
-        # If LLM says Flat, but scores aren't equal, SNAP to previous score
         if "Flat" in arc_label and curr_score != prev_score:
-            print(f"Adjusting Component {i}: Label is Flat, snapping score {curr_score} to {prev_score}")
-            components[i]['end_emotional_score'] = prev_score
+            score_diff = abs(curr_score - prev_score)
             
-    return components
-
-
-def enforce_minimum_duration(components, min_duration=10):
-    """
-    Ensures every component takes up at least `min_duration` (e.g., 10%) of the x-axis.
-    Works backwards from the end to adjust timing.
-    """
-    # We iterate backwards from the last component down to the second component
-    # (We don't touch component 0 as it is time 0)
-    
-    # Start at the last component
-    for i in range(len(components) - 1, 0, -1):
-        current_end = components[i]['end_time']
-        prev_end = components[i-1]['end_time']
-        
-        duration = current_end - prev_end
-        
-        if duration < min_duration:
-            # Calculate how much we need to shift back
-            needed = min_duration - duration
-            
-            # The new end time for the PREVIOUS component
-            new_prev_end = prev_end - needed
-            
-            # Safety check: Don't push back below 0 or below the component before that
-            limit = 0
-            if i > 1:
-                limit = components[i-2]['end_time'] + min_duration # Ensure that one has space too? 
-                # Or simpler: just limit to components[i-2]['end_time']
-                limit = components[i-2]['end_time']
-            
-            if new_prev_end > limit:
-                print(f"Adjusting timing: Component {i} was {duration}%, stealing {needed}% from previous.")
-                components[i-1]['end_time'] = int(new_prev_end)
+            if score_diff <= tolerance:
+                # Small deviation - auto-correct
+                print(f"⚠️ Adjusting Component {i}: Arc is '{arc_label}' with minor deviation "
+                      f"({prev_score} → {curr_score}), snapping to {prev_score}")
+                components[i]['end_emotional_score'] = prev_score
             else:
-                # If we can't steal enough space, we compress as much as possible 
-                # without overlapping the previous one.
-                components[i-1]['end_time'] = int(limit) + 1 # +1 to avoid exact overlap if desired
-
+                # Large deviation
+                error_msg = (
+                    f"Component {i}: Arc labeled as '{arc_label}' but score changed by "
+                    f"{score_diff} points ({prev_score} → {curr_score}). "
+                    f"Flat arcs should have changes ≤{tolerance}."
+                )
+                
+                if strict:
+                    raise ValueError(f"❌ ERROR: {error_msg}")
+                else:
+                    print(f"⚠️ WARNING: {error_msg} Auto-correcting anyway.")
+                    components[i]['end_emotional_score'] = prev_score
+            
     return components
+
+def ensure_finale_visibility(components, min_finale_duration=10, min_score_change=3):
+    """
+    Simple rule: If the last component is very short but has a meaningful
+    emotional shift, expand it by compressing earlier components.
+    
+    Args:
+        components: List of story components
+        min_finale_duration: Minimum percentage duration for finale (default: 10)
+        min_score_change: Minimum score change to consider "meaningful" (default: 3)
+    """
+    if len(components) < 3:
+        print("⚠️ NEED TO CHECK STORY COMPONENTS LESS THAN 3")
+
+
+    # Check last component
+    last_duration = components[-1]['end_time'] - components[-2]['end_time']
+    last_score_change = abs(components[-1]['end_emotional_score'] - 
+                            components[-2]['end_emotional_score'])
+    
+    if last_duration < min_finale_duration and last_score_change >= min_score_change:
+        needed = min_finale_duration - last_duration
+
+        print("⚠️ Changing Duration of Final Component to Ensure Visibility")
+        
+        # Compress all earlier components proportionally
+        # Everything from 0 to components[-2]['end_time'] needs to fit in 0 to (100 - min_finale_duration)
+        total_earlier_time = components[-2]['end_time']
+        available_earlier_time = 100 - min_finale_duration
+        compression_ratio = available_earlier_time / total_earlier_time
+        
+        for i in range(1, len(components) - 1):
+            original_end = components[i]['end_time']
+            components[i]['end_time'] = int(original_end * compression_ratio)
+        
+        # Finale now starts at the compressed endpoint and ends at 100
+        components[-2]['end_time'] = available_earlier_time
+        components[-1]['end_time'] = 100
+    
+    return components
+
 
 #review / grade accuracy of story components
 #VERSION 1
@@ -477,7 +499,7 @@ def enforce_minimum_duration(components, min_duration=10):
     #    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
 
 
-def distill_story_components(config_path, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+def distill_story_components(config_path, story_summary, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
     """
     Phase 2: Aggressively distills granular data into a macro-shape.
     """
@@ -488,7 +510,7 @@ def distill_story_components(config_path, granular_components, story_title, auth
     Below is a detailed analysis of "{story_title}" by {author} that's focused specifically on the emotional journey of {protagonist} from the story. 
     
     Your task is:
-    1. carefully review the provided detailed analysis, THEN
+    1. carefully review the provided story summary and detailed analysis, THEN
     2. simplify and distill the analysis, THEN
     3. output the distilled analysis 
  
@@ -496,22 +518,27 @@ def distill_story_components(config_path, granular_components, story_title, auth
 
     Please carefully follow the instructions below. 
 
-    # 1.) REVIEW DETAILED ANALYSIS
-    Carefully review the provided detailed analysis using the framework provided.
+    # 1.) REVIEW SUMMARY AND DETAILED ANALYSIS
 
-    ## ANALYSIS FRAMEWORK
+    ## 1.1) Review the following summary of "{story_title}" by {author}.
+    This summary is your SOURCE OF TRUTH for all plot events and details:
+    {story_summary}
+
+    ## 1.2) Carefully review the provided detailed analysis of {protagonist} using the framework provided.
+
+    ### ANALYSIS FRAMEWORK
     The detailed analysis follows the following framework:
     1. Story Timeline: The narrative is viewed on a scale from 0 to 100, representing the percentage of progress through the story.
     2. Story Components: The story is segmented into components defined by {protagonist}'s emotional journey.
     3. Continuity: Each story component starts where the previous one ended, ensuring a seamless emotional journey.
     4. Emotional Arcs: {protagonist}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
 
-    ## DETAILED ANALYSIS (INPUT DATA):
+    ### DETAILED ANALYSIS (INPUT DATA):
     {granular_components}
 
     # 2.) SIMPLIFY AND DISTILL ANALYSIS 
 
-    2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
+    ## 2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
         - You MUST reduce the story to between 3 and 5 components total. (Target 3 or 4 for most stories).
         - Define Components by Structural Trend: Do not simply track every change in direction. Look for the dominant trajectory.
         - The "False Reversal" Rule: If the emotional score reverses direction briefly but then returns to its previous trajectory, IGNORE the reversal.
@@ -519,11 +546,11 @@ def distill_story_components(config_path, granular_components, story_title, auth
             - Example (False Bottom): If the score goes +5 (Start) -> +2 (Brief Scare) -> +8 (New High), this is ONE "Increase" component from +5 to +8.
         - Preserve the Global Vertices: You must preserve the Absolute Lowest Point (Nadir) and Absolute Highest Point (Climax) of the narrative.
         - Ensure the distilled shape hits these exact extremes at the correct time.
-        - The "Stasis" Rule: If the emotional score varies by only +/- 1 point over a long duration, or if the character is "stuck" in a situation, treat this as "Linear Flat."
+        - The "Stasis" Rule: Use "Linear Flat" ONLY when the emotional score changes by ±1 point or less from start to end of the component. You may use "Linear Flat" for periods where the protagonist oscillates through ups and downs (e.g., -5 → -3 → -7 → -5) but returns to within ±1 point of the starting score. CRITICAL: If the component's ending score differs from the starting score by ±2 or more points, you MUST use an appropriate Increase/Decrease arc type, NOT Linear Flat—even if the character felt "stuck" or "trapped" during this period. Major events that cause sustained emotional shifts must be reflected in the arc type.        
         - Preserve the Start: Keep the first component (end_time 0) exactly as is.
         - Preserve the End: The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
 
-    2.2) Distilled Component **Arc Selection:**
+    ## 2.2) Distilled Component **Arc Selection:**
        For each distilled component, choose the emotional arc pattern that best fits the rate of change for distilled component. Here are the following choices:
        a. Step-by-Step Increase/Decrease: Emotions change in distinct, noticeable stages
        b. Linear Increase/Decrease: Consistent, steady change in emotional state
@@ -533,17 +560,25 @@ def distill_story_components(config_path, granular_components, story_title, auth
        f. S-Curve Increase/Decrease: Change follows an 'S' shape (slow-fast-slow)
        g. Linear Flat: No change in emotions
 
-    2.3) Distilled Component **Description Synthesis:**
+    ## 2.3) Distilled Component **Description Synthesis:**
        For each distilled component, write a new description.
        - **Focus on Events:** The description must be a chronological sequence of concrete actions and plot beats focused on {protagonist}'s experience and perspective. Do not use abstract emotional summaries; instead, state exactly what happens using specific details (e.g. specific proper names, settings, and physical actions).
-       - **Source Material:** Construct the description strictly from the events detailed in the underlying components which make up the distilled component.
+       - **Source Material:** Construct the description strictly from the events in the story summary and the underlying components. When merging components, cross-reference the story summary to ensure factual accuracy.       
        - **Alignment:** Select events that justify the specific emotional arc of this distilled component i.e. the new description should reflect the emotional trajectory (change or stasis) of the distilled component
          * If the arc is "Increase," focus on the positive events/wins.
          * If the arc is "Decrease," focus on the negative events/losses.
          * EXCEPTION: If the arc is "Linear Flat" (Stasis), you must include the full sequence of events (both good and bad) to show the lack of net progress.
        - **Naming & Clarity:** **Use {protagonist}'s name explicitly.** Do not rely on pronouns (e.g. "He" or "She") to start the description. Ensure the protagonist is clearly identified as the subject of the actions.
     
-    2.4)  Double Check according to the following **TECHNICAL & VALIDATION RULES (CRITICAL):**
+    ## 2.4) **Cross-Reference with Story Summary:**
+        Before finalizing each distilled component description:
+        - Verify that all events mentioned actually occur in the story summary
+        - Confirm the chronological sequence is accurate
+        - Check that character names and specific details match the source material
+        - If you've merged multiple components, ensure the combined description doesn't 
+            contradict or omit crucial story beats from the summary
+    
+    ## 2.5)  Double Check according to the following **TECHNICAL & VALIDATION RULES (CRITICAL):**
        - **Anchor Check:** Ensure the Start Score (Time 0) and End Score (Time 100) match the input data exactly.
        - Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
        - Emotional scores must be whole numbers between -10 and +10. 
@@ -579,13 +614,18 @@ def distill_story_components(config_path, granular_components, story_title, auth
         ]
     }}
 
-    EXAMPLE:
-
+    # EXAMPLE:
+    Below is a simple illustrative example of how to peform the task.
+    
     <example>
     <author_name>Charles Perrault</author_name>
     <story_title>Cinderella at the Ball</story_title>
     <protagonist>Cinderella</protagonist>
     
+    <story_summary_(input_data)>
+    Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
+    </story_summary_(input_data)>
+
     <detailed_analysis_(input_data)>
     {{
         "title": "Cinderella at the Ball",
@@ -681,11 +721,56 @@ def distill_story_components(config_path, granular_components, story_title, auth
         ]
     }}
     </ideal_output>
+
+    <distillation_notes>
+    The following notes explain the key decisions made in creating the distilled output above. 
+    Use these principles when analyzing your assigned story:
+
+    **Score Preservation:**
+    Notice that the distilled output preserves the EXACT peak (+9) and nadir (-9) from 
+    the detailed analysis. When you see:
+    - Detailed: -5 → -3 → -9 (nadir) → 4 → 9 (peak) → -2 → -4 → 10
+    - Distilled: -5 → -9 (nadir) → 9 (peak) → -4 → 10
+
+    The distillation "smooths through" the brief rise to -3 and the dip to -2/-4, but 
+    it MUST hit the absolute extremes (-9 and +9 in the detailed data become -9 and +9 
+    in the distilled data). Never average or skip the peaks and valleys.
+
+    **False Reversal Identification:**
+    In the detailed analysis, Cinderella briefly felt hope when asking to attend (score 
+    improved -5 → -3), but this was immediately crushed (-3 → -9). This is a "False 
+    Summit" because:
+    1. The hope was fleeting and immediately reversed
+    2. The dominant trend is DOWNWARD: -5 → -9
+    3. The distilled output correctly merges this into ONE Decrease component
+
+    Counter-example: If Cinderella had sustained the hope for 20% of the story before 
+    the dress incident, that WOULD be a separate component.
+
+    **Description Synthesis:**
+    The distilled component at end_time 90 merges THREE detailed components (time 60→70, 
+    70→90, 90→100 from detailed data). Notice how the description:
+
+    ✅ DOES:
+    - Use specific plot beats: "clock strikes midnight," "lose a glass slipper," "stepsisters 
+    try to force their feet"
+    - Maintain chronological order
+    - Focus on events that justify the DECREASE (-2 → -4): the fleeing, the return to rags, 
+    the helpless watching
+
+    ❌ DOES NOT:
+    - Include emotional adjectives like "sadly" or "desperately" (show, don't tell)
+    - Omit the brief panic at midnight (time 60→70) just because it had a different arc 
+    type in the detailed data
+    - Use vague language like "things get worse"
+
+    All events are traceable to the story summary.
+    </distillation_notes>
     </example>
     """
 
     prompt = PromptTemplate(
-        input_variables=["granular_components", "story_title", "protagonist", "author"],
+        input_variables=["story_summary","granular_components", "story_title", "protagonist", "author"],
         template=prompt_template
     )
 
@@ -718,6 +803,7 @@ def distill_story_components(config_path, granular_components, story_title, auth
 
     try:
         output = runnable.invoke({
+            "story_summary": story_summary,
             "granular_components": granular_json_str,
             "story_title": story_title,
             "protagonist": protagonist,
@@ -771,13 +857,14 @@ def distill_story_components(config_path, granular_components, story_title, auth
 
 
 
-def get_distilled_story_components(config_path, story_components_detailed, story_title, story_author, story_protagonist, 
+def get_distilled_story_components(config_path, story_components_detailed, story_summary, story_title, story_author, story_protagonist, 
                       llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
 
    
     #print(story_summary_source)
     story_components = distill_story_components(
         config_path=config_path,
+        story_summary=story_summary,
         granular_components=story_components_detailed,
         story_title=story_title,
         author=story_author,
@@ -791,25 +878,31 @@ def get_distilled_story_components(config_path, story_components_detailed, story
 
     #POST PROCESSING 
     #handle issues with "Flat" Arc Types:
-    final_components = clean_distilled_scores(final_components)
+    final_components = clean_distilled_scores(final_components, tolerance=1, strict=False)
 
-    #handle issues where components don't hit minium lenght -- fixing  "Visual Weight" of shape
-    final_components = enforce_minimum_duration(final_components)
+    #ensure big changes at the end are visibale
+    final_components = ensure_finale_visibility(final_components, min_finale_duration=10)
 
-    #chekc if story_component are valid
-    story_components_validity = validate_story_arcs(story_components) #call to confirm story_components are valid
+
+    #check if story_component are valid
+    story_components_for_validation = {
+        'title': story_title,
+        'story_components': final_components
+    }
+    story_components_validity = validate_story_arcs(story_components_for_validation)
 
     #check if right protagonist was chosen
     if story_components.get('protagonist') != story_protagonist:
-         print(f"WARNING: LLM returned protagonist {story_components.get('protagonist')} vs expected {story_protagonist}")
-
+         print(f"⚠️ WARNING: LLM returned protagonist {story_components.get('protagonist')} vs expected {story_protagonist}")
 
     # 5. Add modified times -- needed for product creation
     for component in final_components:
         component['modified_end_time'] = component['end_time']
         component['modified_end_emotional_score'] = component['end_emotional_score']
     
+    # 6. Return complete structure with title and protagonist
     return final_components
+
 
 
 
@@ -972,6 +1065,7 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 
 
 #TESTING!
+# #
 # story_components_detailed = [
 #     {
 #       "end_time": 0,
@@ -1111,11 +1205,16 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 #     }
 #   ]
 
+# catcher_in_the_rye_summary = """
+# "Holden Caulfield, seventeen years old, was narrating from a mental hospital or sanitarium in southern California about events that took place over a two-day period the previous December. He was a student at Pencey Prep School in Pennsylvania. On a Saturday afternoon in December, Holden missed the traditional football game between Pencey Prep and Saxon Hall. As manager of the fencing team, he had lost the team's equipment on the subway that morning, resulting in the cancellation of a match in New York. Holden had been expelled from Pencey for failing four out of his five classes and was not to return after Christmas break, which began the following Wednesday. He went to the home of his history teacher, Mr. Spencer, to say good-bye. Mr. Spencer advised him that life is a game and one should play it according to the rules, but Holden dismissed much of what Spencer said. After gladly escaping from the long-winded old man, Holden returned to his dormitory, which was almost deserted. Wearing his new red hunting cap, he began to read.\n\nHolden's reverie was interrupted when a dorm neighbor named Robert Ackley, an obnoxious student with a terrible complexion, disturbed him. Later, Holden's roommate, Ward Stradlater, returned. Stradlater was conceited, arrogant, and a \"secret slob.\" He asked Holden to write an English composition for him while he prepared for a date with Jane Gallagher. Holden went with Ackley and Mal Brossard to see a movie in New York City. When Holden returned, he wrote the composition for Stradlater about his brother Allie's left-handed baseball glove, which had poems written all over it in green ink. When Stradlater returned from his date, he became upset at Holden for writing what he considered a poor essay. Holden responded by tearing up the composition. Holden asked about the date with Jane, and when Stradlater indicated that he might have had sex with her, Holden became enraged and tried to punch Stradlater. Stradlater quickly overpowered him, knocked him out, and won the fight easily. Holden could not bear to remain in the dormitory and decided on a whim to leave Pencey that night instead of waiting until Wednesday.\n\nHolden caught a train to New York City, where he planned to stay in a hotel until Wednesday, when his parents expected him to return home for Christmas vacation. On the train, he sat next to the mother of a Pencey student, Ernest Morrow. Claiming that his name was Rudolf Schmidt, Holden lied to Mrs. Morrow, telling her what a popular and well-respected boy her son was at Pencey, when in fact Ernest was loathed by the other boys. Holden invited her to have a drink with him at the club car. When Holden reached New York, he did not know whom he should call. He considered inviting his younger sister Phoebe, as well as Jane Gallagher and another friend, Sally Hayes. He finally decided to stay at the Edmond Hotel. Holden checked into the hotel, and his room faced windows of another wing of the hotel. From his window he observed assorted behavior by guests, including a transvestite and a couple who spit drinks back at each other. He decided to call Faith Cavendish, a former burlesque stripper and reputed prostitute, but she rejected his advances.\n\nHolden went down to the Lavender Room, a nightclub in the hotel, where he met three women in their thirties who were tourists from Seattle. He danced with one of them, Bernice Krebs, a blonde woman, and enjoyed dancing with her, but he ended up with only the check. After leaving the Lavender Room, Holden decided to go to Ernie's, a nightclub in Greenwich Village that his brother D.B. had often frequented before moving to Hollywood. Holden left almost immediately after he arrived because he saw Lillian Simmons, one of D.B.'s former girlfriends, and wished to avoid her because she was a \"phony.\" He walked back to the hotel, where Maurice, the elevator man, offered him a prostitute for the night. Holden accepted. When Sunny, the prostitute, arrived, Holden became too nervous, made up an excuse about having just had an operation, and refused to go on with it. He paid the girl five dollars to leave. Sunny demanded ten dollars, but Holden believed he only owed five based on the earlier deal. Sunny and Maurice soon returned and demanded the extra five dollars. Holden argued with them, but Maurice threatened him while Sunny stole the money from his wallet. Maurice punched him in the stomach before leaving. Holden then imagined shooting Maurice in the stomach and even jumping out of the window to commit suicide. It was near dawn Sunday morning.\n\nAfter a short sleep, Holden telephoned Sally Hayes and agreed to meet her that afternoon to go to a play. He left the hotel, checked his luggage at Grand Central Station so that he would not have to go back to the hotel where he might face Maurice again, and had a late breakfast. At Grand Central Station, he met two nuns, one an English teacher, with whom he discussed Romeo and Juliet. He insisted on giving them a donation. Holden looked for a special record for his ten-year-old sister Phoebe called \"Little Shirley Beans.\" He spotted a small boy singing \"If a body catch a body coming through the rye,\" which made Holden feel less depressed. He met Sally for their matinee date. Although he immediately wanted to marry her, he did not particularly like her because she was snobbish and \"phony.\" They went to see a play starring the married Broadway stars Alfred Lunt and Lynn Fontanne. After the show, Sally kept mentioning that she saw a boy from Andover whom she knew, and Holden told her to go over and give the boy \"a big soul kiss.\" While she talked to the boy, Holden became disgusted at how phony the conversation was.\n\nSally and Holden went ice skating at Radio City and then had lunch together. During lunch, Holden complained that he was fed up with everything around him and suddenly suggested that they run away together to New England, where they could live in a cabin in the woods. When Sally dismissed the idea, Holden called her a \"royal pain in the ass,\" causing her to cry. Holden left. After the date, he saw the Christmas show at Radio City Music Hall and endured a movie. He called Carl Luce, a friend from the Whooton School who went to Columbia, and arranged to meet him at the Wicker Bar. At the bar, Holden had a conversation that was preoccupied with sex, and Carl soon became annoyed, calling it a \"typical Caulfield conversation.\" Carl suggested that Holden see a psychiatrist and left early. Holden remained at the Wicker Bar, where he got very drunk. After trying to make a date with the coat-check girl, he left the bar.\n\nThroughout his time in New York, Holden had been worried about the ducks in the lagoon at Central Park. He went to Central Park to look for them but only managed to break Phoebe's record in the process. He became increasingly distraught and delusional, believing that he would die every time he crossed the street. He fell unconscious after suffering from diarrhea. Exhausted physically and mentally and thinking he might die of pneumonia, he headed home to see his sister. He sneaked into his parents' apartment, attempting to avoid his parents, and awakened Phoebe. She soon became distressed when she heard that Holden had failed out of Pencey. She said that their father would kill him. He told her that he might go out to a ranch in Colorado, but she dismissed his idea as foolish. When he complained about the phoniness of Pencey, Phoebe asked him if he actually liked anything. He claimed that he liked Allie, and he thought about how he liked the nuns at Grand Central and a boy at Elkton Hills who had committed suicide. He told Phoebe that the one thing he would like to be was \"the catcher in the rye.\" He explained that he would stand near the edge of a cliff by a field of rye and catch any of the playing children who, in their abandon, came close to falling off. Phoebe informed him that the song he had heard about the catcher in the rye was actually a poem by Robert Burns, and it was about bodies meeting bodies, not catching bodies.\n\nWhen his parents returned from a late night out, Holden left the apartment undetected and visited the home of Mr. Antolini, a favorite teacher and his former English teacher at Elkton Hills, where he hoped to stay a few days. Mr. Antolini told Holden that he was headed for a serious fall and that he was the type who might die nobly for a highly unworthy cause. He quoted Wilhelm Stekel: \"The mark of an immature man is that he wants to die nobly for a cause, while the mark of the mature man is that he wants to live humbly for one.\" Holden fell asleep on the couch. In the predawn hours, Holden awoke startled to find Mr. Antolini patting Holden's head. Holden immediately interpreted this as a homosexual advance and quickly left. He told Mr. Antolini that he had to get his bags from Grand Central Station but would return soon.\n\nHolden spent the night at Grand Central Station. It was Monday morning. He became increasingly distraught and depressed. He decided to run away and head west where he hoped to live as a deaf-mute. He sent a note to Phoebe at school, telling her to meet him for lunch at the museum. He arranged to meet Phoebe to say good-bye. When he met Phoebe, she told him that she wanted to go with him and became angry when he refused. She pulled a \"Fine, I'm not talking to you anymore.\" Holden finally agreed to stay and not run away. He bought Phoebe a ticket for the carousel at the nearby zoo. As he watched her ride the carousel, going around and around, he began to cry. He declared he was happy.\n\nHolden's story ended with Phoebe riding the carousel in the rain as Holden watched. In the final chapter, Holden was at the sanitarium in California, in psychiatric care one year later. He did not want to tell any more about what happened next or how he got sick. He said he was supposed to go back to school in September, but he was not sure whether or not things would be any different this time around. He concluded that relating the whole story had only made him miss people, even the jerks like Stradlater and Ackley and even Maurice.",
+# """
+
 
 # from paths import PATHS
 # story_component_distill_llm_model = "gemini-3-pro-preview" #"gpt-5-2025-08-07"
 # story_components = get_distilled_story_components(
 #     config_path=PATHS['config'],
+#     story_summary=catcher_in_the_rye_summary,
 #     story_components_detailed=story_components_detailed,
 #     story_title="The Catcher in the Rye",
 #     story_author="J.D. Salinger",

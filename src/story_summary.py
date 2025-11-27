@@ -70,6 +70,10 @@ def build_sources_block(story_summary_data) -> str:
         raise ValueError("No usable sources found; aborting to prevent hallucination.")
         #return "<sources>\n  <!-- no sources provided -->\n</sources>"
     sources_block = "<sources>\n" + "\n\n".join(parts) + "\n</sources>"
+
+    if len(sources_used) < 2:
+        print("⚠️ WARNING: Only ", len(sources_used), " sources used. Need more!")
+
     return sources_block, sources_used
 
 
