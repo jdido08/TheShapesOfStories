@@ -73,6 +73,8 @@ for row in rows:
     build_story_summary = row.get("build_story_summary")
     story_cover_path = row.get("story_cover_path")
 
+    print("STORY COVER:")
+    print(story_cover_path)
 
     if build_story_summary == "TRUE":
         build_story_summary = True

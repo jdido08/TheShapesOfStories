@@ -264,21 +264,21 @@ def get_story_summary(story_title, story_author, story_protagonist, story_summar
     return output_text
 
 
-story_title = "The Great Gatsby"
-story_author = "F. Scott Fitzgerald"
-story_protagonist = "Jay Gatsby"
-#story_summary_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/les_miserables_composite_data.json"
-story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json"
-config_path=PATHS['config']
-llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
-llm_model = "gemini-2.5-pro" #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2
+# story_title = "The Great Gatsby"
+# story_author = "F. Scott Fitzgerald"
+# story_protagonist = "Jay Gatsby"
+# #story_summary_path = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/summaries/les_miserables_composite_data.json"
+# story_summary_path = "/Users/johnmikedidonato/Projects/TheShapesOfStories/data/summaries/the_great_gatsby_composite_data.json"
+# config_path=PATHS['config']
+# llm_provider = "google" #"google", #"openai",#, #"openai",, #"anthropic", #google", 
+# llm_model = "gemini-2.5-pro" #"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2
 
-get_story_summary(
-    story_title = story_title,
-    story_author = story_author,
-    story_protagonist = story_protagonist,
-    story_summary_path = story_summary_path,
-    config_path=config_path,
-    llm_provider = llm_provider,
-    llm_model = llm_model
-)
+# get_story_summary(
+#     story_title = story_title,
+#     story_author = story_author,
+#     story_protagonist = story_protagonist,
+#     story_summary_path = story_summary_path,
+#     config_path=config_path,
+#     llm_provider = llm_provider,
+#     llm_model = llm_model
+# )

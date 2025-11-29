@@ -22,14 +22,6 @@ import json
 import matplotlib.font_manager as fm
 from product_color import map_hex_to_simple_color
 
-#added 11/29/2025
-from spacing_optimizer import (
-    handle_spacing_adjustment_optimized,
-    test_text_fit_on_curve,
-    SPACE_MULTIPLIER_MIN,
-    SPACE_MULTIPLIER_MAX
-)
-
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
 gi.require_version('PangoCairo', '1.0')
@@ -39,7 +31,168 @@ import anthropic
 import yaml
 
 CURRENT_DPI = 300
-MAX_SPACING_ADJUSTMENT_ATTEMPTS = 20 #200
+MAX_SPACING_ADJUSTMENT_ATTEMPTS = 200
+
+
+def binary_search_curve_endpoint(
+    component, 
+    curve_length_status,
+    arc_x_values, 
+    arc_y_values,
+    arc_x_values_scaled, 
+    arc_y_values_scaled,
+    descriptors_text,
+    old_min_x, old_max_x, 
+    old_min_y, old_max_y,
+    scale_x, scale_y,
+    path_margin_x, path_margin_y_top,
+    path_drawable_h, 
+    x_min, y_min,
+    pangocairo_context, 
+    font_desc,
+    recursive_mode=True,
+    tolerance_percent=0.05,
+    max_iterations=25
+):
+    """
+    Use binary search to find the optimal curve endpoint that fits the text.
+    
+    Instead of iteratively adjusting the endpoint by fixed amounts and re-rendering,
+    this function mathematically searches for the right endpoint in ~15-25 iterations
+    WITHOUT any re-rendering.
+    
+    Returns:
+        tuple: (should_adjust, new_end_time, new_end_emotional_score, message)
+    """
+    # Early exit conditions
+    if not recursive_mode:
+        return False, None, None, "Recursive mode disabled"
+    
+    if len(arc_x_values) < 2:
+        return False, None, None, "Not enough arc points for interpolation"
+    
+    # Calculate target arc length based on text
+    layout = Pango.Layout.new(pangocairo_context)
+    layout.set_font_description(font_desc)
+    layout.set_text(descriptors_text, -1)
+    text_width_px, _ = layout.get_pixel_size()
+    
+    # Add small buffer for character spacing
+    target_arc_length = text_width_px * 1.05
+    
+    # Prepare cubic spline for interpolation
+    x_og = np.array(arc_x_values, dtype=float)
+    y_og = np.array(arc_y_values, dtype=float)
+    
+    # Sort by x
+    sorted_indices = np.argsort(x_og)
+    x_og = x_og[sorted_indices]
+    y_og = y_og[sorted_indices]
+    
+    # Remove duplicate x values (required for CubicSpline)
+    unique_mask = np.concatenate([[True], np.abs(np.diff(x_og)) > 1e-10])
+    x_og = x_og[unique_mask]
+    y_og = y_og[unique_mask]
+    
+    if len(x_og) < 2:
+        return False, None, None, "Not enough unique points after dedup"
+    
+    try:
+        cs = CubicSpline(x_og, y_og, extrapolate=True)
+    except Exception as e:
+        return False, None, None, f"Spline creation failed: {e}"
+    
+    # Define binary search bounds
+    x_start = x_og[0]
+    x_current_end = x_og[-1]
+    
+    if curve_length_status == "curve_too_short":
+        # Need to EXTEND the curve
+        search_min = x_current_end
+        max_extension = x_current_end + (x_current_end - x_start)
+        search_max = min(old_max_x, max_extension)
+    else:
+        # Need to SHORTEN the curve
+        min_shrink = x_start + (x_current_end - x_start) * 0.1
+        search_min = max(old_min_x, min_shrink)
+        search_max = x_current_end
+    
+    # Binary search for optimal endpoint
+    best_x = None
+    best_y = None
+    best_length = None
+    best_diff = float('inf')
+    
+    for iteration in range(max_iterations):
+        mid_x = (search_min + search_max) / 2
+        mid_y = float(cs(mid_x))
+        
+        # Check if y is within bounds
+        if mid_y < old_min_y or mid_y > old_max_y:
+            if curve_length_status == "curve_too_short":
+                search_max = mid_x
+            else:
+                search_min = mid_x
+            continue
+        
+        # Check if x is within bounds
+        if mid_x < old_min_x or mid_x > old_max_x:
+            if curve_length_status == "curve_too_short":
+                search_max = mid_x
+            else:
+                search_min = mid_x
+            continue
+        
+        # Estimate arc length at this endpoint (without rendering)
+        num_sample_points = max(50, int(abs(mid_x - x_start) * 30))
+        sample_x = np.linspace(x_start, mid_x, num_sample_points)
+        sample_y = cs(sample_x)
+        
+        # Convert to pixel coordinates
+        sample_x_px = np.array([(x - x_min) * scale_x + path_margin_x for x in sample_x])
+        sample_y_px = np.array([(path_margin_y_top + path_drawable_h) - ((y - y_min) * scale_y) for y in sample_y])
+        
+        # Calculate arc length in pixels
+        test_arc_length = np.sum(np.hypot(np.diff(sample_x_px), np.diff(sample_y_px)))
+        
+        # How close are we to target?
+        diff = abs(test_arc_length - target_arc_length)
+        diff_percent = diff / target_arc_length if target_arc_length > 0 else 0
+        
+        # Track best result
+        if diff < best_diff:
+            best_diff = diff
+            best_x = mid_x
+            best_y = mid_y
+            best_length = test_arc_length
+        
+        # Check if within tolerance
+        if diff_percent <= tolerance_percent:
+            return (True, best_x, best_y, 
+                    f"Found optimal in {iteration+1} iters "
+                    f"(arc:{test_arc_length:.0f}px, target:{target_arc_length:.0f}px)")
+        
+        # Adjust search bounds
+        if test_arc_length < target_arc_length:
+            search_min = mid_x
+        else:
+            search_max = mid_x
+        
+        # Check for convergence
+        if abs(search_max - search_min) < 0.0001:
+            break
+    
+    # Return best result found
+    if best_x is not None:
+        final_diff_percent = best_diff / target_arc_length if target_arc_length > 0 else 0
+        if final_diff_percent <= 0.15:
+            return (True, best_x, best_y,
+                    f"Best after {max_iterations} iters "
+                    f"(arc:{best_length:.0f}px, target:{target_arc_length:.0f}px, "
+                    f"diff:{final_diff_percent*100:.1f}%)")
+    
+    return False, None, None, f"No valid endpoint found (best diff: {best_diff:.0f}px)"
+
 
 
 def maybe_save(surface, path, output_format, save: bool):
@@ -946,7 +1099,7 @@ def create_shape_single_pass(
                         component['spacing_adjustment_attempts'] = 0 # Reset total attempts for this new text
                         component['spacing_factor'] = 1
                         component['adjust_spacing'] = False
-                        component['spacing_optimized'] = False #ADDED 11/29/2025
+                        component['binary_search_attempted'] = False  # Reset binary search flag for new text
                         component['modified_end_time'] = component['end_time']
                         component['modified_end_emotional_score'] = component['end_emotional_score']
                     
@@ -1046,223 +1199,368 @@ def create_shape_single_pass(
                 max_space_multipler = 1.0
             #print(curve_length_status)
             # Check if curve too short/long, do your recursion logic...
-            if curve_length_status == "curve_too_short":
-                # Attempt adjusting via CubicSpline
-                x_og = np.array(original_arc_end_time_values)
-                y_og = np.array(original_arc_end_emotional_score_values)
-                sorted_indices = np.argsort(x_og)
-                x_og = x_og[sorted_indices]
-                y_og = y_og[sorted_indices]
 
-                # Check that we have at least two points before proceeding with CubicSpline
-                if len(x_og) < 2:
-                    print("CALLING TO SEE IF THERE'S LESS THAN 2 before removing dups")
-                    print("original_arc_end_time_values: ", original_arc_end_time_values)
+            # if curve_length_status == "curve_too_short":
+            #     # Attempt adjusting via CubicSpline
+            #     x_og = np.array(original_arc_end_time_values)
+            #     y_og = np.array(original_arc_end_emotional_score_values)
+            #     sorted_indices = np.argsort(x_og)
+            #     x_og = x_og[sorted_indices]
+            #     y_og = y_og[sorted_indices]
 
-                # Remove duplicates
-                tolerance = 1e-12
-                unique_indices = [0]
-                for i in range(1, len(x_og)):
-                    if x_og[i] - x_og[unique_indices[-1]] > tolerance:
-                        unique_indices.append(i)
-                x_og = x_og[unique_indices]
-                y_og = y_og[unique_indices]
+            #     # Check that we have at least two points before proceeding with CubicSpline
+            #     if len(x_og) < 2:
+            #         print("CALLING TO SEE IF THERE'S LESS THAN 2 before removing dups")
+            #         print("original_arc_end_time_values: ", original_arc_end_time_values)
 
-                # Check that we have at least two points before proceeding with CubicSpline
-                if len(x_og) < 2:
-                    # print("Not enough points for cubic spline adjustment; skipping cubic spline update.")
-                    # print("X_og: ", x_og)
-                    # # You can decide to either return an error status, skip the adjustment, or use a fallback
-                    # # For instance, set the status to "error" or simply continue:
-                    # if story_data is None:
-                    #     print("STORY DATA NONE -- 11")
+            #     # Remove duplicates
+            #     tolerance = 1e-12
+            #     unique_indices = [0]
+            #     for i in range(1, len(x_og)):
+            #         if x_og[i] - x_og[unique_indices[-1]] > tolerance:
+            #             unique_indices.append(i)
+            #     x_og = x_og[unique_indices]
+            #     y_og = y_og[unique_indices]
 
-                    # return story_data, "error"  # or handle it in another way
-                    # Try spacing optimization instead
-                    #ADDED 11/29/2025
-                    print(f"⚠️ Segment too short for spline ({len(x_og)} points)")
-                    # Try spacing optimization instead
-                    if not component.get('spacing_optimized', False):
-                        success, multiplier, message = handle_spacing_adjustment_optimized(
-                            component=component,
-                            curve_length_status="curve_too_short",
-                            arc_x_values_scaled=arc_x_values_scaled,
-                            arc_y_values_scaled=arc_y_values_scaled,
-                            descriptors_text=descriptors_text,
-                            pangocairo_context=pangocairo_context,
-                            font_desc=font_desc,
-                            all_rendered_boxes=all_rendered_boxes,
-                            margin_x=margin_x,
-                            margin_y=margin_y,
-                            design_width=design_width,
-                            design_height=design_height,
-                            original_arc_end_time_values=original_arc_end_time_values,
-                            original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
-                            old_min_x=old_min_x,
-                            old_max_x=old_max_x,
-                            old_min_y=old_min_y,
-                            old_max_y=old_max_y,
-                            recursive_mode=recursive_mode
-                        )
-                        if success:
-                            component['status'] = "spacing_optimized_short_segment"
-                            maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                            return story_data, "processing"
+            #     # Check that we have at least two points before proceeding with CubicSpline
+            #     if len(x_og) < 2:
+            #         print("Not enough points for cubic spline adjustment; skipping cubic spline update.")
+            #         print("X_og: ", x_og)
+            #         # You can decide to either return an error status, skip the adjustment, or use a fallback
+            #         # For instance, set the status to "error" or simply continue:
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 11")
+
+            #         return story_data, "error"  # or handle it in another way
+
+            #     #print("X: ", x_og)
+            #     cs = CubicSpline(x_og, y_og, extrapolate=True)
+            #     new_x = x_og[-1] + (x_og[1] - x_og[0])
+            #     new_y = float(cs(new_x))
+
+            #     # print(new_x, " , ", new_y)
+            #     # print(old_max_y, " , ", old_min_y)
+
+            #     #normal mode
+            #     if (new_x >= old_min_x and new_x <= old_max_x 
+            #         and new_y >= old_min_y and new_y <= old_max_y
+            #         and recursive_mode
+            #         and component['adjust_spacing'] == False):
+            #         component['modified_end_time'] = new_x
+            #         component['modified_end_emotional_score'] = new_y
                     
-                    # If spacing didn't work, regenerate with fewer chars
-                    component['arc_text_valid'] = False
-                    component['target_arc_text_chars'] = max(5, component.get('target_arc_text_chars', 20) - 5)
-                    print(f"   → Reducing target chars to {component['target_arc_text_chars']}")
-                    return story_data, "processing"  # Retry, don't fail!
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 12")
 
-                #print("X: ", x_og)
-                cs = CubicSpline(x_og, y_og, extrapolate=True)
-                new_x = x_og[-1] + (x_og[1] - x_og[0])
-                new_y = float(cs(new_x))
+            #         return story_data, "processing"
 
-                # print(new_x, " , ", new_y)
-                # print(old_max_y, " , ", old_min_y)
+            #     #this really only works if like this was suppose to be the last story segment
+            #     # we hit x max and want to extend y
+            #     elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,2) != round(y_og[-1],2))
+            #           and component['adjust_spacing'] == False):
+            #         new_x = x_og[-1]
+            #         #print(round(new_y,3), " != ", round(y_og[-1],3)) 
+            #         component['modified_end_time'] = new_x
+            #         component['modified_end_emotional_score'] = new_y
 
-                #normal mode
-                if (new_x >= old_min_x and new_x <= old_max_x 
-                    and new_y >= old_min_y and new_y <= old_max_y
-                    and recursive_mode
-                    and component['adjust_spacing'] == False):
-                    component['modified_end_time'] = new_x
-                    component['modified_end_emotional_score'] = new_y
-                    
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
-                    if story_data is None:
-                        print("STORY DATA NONE -- 12")
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 13")
 
-                    return story_data, "processing"
-
-                #this really only works if like this was suppose to be the last story segment
-                # we hit x max and want to extend y
-                elif ((new_x >= old_max_x or new_x <= old_min_x) and (new_y >= old_min_y and new_y <= old_max_y) and recursive_mode and component['end_time'] == 100 and (round(new_y,2) != round(y_og[-1],2))
-                      and component['adjust_spacing'] == False):
-                    new_x = x_og[-1]
-                    #print(round(new_y,3), " != ", round(y_og[-1],3)) 
-                    component['modified_end_time'] = new_x
-                    component['modified_end_emotional_score'] = new_y
-
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
-                    if story_data is None:
-                        print("STORY DATA NONE -- 13")
-
-                    return story_data, "processing"
+            #         return story_data, "processing"
                 
-                # #we hit y max / min and need to extend x
-                elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode 
-                      and component['adjust_spacing'] == False):
-                    #print("#we hit y max / min and need to extend x")
-                    new_y = y_og[-1]
-                    component['modified_end_time'] = new_x
-                    component['modified_end_emotional_score'] = new_y
+            #     # #we hit y max / min and need to extend x
+            #     elif ((new_y >= old_max_y or new_y <= old_min_y) and (new_x >= old_min_x and new_x <= old_max_x) and recursive_mode 
+            #           and component['adjust_spacing'] == False):
+            #         #print("#we hit y max / min and need to extend x")
+            #         new_y = y_og[-1]
+            #         component['modified_end_time'] = new_x
+            #         component['modified_end_emotional_score'] = new_y
 
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
-                    if story_data is None:
-                        print("STORY DATA NONE -- 1")
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 1")
                     
-                    return story_data, "processing"
+            #         return story_data, "processing"
             
+            #     elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
+            #         component['adjust_spacing'] = True
 
-                # elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
-                #     component['adjust_spacing'] = True
-
-                #     #adjust current multiplier
-                #     if component.get('status', "") == "expanding spacing":
-                #         print("spacing factor change")
-                #         component["spacing_factor"] = component["spacing_factor"] * 10
+            #         #adjust current multiplier
+            #         if component.get('status', "") == "expanding spacing":
+            #             print("spacing factor change")
+            #             component["spacing_factor"] = component["spacing_factor"] * 10
                     
-                #     try:
-                #         new_multiplier = max(0.8, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
-                #     except:
-                #         new_multiplier = max(0.8, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+            #         try:
+            #             new_multiplier = max(0.8, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
+            #             component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+            #         except:
+            #             new_multiplier = max(0.8, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
+            #             component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
                     
-                #     if new_multiplier == .8:
-                #         component['space_to_modify'] = component['space_to_modify'] + 1
-                #         print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+            #         if new_multiplier == .8:
+            #             component['space_to_modify'] = component['space_to_modify'] + 1
+            #             print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
                   
 
-                #     #adjust future mulitplier
-                #     #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] - 0.01
-                #     component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+            #         #adjust future mulitplier
+            #         #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] - 0.01
+            #         component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
 
-                #     component['status'] = "reducing spacing"
+            #         component['status'] = "reducing spacing"
                     
 
-                #     maybe_save(surface, story_shape_path, output_format, save_intermediate)
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
-                #     if story_data is None:
-                #         print("STORY DATA NONE -- 2")
-                #     return story_data, "processing"
-                elif not component.get('spacing_optimized', False):
-                    success, multiplier, message = handle_spacing_adjustment_optimized(
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 2")
+            #         return story_data, "processing"
+            
+            #     else: #this means: "curve too short but can't change due to constraints"
+            #         #so we actually want less chars than we initially thought
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
+
+
+            #         if component['arc_manual_override'] == True:
+            #             status = 'Manual Override'
+            #         # if component['adjust_spacing'] == True:
+            #         #     status = 'Close Enough!'
+            #         #     #print("CLOSE ENOUGH!")
+            #         else:
+            #             component['arc_text_valid'] = False
+            #             component['arc_text_valid_message'] = "curve too short but can't change due to constraints"
+            #             print("curve too short but can't change due to constraints")
+            #             #status = "curve too short but can't change due to constraints"
+            #             print("spacing attempts: ", component['spacing_adjustment_attempts'])
+            #             print("max_space_multipler: ", min_space_multipler)
+            #             print("spacing_factor: ", component['spacing_factor'])
+
+
+            #             if story_data is None:
+            #                 print("STORY DATA NONE -- 3")
+
+            #             return story_data, "processing"
+
+            # #curve is too long so need to shorten it
+            # elif curve_length_status == "curve_too_long":
+
+            #     #doing - 10 is super janky; the problem is that num a points is fixed so if you make arc length smaller but keep number of points the same then decreasing arc like becomes hard
+            #     #an alternative apprach is instead of defining num of point you could define x_delta size and infer num of points
+            #     original_arc_end_time_index_length = len(original_arc_end_time_values) - 3
+            #     original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 3
+                
+            #     #print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length])
+
+            #     #check if last values of arc segments is the global max; if it's the global max then shouldn't touch unless the second to last is the same value then you can shorten it
+            #     #normal mode can decrease everything 
+            #     if (original_arc_end_time_values[-1] > old_min_x 
+            #         and original_arc_end_time_values[-1] < old_max_x
+            #         and original_arc_end_emotional_score_values[-1] > old_min_y
+            #         and original_arc_end_emotional_score_values[-1] < old_max_y
+            #         and len(component['arc_x_values']) > 1 and recursive_mode
+            #         and original_arc_end_time_index_length >= 0 
+            #         and original_arc_end_emotional_score_index_length >= 0
+            #         and component['adjust_spacing'] == False):
+                    
+            #         component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
+            #         component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
+                    
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
+
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 4")
+
+            #         return story_data, "processing"
+                
+            #     #cant touch x -- maybe want to remove
+            #     elif ((original_arc_end_time_values[-1] == old_min_x or original_arc_end_time_values[-1] == old_max_x)
+            #         and original_arc_end_emotional_score_values[-1] > old_min_y
+            #         and original_arc_end_emotional_score_values[-1] < old_max_y
+            #         and len(component['arc_x_values']) > 1 and recursive_mode 
+            #         and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)
+            #         and original_arc_end_emotional_score_index_length >= 0
+            #         and component['adjust_spacing'] == False):
+
+            #         component['modified_end_time'] = original_arc_end_time_values[-1]
+            #         component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
+                    
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
+
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 5")
+
+            #         return story_data, "processing"
+                
+            #     # #cant touch y
+            #     # elif ((original_arc_end_emotional_score_values[-1] == old_min_y or original_arc_end_emotional_score_values[-1] == old_max_y)
+            #     #     and original_arc_end_time_values[-1] > old_min_x 
+            #     #     and original_arc_end_time_values[-1] < old_max_x
+            #     #     and len(component['arc_x_values']) > 1 and recursive_mode
+            #     #     and original_arc_end_time_index_length >= 0):
+
+            #     #     #print("hey")
+            #     #     print("modifying end time")
+            #     #     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
+            #     #     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
+
+            #     #     if output_format == "svg":
+            #     #         surface.flush()   # flush the partial drawing, but do *not* finalize!
+            #     #     else:
+            #     #         surface.write_to_png(story_shape_path)
+            #     #     return story_data, "processing"
+
+            #     elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
+            #         component['adjust_spacing'] = True
+                    
+            #         if component.get('status', "") == "reducing spacing":
+            #             print("spacing factor change")
+            #             component["spacing_factor"] = component["spacing_factor"] * 10
+                    
+            #         try:
+            #             new_multiplier = min(1.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
+            #             component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+            #         except:
+            #             new_multiplier = min(1.5,component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
+            #             component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+                    
+            #         if new_multiplier == 1.5:
+            #             component['space_to_modify'] = component['space_to_modify'] + 1
+            #             print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+                    
+
+            #          #adjust next multiplier
+            #         #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] + 0.01
+            #         component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+                    
+            #         component['status'] = "expanding spacing"
+
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
+
+            #         if story_data is None:
+            #             print("STORY DATA NONE -- 6")
+
+            #         return story_data, "processing"
+
+            #     else: # this means: curve too long but can't change due to constraints
+            #         # so we want more chars than we initially thought so let's up the number of chars
+            #         # so we need recalc descriptors and ask for longer 
+            #         maybe_save(surface, story_shape_path, output_format, save_intermediate)
+
+            #         if component['arc_manual_override'] == True:
+            #             status = 'Manual Override'
+            #         # elif component['adjust_spacing'] == True:
+            #         #     status = 'Close Enough'
+            #             #print("CLOSE ENOUGH!")
+            #         else:
+            #             component['arc_text_valid'] = False
+            #             component['arc_text_valid_message'] = "curve too long but can't change due to constraints"
+            #             print("curve too long but can't change due to constraints")
+            #             print("spacing attempts: ", component['spacing_adjustment_attempts'])
+            #             print("max_space_multipler: ", max_space_multipler)
+            #             print("spacing_factor: ", component['spacing_factor'])
+
+            #             if story_data is None:
+            #                 print("STORY DATA NONE -- 7")
+
+            #             return story_data, "processing"
+
+            if curve_length_status == "curve_too_short":
+                
+                # ----- TRY BINARY SEARCH FIRST (if not already in spacing mode) -----
+                if (not component.get('adjust_spacing', False) and not component.get('binary_search_attempted', False)):
+
+                    bs_success, bs_new_x, bs_new_y, bs_message = binary_search_curve_endpoint(
                         component=component,
-                        curve_length_status="curve_too_short",
+                        curve_length_status=curve_length_status,
+                        arc_x_values=arc_x_values,
+                        arc_y_values=arc_y_values,
                         arc_x_values_scaled=arc_x_values_scaled,
                         arc_y_values_scaled=arc_y_values_scaled,
                         descriptors_text=descriptors_text,
-                        pangocairo_context=pangocairo_context,
-                        font_desc=font_desc,
-                        all_rendered_boxes=all_rendered_boxes,
-                        margin_x=margin_x,
-                        margin_y=margin_y,
-                        design_width=design_width,
-                        design_height=design_height,
-                        original_arc_end_time_values=original_arc_end_time_values,
-                        original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
                         old_min_x=old_min_x,
                         old_max_x=old_max_x,
                         old_min_y=old_min_y,
                         old_max_y=old_max_y,
+                        scale_x=scale_x,
+                        scale_y=scale_y,
+                        path_margin_x=path_margin_x,
+                        path_margin_y_top=path_margin_y_top,
+                        path_drawable_h=path_drawable_h,
+                        x_min=x_min,
+                        y_min=y_min,
+                        pangocairo_context=pangocairo_context,
+                        font_desc=font_desc,
                         recursive_mode=recursive_mode
                     )
+
+                    component['binary_search_attempted'] = True
+
                     
-                    if success:
-                        component['status'] = "spacing_optimized"
+                    if bs_success:
+                        # Binary search found a good endpoint!
+                        component['modified_end_time'] = bs_new_x
+                        component['modified_end_emotional_score'] = bs_new_y
+                        print(f"  ✓ Binary search (extend): {bs_message}")
                         maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        if story_data is None:
-                            print("STORY DATA NONE -- 2")
                         return story_data, "processing"
                     else:
-                        # Spacing optimization failed - need MORE characters (curve is too short)
-                        print(f"  ✗ Spacing optimization failed for curve_too_short")
-                        component['arc_text_valid'] = False
-                        component['arc_text_valid_message'] = "spacing failed - need more characters"
-                        # INCREASE target since curve is too short (need longer text to fill it)
-                        old_target = component.get('target_arc_text_chars', 50)
-                        component['target_arc_text_chars'] = max(5, old_target - 3)
-                        print(f"   → Increasing target chars: {old_target} → {component['target_arc_text_chars']}")
-                        maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        return story_data, "processing"
+                        # Binary search couldn't find solution, fall back to spacing
+                        print(f"  → Binary search failed: {bs_message} - trying spacing adjustment")
+                        component['adjust_spacing'] = True
+                
+                # ----- SPACING ADJUSTMENT FOR CURVE TOO SHORT -----
+                if (component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS 
+                    and component['space_to_modify'] < component['spaces_in_arc_text'] 
+                    and component["spacing_factor"] < 1000):
+                    
+                    component['adjust_spacing'] = True
 
-                else: #this means: "curve too short but can't change due to constraints"
-                    #so we actually want less chars than we initially thought
+                    # Adjust spacing factor if we were previously expanding
+                    if component.get('status', "") == "expanding spacing":
+                        print("spacing factor change")
+                        component["spacing_factor"] = component["spacing_factor"] * 10
+                    
+                    # Reduce space width (make text more compact to fit shorter curve)
+                    try:
+                        new_multiplier = max(0.8, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+                    except:
+                        new_multiplier = max(0.8, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+                    
+                    # Move to next space if this one is at minimum
+                    if new_multiplier == 0.8:
+                        component['space_to_modify'] = component['space_to_modify'] + 1
+                        print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+                    
+                    component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+                    component['status'] = "reducing spacing"
+
+                    
+                    
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
+                    if story_data is None:
+                        print("STORY DATA NONE -- 2")
+                    return story_data, "processing"
+            
+                else:
+                    # Can't adjust anymore - curve too short but constraints prevent changes
+                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
-                    # if component['adjust_spacing'] == True:
-                    #     status = 'Close Enough!'
-                    #     #print("CLOSE ENOUGH!")
                     else:
                         component['arc_text_valid'] = False
                         component['arc_text_valid_message'] = "curve too short but can't change due to constraints"
                         print("curve too short but can't change due to constraints")
-                        #status = "curve too short but can't change due to constraints"
                         print("spacing attempts: ", component['spacing_adjustment_attempts'])
-                        print("max_space_multipler: ", min_space_multipler)
+                        print("min_space_multipler: ", min_space_multipler)
                         print("spacing_factor: ", component['spacing_factor'])
-
 
                         if story_data is None:
                             print("STORY DATA NONE -- 3")
@@ -1270,158 +1568,90 @@ def create_shape_single_pass(
                         return story_data, "processing"
 
 
-            #curve is too long so need to shorten it
             elif curve_length_status == "curve_too_long":
-
-                #doing - 10 is super janky; the problem is that num a points is fixed so if you make arc length smaller but keep number of points the same then decreasing arc like becomes hard
-                #an alternative apprach is instead of defining num of point you could define x_delta size and infer num of points
-                original_arc_end_time_index_length = len(original_arc_end_time_values) - 3
-                original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 3
                 
-                #print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length])
-
-                #check if last values of arc segments is the global max; if it's the global max then shouldn't touch unless the second to last is the same value then you can shorten it
-                #normal mode can decrease everything 
-                if (original_arc_end_time_values[-1] > old_min_x 
-                    and original_arc_end_time_values[-1] < old_max_x
-                    and original_arc_end_emotional_score_values[-1] > old_min_y
-                    and original_arc_end_emotional_score_values[-1] < old_max_y
-                    and len(component['arc_x_values']) > 1 and recursive_mode
-                    and original_arc_end_time_index_length >= 0 
-                    and original_arc_end_emotional_score_index_length >= 0
-                    and component['adjust_spacing'] == False):
-                    
-                    component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
-                    component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
-                    
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
-                    if story_data is None:
-                        print("STORY DATA NONE -- 4")
-
-                    return story_data, "processing"
-                
-                #cant touch x -- maybe want to remove
-                elif ((original_arc_end_time_values[-1] == old_min_x or original_arc_end_time_values[-1] == old_max_x)
-                    and original_arc_end_emotional_score_values[-1] > old_min_y
-                    and original_arc_end_emotional_score_values[-1] < old_max_y
-                    and len(component['arc_x_values']) > 1 and recursive_mode 
-                    and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)
-                    and original_arc_end_emotional_score_index_length >= 0
-                    and component['adjust_spacing'] == False):
-
-                    component['modified_end_time'] = original_arc_end_time_values[-1]
-                    component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
-                    
-                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
-                    if story_data is None:
-                        print("STORY DATA NONE -- 5")
-
-                    return story_data, "processing"
-                
-                # #cant touch y
-                # elif ((original_arc_end_emotional_score_values[-1] == old_min_y or original_arc_end_emotional_score_values[-1] == old_max_y)
-                #     and original_arc_end_time_values[-1] > old_min_x 
-                #     and original_arc_end_time_values[-1] < old_max_x
-                #     and len(component['arc_x_values']) > 1 and recursive_mode
-                #     and original_arc_end_time_index_length >= 0):
-
-                #     #print("hey")
-                #     print("modifying end time")
-                #     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
-                #     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
-
-                #     if output_format == "svg":
-                #         surface.flush()   # flush the partial drawing, but do *not* finalize!
-                #     else:
-                #         surface.write_to_png(story_shape_path)
-                #     return story_data, "processing"
-
-
-                # elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
-                #     component['adjust_spacing'] = True
-                    
-                #     if component.get('status', "") == "reducing spacing":
-                #         print("spacing factor change")
-                #         component["spacing_factor"] = component["spacing_factor"] * 10
-                    
-                #     try:
-                #         new_multiplier = min(1.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
-                #     except:
-                #         new_multiplier = min(1.5,component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
-                    
-                #     if new_multiplier == 1.5:
-                #         component['space_to_modify'] = component['space_to_modify'] + 1
-                #         print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
-                    
-
-                #      #adjust next multiplier
-                #     #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] + 0.01
-                #     component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
-                    
-                #     component['status'] = "expanding spacing"
-
-                #     maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
-                #     if story_data is None:
-                #         print("STORY DATA NONE -- 6")
-
-                #     return story_data, "processing"
-
-                elif not component.get('spacing_optimized', False):
-                    success, multiplier, message = handle_spacing_adjustment_optimized(
+                # ----- TRY BINARY SEARCH FIRST (if not already in spacing mode) -----
+                if (not component.get('adjust_spacing', False) and not component.get('binary_search_attempted', False)):
+                    bs_success, bs_new_x, bs_new_y, bs_message = binary_search_curve_endpoint(
                         component=component,
-                        curve_length_status="curve_too_long",
+                        curve_length_status=curve_length_status,
+                        arc_x_values=arc_x_values,
+                        arc_y_values=arc_y_values,
                         arc_x_values_scaled=arc_x_values_scaled,
                         arc_y_values_scaled=arc_y_values_scaled,
                         descriptors_text=descriptors_text,
-                        pangocairo_context=pangocairo_context,
-                        font_desc=font_desc,
-                        all_rendered_boxes=all_rendered_boxes,
-                        margin_x=margin_x,
-                        margin_y=margin_y,
-                        design_width=design_width,
-                        design_height=design_height,
-                        original_arc_end_time_values=original_arc_end_time_values,
-                        original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
                         old_min_x=old_min_x,
                         old_max_x=old_max_x,
                         old_min_y=old_min_y,
                         old_max_y=old_max_y,
+                        scale_x=scale_x,
+                        scale_y=scale_y,
+                        path_margin_x=path_margin_x,
+                        path_margin_y_top=path_margin_y_top,
+                        path_drawable_h=path_drawable_h,
+                        x_min=x_min,
+                        y_min=y_min,
+                        pangocairo_context=pangocairo_context,
+                        font_desc=font_desc,
                         recursive_mode=recursive_mode
                     )
+
+                    component['binary_search_attempted'] = True
                     
-                    if success:
-                        component['status'] = "spacing_optimized"
+                    if bs_success:
+                        # Binary search found a good endpoint!
+                        component['modified_end_time'] = bs_new_x
+                        component['modified_end_emotional_score'] = bs_new_y
+                        print(f"  ✓ Binary search (shorten): {bs_message}")
                         maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        if story_data is None:
-                            print("STORY DATA NONE -- 6")
                         return story_data, "processing"
                     else:
-                        # Spacing optimization failed - need FEWER characters (curve is too long)
-                        print(f"  ✗ Spacing optimization failed for curve_too_long")
-                        component['arc_text_valid'] = False
-                        component['arc_text_valid_message'] = "spacing failed - need fewer characters"
-                        # DECREASE target since curve is too long (need shorter text)
-                        old_target = component.get('target_arc_text_chars', 50)
-                        component['target_arc_text_chars'] = old_target + 3
-                        print(f"   → Decreasing target chars: {old_target} → {component['target_arc_text_chars']}")
-                        maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        return story_data, "processing"
+                        # Binary search couldn't find solution, fall back to spacing
+                        print(f"  → Binary search failed: {bs_message} - trying spacing adjustment")
+                        component['adjust_spacing'] = True
 
-                else: # this means: curve too long but can't change due to constraints
-                    # so we want more chars than we initially thought so let's up the number of chars
-                    # so we need recalc descriptors and ask for longer 
+                # ----- SPACING ADJUSTMENT FOR CURVE TOO LONG -----
+                if (component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS 
+                    and component['space_to_modify'] < component['spaces_in_arc_text'] 
+                    and component["spacing_factor"] < 1000):
+                    
+                    component['adjust_spacing'] = True
+                    
+                    # Adjust spacing factor if we were previously reducing
+                    if component.get('status', "") == "reducing spacing":
+                        print("spacing factor change")
+                        component["spacing_factor"] = component["spacing_factor"] * 10
+                    
+                    # Increase space width (spread text to fill longer curve)
+                    try:
+                        new_multiplier = min(1.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+                    except:
+                        new_multiplier = min(1.5, component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+                    
+                    # Move to next space if this one is at maximum
+                    if new_multiplier == 1.5:
+                        component['space_to_modify'] = component['space_to_modify'] + 1
+                        print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+                    
+                    component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+                    component['status'] = "expanding spacing"
+
+                    
+                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
+
+                    if story_data is None:
+                        print("STORY DATA NONE -- 6")
+
+                    return story_data, "processing"
+
+                else:
+                    # Can't adjust anymore - curve too long but constraints prevent changes
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
                     if component['arc_manual_override'] == True:
                         status = 'Manual Override'
-                    # elif component['adjust_spacing'] == True:
-                    #     status = 'Close Enough'
-                        #print("CLOSE ENOUGH!")
                     else:
                         component['arc_text_valid'] = False
                         component['arc_text_valid_message'] = "curve too long but can't change due to constraints"
@@ -1437,7 +1667,6 @@ def create_shape_single_pass(
 
             elif curve_length_status == "curve_correct_length":
                 maybe_save(surface, story_shape_path, output_format, save_intermediate)
-
                 status = 'All phrases fit exactly on the curve.'
 
             component['status'] = status

@@ -9,7 +9,7 @@ from datetime import datetime
 
 # imports from my code
 from story_style import get_story_style, pango_font_exists #move to this sheet
-from story_components import get_story_components, grade_story_components, get_distilled_story_components
+from story_components import get_story_components, grade_story_components, get_distilled_story_components, visualize_distillation
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
@@ -212,6 +212,14 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     print("✅ Story Components Distilled")
     print(story_components)
 
+    visualize_distillation(
+        detailed_components=story_components_detailed, 
+        distilled_components=story_components, 
+        story_title=story_title, 
+        protagonist=story_protagonist)
+    print("✅ Story Components Visualized")
+
+
     #grade story components
     story_components_grader_llm_model = "gemini-2.5-pro" #google good for grading 
     story_component_grades = grade_story_components(
@@ -224,8 +232,11 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         llm_provider = "google", #"google", #"openai",#, #"openai",, #"anthropic", #google", 
         llm_model = story_components_grader_llm_model#"gemini-2.5-pro-preview-06-05", #o3-mini-2025-01-31", #"o4-mini-2025-04-16" #"gemini-2.5-pro-preview-05-06" #"o3-2025-04-16" #"gemini-2.5-pro-preview-05-06"#o3-2025-04-16"#"gemini-2.5-pro-preview-05-06" #"claude-3-5-sonnet-latest" #"gemini-2.5-pro-preview-03-25"
     )
-    print("✅ Story Components Distilled")
+    print("✅ Story Components Graded")
+    print("GRADE: ", story_component_grades['shape_accuracy']['final_grade'])
 
+
+    
     
     # get category of shape
     story_symbolic_rep,  story_archetype = get_story_symbolic_and_archetype(story_components)
@@ -235,6 +246,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     if story_cover_path == "":
         cover_data = get_story_cover(story_title)
     else:
+        print("Using manually specified cover")
         cover_data = manually_set_cover(story_title, story_cover_path)
    
     # get stort style

@@ -22,14 +22,6 @@ import json
 import matplotlib.font_manager as fm
 from product_color import map_hex_to_simple_color
 
-#added 11/29/2025
-from spacing_optimizer import (
-    handle_spacing_adjustment_optimized,
-    test_text_fit_on_curve,
-    SPACE_MULTIPLIER_MIN,
-    SPACE_MULTIPLIER_MAX
-)
-
 # Ensure the correct versions of Pango and PangoCairo are used
 gi.require_version('Pango', '1.0')
 gi.require_version('PangoCairo', '1.0')
@@ -39,7 +31,7 @@ import anthropic
 import yaml
 
 CURRENT_DPI = 300
-MAX_SPACING_ADJUSTMENT_ATTEMPTS = 20 #200
+MAX_SPACING_ADJUSTMENT_ATTEMPTS = 200
 
 
 def maybe_save(surface, path, output_format, save: bool):
@@ -946,7 +938,6 @@ def create_shape_single_pass(
                         component['spacing_adjustment_attempts'] = 0 # Reset total attempts for this new text
                         component['spacing_factor'] = 1
                         component['adjust_spacing'] = False
-                        component['spacing_optimized'] = False #ADDED 11/29/2025
                         component['modified_end_time'] = component['end_time']
                         component['modified_end_emotional_score'] = component['end_emotional_score']
                     
@@ -1070,51 +1061,14 @@ def create_shape_single_pass(
 
                 # Check that we have at least two points before proceeding with CubicSpline
                 if len(x_og) < 2:
-                    # print("Not enough points for cubic spline adjustment; skipping cubic spline update.")
-                    # print("X_og: ", x_og)
-                    # # You can decide to either return an error status, skip the adjustment, or use a fallback
-                    # # For instance, set the status to "error" or simply continue:
-                    # if story_data is None:
-                    #     print("STORY DATA NONE -- 11")
+                    print("Not enough points for cubic spline adjustment; skipping cubic spline update.")
+                    print("X_og: ", x_og)
+                    # You can decide to either return an error status, skip the adjustment, or use a fallback
+                    # For instance, set the status to "error" or simply continue:
+                    if story_data is None:
+                        print("STORY DATA NONE -- 11")
 
-                    # return story_data, "error"  # or handle it in another way
-                    # Try spacing optimization instead
-                    #ADDED 11/29/2025
-                    print(f"⚠️ Segment too short for spline ({len(x_og)} points)")
-                    # Try spacing optimization instead
-                    if not component.get('spacing_optimized', False):
-                        success, multiplier, message = handle_spacing_adjustment_optimized(
-                            component=component,
-                            curve_length_status="curve_too_short",
-                            arc_x_values_scaled=arc_x_values_scaled,
-                            arc_y_values_scaled=arc_y_values_scaled,
-                            descriptors_text=descriptors_text,
-                            pangocairo_context=pangocairo_context,
-                            font_desc=font_desc,
-                            all_rendered_boxes=all_rendered_boxes,
-                            margin_x=margin_x,
-                            margin_y=margin_y,
-                            design_width=design_width,
-                            design_height=design_height,
-                            original_arc_end_time_values=original_arc_end_time_values,
-                            original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
-                            old_min_x=old_min_x,
-                            old_max_x=old_max_x,
-                            old_min_y=old_min_y,
-                            old_max_y=old_max_y,
-                            recursive_mode=recursive_mode
-                        )
-                        if success:
-                            component['status'] = "spacing_optimized_short_segment"
-                            maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                            return story_data, "processing"
-                    
-                    # If spacing didn't work, regenerate with fewer chars
-                    component['arc_text_valid'] = False
-                    component['target_arc_text_chars'] = max(5, component.get('target_arc_text_chars', 20) - 5)
-                    print(f"   → Reducing target chars to {component['target_arc_text_chars']}")
-                    return story_data, "processing"  # Retry, don't fail!
-
+                    return story_data, "error"  # or handle it in another way
 
                 #print("X: ", x_og)
                 cs = CubicSpline(x_og, y_og, extrapolate=True)
@@ -1170,80 +1124,39 @@ def create_shape_single_pass(
                     
                     return story_data, "processing"
             
+                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
+                    component['adjust_spacing'] = True
 
-                # elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
-                #     component['adjust_spacing'] = True
-
-                #     #adjust current multiplier
-                #     if component.get('status', "") == "expanding spacing":
-                #         print("spacing factor change")
-                #         component["spacing_factor"] = component["spacing_factor"] * 10
+                    #adjust current multiplier
+                    if component.get('status', "") == "expanding spacing":
+                        print("spacing factor change")
+                        component["spacing_factor"] = component["spacing_factor"] * 10
                     
-                #     try:
-                #         new_multiplier = max(0.8, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
-                #     except:
-                #         new_multiplier = max(0.8, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+                    try:
+                        new_multiplier = max(0.8, component['spaces_width_multiplier'][component['space_to_modify']] - (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+                    except:
+                        new_multiplier = max(0.8, component['spaces_width_multiplier'][str(component['space_to_modify'])] - (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
                     
-                #     if new_multiplier == .8:
-                #         component['space_to_modify'] = component['space_to_modify'] + 1
-                #         print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+                    if new_multiplier == .8:
+                        component['space_to_modify'] = component['space_to_modify'] + 1
+                        print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
                   
 
-                #     #adjust future mulitplier
-                #     #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] - 0.01
-                #     component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+                    #adjust future mulitplier
+                    #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] - 0.01
+                    component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
 
-                #     component['status'] = "reducing spacing"
+                    component['status'] = "reducing spacing"
                     
 
-                #     maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
-                #     if story_data is None:
-                #         print("STORY DATA NONE -- 2")
-                #     return story_data, "processing"
-                elif not component.get('spacing_optimized', False):
-                    success, multiplier, message = handle_spacing_adjustment_optimized(
-                        component=component,
-                        curve_length_status="curve_too_short",
-                        arc_x_values_scaled=arc_x_values_scaled,
-                        arc_y_values_scaled=arc_y_values_scaled,
-                        descriptors_text=descriptors_text,
-                        pangocairo_context=pangocairo_context,
-                        font_desc=font_desc,
-                        all_rendered_boxes=all_rendered_boxes,
-                        margin_x=margin_x,
-                        margin_y=margin_y,
-                        design_width=design_width,
-                        design_height=design_height,
-                        original_arc_end_time_values=original_arc_end_time_values,
-                        original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
-                        old_min_x=old_min_x,
-                        old_max_x=old_max_x,
-                        old_min_y=old_min_y,
-                        old_max_y=old_max_y,
-                        recursive_mode=recursive_mode
-                    )
-                    
-                    if success:
-                        component['status'] = "spacing_optimized"
-                        maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        if story_data is None:
-                            print("STORY DATA NONE -- 2")
-                        return story_data, "processing"
-                    else:
-                        # Spacing optimization failed - need MORE characters (curve is too short)
-                        print(f"  ✗ Spacing optimization failed for curve_too_short")
-                        component['arc_text_valid'] = False
-                        component['arc_text_valid_message'] = "spacing failed - need more characters"
-                        # INCREASE target since curve is too short (need longer text to fill it)
-                        old_target = component.get('target_arc_text_chars', 50)
-                        component['target_arc_text_chars'] = max(5, old_target - 3)
-                        print(f"   → Increasing target chars: {old_target} → {component['target_arc_text_chars']}")
-                        maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        return story_data, "processing"
-
+                    if story_data is None:
+                        print("STORY DATA NONE -- 2")
+                    return story_data, "processing"
+            
                 else: #this means: "curve too short but can't change due to constraints"
                     #so we actually want less chars than we initially thought
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
@@ -1338,79 +1251,37 @@ def create_shape_single_pass(
                 #         surface.write_to_png(story_shape_path)
                 #     return story_data, "processing"
 
-
-                # elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
-                #     component['adjust_spacing'] = True
+                elif component['spacing_adjustment_attempts'] < MAX_SPACING_ADJUSTMENT_ATTEMPTS and component['space_to_modify'] < component['spaces_in_arc_text'] and component["spacing_factor"] < 1000:
+                    component['adjust_spacing'] = True
                     
-                #     if component.get('status', "") == "reducing spacing":
-                #         print("spacing factor change")
-                #         component["spacing_factor"] = component["spacing_factor"] * 10
+                    if component.get('status', "") == "reducing spacing":
+                        print("spacing factor change")
+                        component["spacing_factor"] = component["spacing_factor"] * 10
                     
-                #     try:
-                #         new_multiplier = min(1.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
-                #     except:
-                #         new_multiplier = min(1.5,component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
-                #         component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
+                    try:
+                        new_multiplier = min(1.5, component['spaces_width_multiplier'][component['space_to_modify']] + (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][component['space_to_modify']] = new_multiplier
+                    except:
+                        new_multiplier = min(1.5,component['spaces_width_multiplier'][str(component['space_to_modify'])] + (0.1 / component["spacing_factor"]))
+                        component['spaces_width_multiplier'][str(component['space_to_modify'])] = new_multiplier
                     
-                #     if new_multiplier == 1.5:
-                #         component['space_to_modify'] = component['space_to_modify'] + 1
-                #         print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
+                    if new_multiplier == 1.5:
+                        component['space_to_modify'] = component['space_to_modify'] + 1
+                        print("NEW SPACE TO MODIFY: ", component['space_to_modify'])
                     
 
-                #      #adjust next multiplier
-                #     #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] + 0.01
-                #     component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
+                     #adjust next multiplier
+                    #component['spaces_width_multiplier'][component['space_to_modify']] = component['spaces_width_multiplier'][component['space_to_modify']] + 0.01
+                    component['spacing_adjustment_attempts'] = component['spacing_adjustment_attempts'] + 1
                     
-                #     component['status'] = "expanding spacing"
+                    component['status'] = "expanding spacing"
 
-                #     maybe_save(surface, story_shape_path, output_format, save_intermediate)
+                    maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
-                #     if story_data is None:
-                #         print("STORY DATA NONE -- 6")
+                    if story_data is None:
+                        print("STORY DATA NONE -- 6")
 
-                #     return story_data, "processing"
-
-                elif not component.get('spacing_optimized', False):
-                    success, multiplier, message = handle_spacing_adjustment_optimized(
-                        component=component,
-                        curve_length_status="curve_too_long",
-                        arc_x_values_scaled=arc_x_values_scaled,
-                        arc_y_values_scaled=arc_y_values_scaled,
-                        descriptors_text=descriptors_text,
-                        pangocairo_context=pangocairo_context,
-                        font_desc=font_desc,
-                        all_rendered_boxes=all_rendered_boxes,
-                        margin_x=margin_x,
-                        margin_y=margin_y,
-                        design_width=design_width,
-                        design_height=design_height,
-                        original_arc_end_time_values=original_arc_end_time_values,
-                        original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
-                        old_min_x=old_min_x,
-                        old_max_x=old_max_x,
-                        old_min_y=old_min_y,
-                        old_max_y=old_max_y,
-                        recursive_mode=recursive_mode
-                    )
-                    
-                    if success:
-                        component['status'] = "spacing_optimized"
-                        maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        if story_data is None:
-                            print("STORY DATA NONE -- 6")
-                        return story_data, "processing"
-                    else:
-                        # Spacing optimization failed - need FEWER characters (curve is too long)
-                        print(f"  ✗ Spacing optimization failed for curve_too_long")
-                        component['arc_text_valid'] = False
-                        component['arc_text_valid_message'] = "spacing failed - need fewer characters"
-                        # DECREASE target since curve is too long (need shorter text)
-                        old_target = component.get('target_arc_text_chars', 50)
-                        component['target_arc_text_chars'] = old_target + 3
-                        print(f"   → Decreasing target chars: {old_target} → {component['target_arc_text_chars']}")
-                        maybe_save(surface, story_shape_path, output_format, save_intermediate)
-                        return story_data, "processing"
+                    return story_data, "processing"
 
                 else: # this means: curve too long but can't change due to constraints
                     # so we want more chars than we initially thought so let's up the number of chars

@@ -4,6 +4,9 @@ import yaml
 import tiktoken
 import json 
 import os 
+from paths import PATHS
+import matplotlib.pyplot as plt
+import numpy as np
 
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -499,305 +502,862 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
     #    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
 
 
-def distill_story_components(config_path, story_summary, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+#archiving 11/28/2025
+# def distill_story_components(config_path, story_summary, granular_components, story_title, author, protagonist, llm_provider="anthropic", llm_model="claude-3-5-sonnet-20241022"):
+#     """
+#     Phase 2: Aggressively distills granular data into a macro-shape.
+#     """
+    
+#     prompt_template = """
+#     You are a world-class literary scholar and expert in story analysis. 
+    
+#     Below is a detailed analysis of "{story_title}" by {author} that's focused specifically on the emotional journey of {protagonist} from the story. 
+    
+#     Your task is:
+#     1. carefully review the provided story summary and detailed analysis, THEN
+#     2. simplify and distill the analysis, THEN
+#     3. output the distilled analysis 
+ 
+#     The simplified and distilled output will be used to help visualize the essence of {protagonist}'s emotional journey. The current detailed analysis is too noisy.
+
+#     Please carefully follow the instructions below. 
+
+#     # 1.) REVIEW SUMMARY AND DETAILED ANALYSIS
+
+#     ## 1.1) Review the following summary of "{story_title}" by {author}.
+#     This summary is your SOURCE OF TRUTH for all plot events and details:
+#     {story_summary}
+
+#     ## 1.2) Carefully review the provided detailed analysis of {protagonist} using the framework provided.
+
+#     ### ANALYSIS FRAMEWORK
+#     The detailed analysis follows the following framework:
+#     1. Story Timeline: The narrative is viewed on a scale from 0 to 100, representing the percentage of progress through the story.
+#     2. Story Components: The story is segmented into components defined by {protagonist}'s emotional journey.
+#     3. Continuity: Each story component starts where the previous one ended, ensuring a seamless emotional journey.
+#     4. Emotional Arcs: {protagonist}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
+
+#     ### DETAILED ANALYSIS (INPUT DATA):
+#     {granular_components}
+
+#     # 2.) SIMPLIFY AND DISTILL ANALYSIS 
+
+#     ## 2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
+#         - You MUST reduce the story to 3-5 components total based on story complexity:
+#             * Target 3 components for simple stories (fables, fairy tales, straightforward plots)
+#             * Target 4 components for most novels and standard stories
+#             * Allow 5 components ONLY for genuinely complex narratives with multiple distinct emotional arcs that cannot be merged without losing critical structure
+#         - Default assumption: Aim for 3-4 components. Before creating a 5th component, verify that merging is truly impossible without distorting the story.
+#         - Ruthlessly merge components that share similar directional trends (two rises become one rise, two falls become one fall).
+#         - Aim for the minimum number of components needed to capture the protagonist's essential emotional journey. More components does not mean better analysis—simplicity and clarity are the goal.
+#         - Define Components by Structural Trend: Do not simply track every change in direction. Look for the dominant trajectory.
+#         - The "False Reversal Rule": If the emotional score temporarily reverses direction but then returns to continue the original trajectory, you MAY smooth out the reversal as a single component ONLY if ALL conditions are met: (1) The reversal magnitude is ≤5 points from the trend line, (2) The reversal does NOT involve death, near-death, life-threatening danger, major betrayal, irreversible loss, or traumatic violence, and (3) The protagonist recovers to continue the original trajectory. If ANY condition is violated, you MUST preserve the reversal's impact by lowering the component's ending score or creating a separate component. CRITICAL: Simply omitting the traumatic event from the description while keeping a high ending score is NOT sufficient—you must adjust the score to reflect the lasting emotional impact.
+#             - Example (Valid Smoothing): Score goes -5 → -2 (brief hope) → -9. The 3-point reversal with no major trauma can be smoothed into ONE Decrease component (-5 → -9).
+#             - Example (Invalid - Large Magnitude): Score goes +6 → -7 → +8. The 13-point reversal exceeds 5 points - you MUST lower the ending score to +5 or split the component.
+#             - Example (Invalid - Traumatic Event): Score goes +6 → -4 (loved one nearly dies) → +5. The life-threatening event has lasting impact - end at +4 or +5, not +6.
+#         - Preserve the Global Vertices: You must preserve the single Absolute Lowest Point (Nadir) and the single Absolute Highest Point (Climax) from the detailed analysis. These are the most extreme scores in the entire story. If merging components, ensure the distilled version still reaches these exact extreme scores at the appropriate times. Local peaks and valleys that are not the absolute extremes may be smoothed out if they meet the False Reversal Rule conditions.        
+#         - Ensure the distilled shape hits these exact extremes at the correct time.
+#         - The "Stasis" Rule: Use "Linear Flat" ONLY when the emotional score changes by ±1 point or less from start to end of the component. You may use "Linear Flat" for periods where the protagonist oscillates through ups and downs (e.g., -5 → -3 → -7 → -5) but returns to within ±1 point of the starting score. CRITICAL: If the component's ending score differs from the starting score by ±2 or more points, you MUST use an appropriate Increase/Decrease arc type, NOT Linear Flat—even if the character felt "stuck" or "trapped" during this period. Major events that cause sustained emotional shifts must be reflected in the arc type.        
+#         - Preserve the Start: Keep the first component (end_time 0) exactly as is.
+#         - Preserve the End: The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+
+#     ## 2.2) Distilled Component **Arc Selection:**
+#        For each distilled component, choose the emotional arc pattern that best fits the rate of change for distilled component. Here are the following choices:
+#        a. Step-by-Step Increase/Decrease: Emotions change in distinct, noticeable stages
+#        b. Linear Increase/Decrease: Consistent, steady change in emotional state
+#        c. Gradual-to-Rapid Increase/Decrease: Change starts slowly, then accelerates
+#        d. Rapid-to-Gradual Increase/Decrease: Change starts quickly, then slows down
+#        e. Straight Increase/Decrease: Sudden, dramatic change in emotions
+#        f. S-Curve Increase/Decrease: Change follows an 'S' shape (slow-fast-slow)
+#        g. Linear Flat: No change in emotions
+
+#     ## 2.3) Distilled Component **Description Synthesis:**
+#        For each distilled component, write a new description.
+#        - **Focus on Events:** The description must be a chronological sequence of concrete actions and plot beats focused on {protagonist}'s experience and perspective. Do not use abstract emotional summaries; instead, state exactly what happens using specific details (e.g. specific proper names, settings, and physical actions).
+#        - **Source Material:** Construct the description strictly from the events in the story summary and the underlying components. When merging components, cross-reference the story summary to ensure factual accuracy.       
+#        - **Alignment:** Select events that justify the specific emotional arc of this distilled component i.e. the new description should reflect the emotional trajectory (change or stasis) of the distilled component
+#          * If the arc is "Increase," focus on the positive events/wins.
+#          * If the arc is "Decrease," focus on the negative events/losses.
+#          * EXCEPTION: If the arc is "Linear Flat" (Stasis), you must include the full sequence of events (both good and bad) to show the lack of net progress.
+#        - **Naming & Clarity:** **Use {protagonist}'s name explicitly.** Do not rely on pronouns (e.g. "He" or "She") to start the description. Ensure the protagonist is clearly identified as the subject of the actions.
+    
+#     ## 2.4) **Cross-Reference with Story Summary:**
+#         Before finalizing each distilled component description:
+#         - Verify that all events mentioned actually occur in the story summary
+#         - Confirm the chronological sequence is accurate
+#         - Check that character names and specific details match the source material
+#         - If you've merged multiple components, ensure the combined description doesn't 
+#             contradict or omit crucial story beats from the summary
+    
+#     ## 2.5)  Double Check according to the following **TECHNICAL & VALIDATION RULES (CRITICAL):**
+#        - **Anchor Check:** Ensure the Start Score (Time 0) and End Score (Time 100) match the input data exactly.
+#        - Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
+#        - Emotional scores must be whole numbers between -10 and +10. 
+#        - If the emotional score remains the same (e.g., -5 to -5), the Arc Type MUST be "Linear Flat". You strictly cannot label an arc as "Increase" or "Decrease" if the score number does not change.
+#        - Adjacent components should not have the same emotional score unless using Linear Flat arc.
+#        - End times must be in ascending order and the final component must end at 100.
+#        - Each arc type must match the emotional change described:
+#         * Increase arcs must show higher end scores than start scores
+#         * Decrease arcs must show lower end scores than start scores
+#         * Flat arcs must maintain the same score
+#        - Double-check your analysis for accuracy and internal consistency before providing the final JSON output.
+
+#     # 3.) OUTPUT DISTILLED ANALYSIS
+#     Please output your distilled analysis in the following format (JSON ONLY):
+    
+#     {{
+#         "title": "{story_title}",
+#         "protagonist": "{protagonist}",
+#         "story_components": [
+#             {{
+#                 "end_time": 0,
+#                 "description": "N/A",
+#                 "end_emotional_score": <int matches input>,
+#                 "arc": "N/A"
+#             }},
+#             {{
+#                 "end_time": <int>, 
+#                 "description": "<Narrative description of the dominant trend>",
+#                 "end_emotional_score": <int>,
+#                 "arc": "<Selected Arc Pattern>"
+#             }}
+#             ...
+#         ]
+#     }}
+
+#     # EXAMPLE:
+#     Below is a simple illustrative example of how to peform the task.
+    
+#     <example>
+#     <author_name>Charles Perrault</author_name>
+#     <story_title>Cinderella at the Ball</story_title>
+#     <protagonist>Cinderella</protagonist>
+    
+#     <story_summary_(input_data)>
+#     Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
+#     </story_summary_(input_data)>
+
+#     <detailed_analysis_(input_data)>
+#     {{
+#         "title": "Cinderella at the Ball",
+#         "protagonist": "Cinderella",
+#         "story_components": [
+#             {{
+#                 "end_time": 0,
+#                 "description": "#N/A",
+#                 "end_emotional_score": -5,
+#                 "arc": "#N/A"
+#             }},
+#             {{
+#                 "end_time": 15,
+#                 "description": "Cinderella timidly asks to attend the ball, feeling a spark of hope that she might be allowed a night of happiness.",
+#                 "end_emotional_score": -3,
+#                 "arc": "Linear Increase"
+#             }},
+#             {{
+#                 "end_time": 25,
+#                 "description": "Her stepmother mocks the request. Then, her stepsisters discover her homemade dress and rip it to shreds. Devastated, she runs to the garden.",
+#                 "end_emotional_score": -9,
+#                 "arc": "Straight Decrease"
+#             }},
+#             {{
+#                 "end_time": 35,
+#                 "description": "The Fairy Godmother appears. Cinderella's despair turns to rising wonder as the pumpkin is transformed into a carriage.",
+#                 "end_emotional_score": 4,
+#                 "arc": "Step-by-Step Increase"
+#             }},
+#             {{
+#                 "end_time": 60,
+#                 "description": "Cinderella enters the ball and dances with the Prince. She feels seen and adored, forgetting her life of servitude.",
+#                 "end_emotional_score": 9,
+#                 "arc": "Gradual-to-Rapid Increase"
+#             }},
+#             {{
+#                 "end_time": 70,
+#                 "description": "Midnight strikes. Cinderella panics and flees, losing her slipper on the stairs.",
+#                 "end_emotional_score": -2,
+#                 "arc": "Straight Decrease"
+#             }},
+#             {{
+#                 "end_time": 90,
+#                 "description": "Back in rags, she resumes chores. She watches helplessly as the Prince searches the kingdom and her stepsisters try on the slipper.",
+#                 "end_emotional_score": -4,
+#                 "arc": "Linear Decrease"
+#             }},
+#             {{
+#                 "end_time": 100,
+#                 "description": "The slipper fits. Cinderella reveals herself, marries the Prince, and leaves her abusive home forever.",
+#                 "end_emotional_score": 10,
+#                 "arc": "Straight Increase"
+#             }}
+#         ]
+#     }}
+#     </detailed_analysis_(input_data)>
+
+#     <ideal_output>
+#     {{
+#         "title": "Cinderella at the Ball",
+#         "protagonist": "Cinderella",
+#         "story_components": [
+#             {{
+#                 "end_time": 0,
+#                 "description": "N/A",
+#                 "end_emotional_score": -5,
+#                 "arc": "N/A"
+#             }},
+#             {{
+#                 "end_time": 25,
+#                 "description": "Cinderella asks to attend the ball but is mocked and forbidden by her stepmother. She attempts to sew a dress from her mother's old things, but her stepsisters discover her, rip the dress to shreds, and leave her sobbing in the garden.",
+#                 "end_emotional_score": -9,
+#                 "arc": "Rapid-to-Gradual Decrease"
+#             }},
+#             {{
+#                 "end_time": 60,
+#                 "description": "The Fairy Godmother transforms a pumpkin into a carriage and rags into a gown. Cinderella enters the ball, dances with the Prince, and is admired by the entire court, forgetting her life of servitude.",
+#                 "end_emotional_score": 9,
+#                 "arc": "Step-by-Step Increase"
+#             }},
+#             {{
+#                 "end_time": 90,
+#                 "description": "The clock strikes midnight, forcing Cinderella to flee and lose a glass slipper. Back in her rags, she resumes chores while the Prince searches the kingdom; she watches helplessly as her stepsisters try to force their feet into the slipper.",
+#                 "end_emotional_score": -4,
+#                 "arc": "Rapid-to-Gradual Decrease"
+#             }},
+#             {{
+#                 "end_time": 100,
+#                 "description": "The Prince allows Cinderella to try the slipper, and it fits perfectly. She reveals her identity, leaves her stepfamily behind, and marries the Prince.",
+#                 "end_emotional_score": 10,
+#                 "arc": "Straight Increase"
+#             }}
+#         ]
+#     }}
+#     </ideal_output>
+
+#     <distillation_notes>
+#     The following notes explain the key decisions made in creating the distilled output above. 
+#     Use these principles when analyzing your assigned story:
+
+#     **Score Preservation:**
+#     Notice that the distilled output preserves the EXACT peak (+9) and nadir (-9) from 
+#     the detailed analysis. When you see:
+#     - Detailed: -5 → -3 → -9 (nadir) → 4 → 9 (peak) → -2 → -4 → 10
+#     - Distilled: -5 → -9 (nadir) → 9 (peak) → -4 → 10
+
+#     The distillation "smooths through" the brief rise to -3 and the dip to -2/-4, but 
+#     it MUST hit the absolute extremes (-9 and +9 in the detailed data become -9 and +9 
+#     in the distilled data). Never average or skip the peaks and valleys.
+
+#     **False Reversal Identification:**
+#     In the detailed analysis, Cinderella briefly felt hope when asking to attend (score 
+#     improved -5 → -3), but this was immediately crushed (-3 → -9). This is a "False 
+#     Summit" because:
+#     1. The hope was fleeting and immediately reversed
+#     2. The dominant trend is DOWNWARD: -5 → -9
+#     3. The distilled output correctly merges this into ONE Decrease component
+
+#     Counter-example: If Cinderella had sustained the hope for 20% of the story before 
+#     the dress incident, that WOULD be a separate component.
+
+#     **Description Synthesis:**
+#     The distilled component at end_time 90 merges THREE detailed components (time 60→70, 
+#     70→90, 90→100 from detailed data). Notice how the description:
+
+#     ✅ DOES:
+#     - Use specific plot beats: "clock strikes midnight," "lose a glass slipper," "stepsisters 
+#     try to force their feet"
+#     - Maintain chronological order
+#     - Focus on events that justify the DECREASE (-2 → -4): the fleeing, the return to rags, 
+#     the helpless watching
+
+#     ❌ DOES NOT:
+#     - Include emotional adjectives like "sadly" or "desperately" (show, don't tell)
+#     - Omit the brief panic at midnight (time 60→70) just because it had a different arc 
+#     type in the detailed data
+#     - Use vague language like "things get worse"
+
+#     All events are traceable to the story summary.
+#     </distillation_notes>
+#     </example>
+#     """
+
+#     prompt = PromptTemplate(
+#         input_variables=["story_summary","granular_components", "story_title", "protagonist", "author"],
+#         template=prompt_template
+#     )
+
+    
+
+#     config = load_config(config_path=config_path)
+#     llm = get_llm(llm_provider, llm_model, config, max_tokens=16384)
+
+#     # Calculate count to shame the LLM into compressing
+#     granular_json_str = json.dumps(granular_components, indent=2)
+
+#     #test to see what prompt actually looks like
+#     # try:
+#     #     final_rendered_prompt = prompt.format(
+#     #         granular_components=granular_json_str,
+#     #         story_title=story_title,
+#     #         protagonist=protagonist,
+#     #         author=author
+#     #     )
+#     #     print("\n" + "="*40)
+#     #     print("DEBUG: ACTUAL PROMPT SENT TO LLM")
+#     #     print("="*40)
+#     #     print(final_rendered_prompt)
+#     #     print("="*40 + "\n")
+#     # except Exception as e:
+#     #     print(f"❌ Error formatting prompt: {e}")
+#     #     # This usually happens if you have a syntax error in the template 
+
+#     runnable = prompt | llm
+
+#     try:
+#         output = runnable.invoke({
+#             "story_summary": story_summary,
+#             "granular_components": granular_json_str,
+#             "story_title": story_title,
+#             "protagonist": protagonist,
+#             "author": author
+#         })
+#     except Exception as e:
+#         print(f"Error during Distillation LLM call: {e}")
+#         raise e
+
+#     # if hasattr(output, "content"):
+#     #     output_text = output.content
+#     # else:
+#     #     output_text = output
+
+#     #attempt to extact json (if needed)
+#     if hasattr(output, "content"):
+#         # Check if content is a list (Google/LangChain edge case)
+#         if isinstance(output.content, list):
+#             # Extract text from all blocks
+#             text_parts = []
+#             for block in output.content:
+#                 if isinstance(block, dict) and "text" in block:
+#                     text_parts.append(block["text"])
+#                 elif isinstance(block, str):
+#                     text_parts.append(block)
+#             output_text = "".join(text_parts)
+#         else:
+#             # Standard string content
+#             output_text = str(output.content)
+#     else:
+#         output_text = str(output)
+
+#     output_text = extract_json(output_text)
+    
+#     try:
+#         result = json.loads(output_text)
+#     except json.JSONDecodeError as e:
+#         # Added 'e' here so you can see the actual error if it happens again
+#         print(f"Error decoding JSON from distillation step: {e}")
+#         print(f"Raw Text causing error: {output_text[:200]}...") 
+#         return "ERROR!" 
+    
+    
+#     # Final Safety Check: If it didn't compress, print a warning
+#     if len(result["story_components"]) > 8:
+#         print(f"⚠️ WARNING: Distillation failed to compress significantly (Count: {len(result['story_components'])})")
+
+#     return result
+
+MIN_COMPONENT_DURATION = 8  # Minimum percentage points for a component
+TARGET_COMPONENTS_MIN = 3   # Minimum target (excluding time-0 baseline)
+TARGET_COMPONENTS_MAX = 5   # Maximum target (excluding time-0 baseline)
+
+def distill_story_components(
+    config_path, 
+    story_summary, 
+    granular_components, 
+    story_title, 
+    author, 
+    protagonist, 
+    llm_provider="anthropic", 
+    llm_model="claude-3-5-sonnet-20241022"
+):
     """
-    Phase 2: Aggressively distills granular data into a macro-shape.
+    Phase 2: Distills granular story components into a macro-shape using
+    the Structural Segment framework.
+    
+    Args:
+        config_path: Path to LLM configuration file
+        story_summary: Full text summary of the story (source of truth)
+        granular_components: Detailed component analysis (dict with story_components list)
+        story_title: Title of the story
+        author: Author name
+        protagonist: Name of the protagonist being analyzed
+        llm_provider: LLM provider (anthropic, openai, google)
+        llm_model: Specific model to use
+        
+    Returns:
+        dict: Distilled story components in the same format as input
     """
     
     prompt_template = """
-    You are a world-class literary scholar and expert in story analysis. 
-    
-    Below is a detailed analysis of "{story_title}" by {author} that's focused specifically on the emotional journey of {protagonist} from the story. 
-    
-    Your task is:
-    1. carefully review the provided story summary and detailed analysis, THEN
-    2. simplify and distill the analysis, THEN
-    3. output the distilled analysis 
- 
-    The simplified and distilled output will be used to help visualize the essence of {protagonist}'s emotional journey. The current detailed analysis is too noisy.
+You are a world-class literary scholar specializing in narrative structure analysis.
 
-    Please carefully follow the instructions below. 
+Your task is to DISTILL a detailed emotional journey analysis into a simplified shape 
+that captures the STRUCTURAL ESSENCE of {protagonist}'s arc in "{story_title}" by {author}.
 
-    # 1.) REVIEW SUMMARY AND DETAILED ANALYSIS
+The output will be used for visualization—clarity and meaningful simplification are paramount.
 
-    ## 1.1) Review the following summary of "{story_title}" by {author}.
-    This summary is your SOURCE OF TRUTH for all plot events and details:
-    {story_summary}
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 1: SOURCE MATERIALS
+═══════════════════════════════════════════════════════════════════════════════
 
-    ## 1.2) Carefully review the provided detailed analysis of {protagonist} using the framework provided.
+## 1.1 Story Summary (SOURCE OF TRUTH)
+All plot details must be verified against this summary:
 
-    ### ANALYSIS FRAMEWORK
-    The detailed analysis follows the following framework:
-    1. Story Timeline: The narrative is viewed on a scale from 0 to 100, representing the percentage of progress through the story.
-    2. Story Components: The story is segmented into components defined by {protagonist}'s emotional journey.
-    3. Continuity: Each story component starts where the previous one ended, ensuring a seamless emotional journey.
-    4. Emotional Arcs: {protagonist}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
+{story_summary}
 
-    ### DETAILED ANALYSIS (INPUT DATA):
-    {granular_components}
+## 1.2 Detailed Analysis (INPUT TO DISTILL)
+Framework: Timeline 0-100, Emotional scores -10 (despair) to +10 (euphoria)
 
-    # 2.) SIMPLIFY AND DISTILL ANALYSIS 
+{granular_components}
 
-    ## 2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
-        - You MUST reduce the story to between 3 and 5 components total. (Target 3 or 4 for most stories).
-        - Define Components by Structural Trend: Do not simply track every change in direction. Look for the dominant trajectory.
-        - The "False Reversal" Rule: If the emotional score reverses direction briefly but then returns to its previous trajectory, IGNORE the reversal.
-            - Example (False Summit): If the score goes -5 (Start) -> -2 (Brief Hope) -> -9 (New Low), this is NOT three components (Down, Up, Down). This is ONE "Decrease" component from -5 to -9. The rise to -2 was a "False Summit" and should be smoothed out.
-            - Example (False Bottom): If the score goes +5 (Start) -> +2 (Brief Scare) -> +8 (New High), this is ONE "Increase" component from +5 to +8.
-        - Preserve the Global Vertices: You must preserve the Absolute Lowest Point (Nadir) and Absolute Highest Point (Climax) of the narrative.
-        - Ensure the distilled shape hits these exact extremes at the correct time.
-        - The "Stasis" Rule: Use "Linear Flat" ONLY when the emotional score changes by ±1 point or less from start to end of the component. You may use "Linear Flat" for periods where the protagonist oscillates through ups and downs (e.g., -5 → -3 → -7 → -5) but returns to within ±1 point of the starting score. CRITICAL: If the component's ending score differs from the starting score by ±2 or more points, you MUST use an appropriate Increase/Decrease arc type, NOT Linear Flat—even if the character felt "stuck" or "trapped" during this period. Major events that cause sustained emotional shifts must be reflected in the arc type.        
-        - Preserve the Start: Keep the first component (end_time 0) exactly as is.
-        - Preserve the End: The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 2: THE STRUCTURAL SEGMENT FRAMEWORK
+═══════════════════════════════════════════════════════════════════════════════
 
-    ## 2.2) Distilled Component **Arc Selection:**
-       For each distilled component, choose the emotional arc pattern that best fits the rate of change for distilled component. Here are the following choices:
-       a. Step-by-Step Increase/Decrease: Emotions change in distinct, noticeable stages
-       b. Linear Increase/Decrease: Consistent, steady change in emotional state
-       c. Gradual-to-Rapid Increase/Decrease: Change starts slowly, then accelerates
-       d. Rapid-to-Gradual Increase/Decrease: Change starts quickly, then slows down
-       e. Straight Increase/Decrease: Sudden, dramatic change in emotions
-       f. S-Curve Increase/Decrease: Change follows an 'S' shape (slow-fast-slow)
-       g. Linear Flat: No change in emotions
+## 2.1 Core Principle: Narrative Position over Direction
 
-    ## 2.3) Distilled Component **Description Synthesis:**
-       For each distilled component, write a new description.
-       - **Focus on Events:** The description must be a chronological sequence of concrete actions and plot beats focused on {protagonist}'s experience and perspective. Do not use abstract emotional summaries; instead, state exactly what happens using specific details (e.g. specific proper names, settings, and physical actions).
-       - **Source Material:** Construct the description strictly from the events in the story summary and the underlying components. When merging components, cross-reference the story summary to ensure factual accuracy.       
-       - **Alignment:** Select events that justify the specific emotional arc of this distilled component i.e. the new description should reflect the emotional trajectory (change or stasis) of the distilled component
-         * If the arc is "Increase," focus on the positive events/wins.
-         * If the arc is "Decrease," focus on the negative events/losses.
-         * EXCEPTION: If the arc is "Linear Flat" (Stasis), you must include the full sequence of events (both good and bad) to show the lack of net progress.
-       - **Naming & Clarity:** **Use {protagonist}'s name explicitly.** Do not rely on pronouns (e.g. "He" or "She") to start the description. Ensure the protagonist is clearly identified as the subject of the actions.
-    
-    ## 2.4) **Cross-Reference with Story Summary:**
-        Before finalizing each distilled component description:
-        - Verify that all events mentioned actually occur in the story summary
-        - Confirm the chronological sequence is accurate
-        - Check that character names and specific details match the source material
-        - If you've merged multiple components, ensure the combined description doesn't 
-            contradict or omit crucial story beats from the summary
-    
-    ## 2.5)  Double Check according to the following **TECHNICAL & VALIDATION RULES (CRITICAL):**
-       - **Anchor Check:** Ensure the Start Score (Time 0) and End Score (Time 100) match the input data exactly.
-       - Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
-       - Emotional scores must be whole numbers between -10 and +10. 
-       - If the emotional score remains the same (e.g., -5 to -5), the Arc Type MUST be "Linear Flat". You strictly cannot label an arc as "Increase" or "Decrease" if the score number does not change.
-       - Adjacent components should not have the same emotional score unless using Linear Flat arc.
-       - End times must be in ascending order and the final component must end at 100.
-       - Each arc type must match the emotional change described:
-        * Increase arcs must show higher end scores than start scores
-        * Decrease arcs must show lower end scores than start scores
-        * Flat arcs must maintain the same score
-       - Double-check your analysis for accuracy and internal consistency before providing the final JSON output.
+DO NOT simply track "going up" or "going down."
 
-    # 3.) OUTPUT DISTILLED ANALYSIS
-    Please output your distilled analysis in the following format (JSON ONLY):
-    
-    {{
-        "title": "{story_title}",
-        "protagonist": "{protagonist}",
-        "story_components": [
-            {{
-                "end_time": 0,
-                "description": "N/A",
-                "end_emotional_score": <int matches input>,
-                "arc": "N/A"
-            }},
-            {{
-                "end_time": <int>, 
-                "description": "<Narrative description of the dominant trend>",
-                "end_emotional_score": <int>,
-                "arc": "<Selected Arc Pattern>"
-            }}
-            ...
-        ]
-    }}
+Instead, identify STRUCTURAL SEGMENTS—phases where {protagonist} occupies a 
+distinct NARRATIVE POSITION in the story. 
 
-    # EXAMPLE:
-    Below is a simple illustrative example of how to peform the task.
-    
-    <example>
-    <author_name>Charles Perrault</author_name>
-    <story_title>Cinderella at the Ball</story_title>
-    <protagonist>Cinderella</protagonist>
-    
-    <story_summary_(input_data)>
-    Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
-    </story_summary_(input_data)>
+A narrative position is the protagonist's fundamental situation or state within 
+the story's structure. Positions vary by genre and story type, but common 
+examples include:
 
-    <detailed_analysis_(input_data)>
-    {{
-        "title": "Cinderella at the Ball",
-        "protagonist": "Cinderella",
-        "story_components": [
-            {{
-                "end_time": 0,
-                "description": "#N/A",
-                "end_emotional_score": -5,
-                "arc": "#N/A"
-            }},
-            {{
-                "end_time": 15,
-                "description": "Cinderella timidly asks to attend the ball, feeling a spark of hope that she might be allowed a night of happiness.",
-                "end_emotional_score": -3,
-                "arc": "Linear Increase"
-            }},
-            {{
-                "end_time": 25,
-                "description": "Her stepmother mocks the request. Then, her stepsisters discover her homemade dress and rip it to shreds. Devastated, she runs to the garden.",
-                "end_emotional_score": -9,
-                "arc": "Straight Decrease"
-            }},
-            {{
-                "end_time": 35,
-                "description": "The Fairy Godmother appears. Cinderella's despair turns to rising wonder as the pumpkin is transformed into a carriage.",
-                "end_emotional_score": 4,
-                "arc": "Step-by-Step Increase"
-            }},
-            {{
-                "end_time": 60,
-                "description": "Cinderella enters the ball and dances with the Prince. She feels seen and adored, forgetting her life of servitude.",
-                "end_emotional_score": 9,
-                "arc": "Gradual-to-Rapid Increase"
-            }},
-            {{
-                "end_time": 70,
-                "description": "Midnight strikes. Cinderella panics and flees, losing her slipper on the stairs.",
-                "end_emotional_score": -2,
-                "arc": "Straight Decrease"
-            }},
-            {{
-                "end_time": 90,
-                "description": "Back in rags, she resumes chores. She watches helplessly as the Prince searches the kingdom and her stepsisters try on the slipper.",
-                "end_emotional_score": -4,
-                "arc": "Linear Decrease"
-            }},
-            {{
-                "end_time": 100,
-                "description": "The slipper fits. Cinderella reveals herself, marries the Prince, and leaves her abusive home forever.",
-                "end_emotional_score": 10,
-                "arc": "Straight Increase"
-            }}
-        ]
-    }}
-    </detailed_analysis_(input_data)>
+- **Equilibrium/Stasis**: Life proceeding normally, before disruption
+- **Aspiration/Pursuit**: Actively working toward a goal or desire
+- **Conflict/Struggle**: Facing obstacles, enduring hardship, in active tension
+- **Climactic Moment**: The turning point—victory, defeat, revelation, or transformation
+- **Consequence/Fallout**: Living with the results of the climax
+- **New Equilibrium**: Settling into a changed (or unchanged) state
 
-    <ideal_output>
-    {{
-        "title": "Cinderella at the Ball",
-        "protagonist": "Cinderella",
-        "story_components": [
-            {{
-                "end_time": 0,
-                "description": "N/A",
-                "end_emotional_score": -5,
-                "arc": "N/A"
-            }},
-            {{
-                "end_time": 25,
-                "description": "Cinderella asks to attend the ball but is mocked and forbidden by her stepmother. She attempts to sew a dress from her mother's old things, but her stepsisters discover her, rip the dress to shreds, and leave her sobbing in the garden.",
-                "end_emotional_score": -9,
-                "arc": "Rapid-to-Gradual Decrease"
-            }},
-            {{
-                "end_time": 60,
-                "description": "The Fairy Godmother transforms a pumpkin into a carriage and rags into a gown. Cinderella enters the ball, dances with the Prince, and is admired by the entire court, forgetting her life of servitude.",
-                "end_emotional_score": 9,
-                "arc": "Step-by-Step Increase"
-            }},
-            {{
-                "end_time": 90,
-                "description": "The clock strikes midnight, forcing Cinderella to flee and lose a glass slipper. Back in her rags, she resumes chores while the Prince searches the kingdom; she watches helplessly as her stepsisters try to force their feet into the slipper.",
-                "end_emotional_score": -4,
-                "arc": "Rapid-to-Gradual Decrease"
-            }},
-            {{
-                "end_time": 100,
-                "description": "The Prince allows Cinderella to try the slipper, and it fits perfectly. She reveals her identity, leaves her stepfamily behind, and marries the Prince.",
-                "end_emotional_score": 10,
-                "arc": "Straight Increase"
-            }}
-        ]
-    }}
-    </ideal_output>
+Different story types have different positions:
+- A tragedy may lack "Recovery" and end in "Destruction"
+- A romance may have "Separation" and "Reunion" as key positions
+- A mystery may have "Investigation" and "Revelation"
+- A character study may move between "Denial" and "Acceptance"
 
-    <distillation_notes>
-    The following notes explain the key decisions made in creating the distilled output above. 
-    Use these principles when analyzing your assigned story:
+The key question: **Has {protagonist}'s fundamental situation changed?**
 
-    **Score Preservation:**
-    Notice that the distilled output preserves the EXACT peak (+9) and nadir (-9) from 
-    the detailed analysis. When you see:
-    - Detailed: -5 → -3 → -9 (nadir) → 4 → 9 (peak) → -2 → -4 → 10
-    - Distilled: -5 → -9 (nadir) → 9 (peak) → -4 → 10
+## 2.2 Target Output: 3-5 Components
 
-    The distillation "smooths through" the brief rise to -3 and the dip to -2/-4, but 
-    it MUST hit the absolute extremes (-9 and +9 in the detailed data become -9 and +9 
-    in the distilled data). Never average or skip the peaks and valleys.
+Your distilled output should have 3-5 components (plus the time-0 baseline).
 
-    **False Reversal Identification:**
-    In the detailed analysis, Cinderella briefly felt hope when asking to attend (score 
-    improved -5 → -3), but this was immediately crushed (-3 → -9). This is a "False 
-    Summit" because:
-    1. The hope was fleeting and immediately reversed
-    2. The dominant trend is DOWNWARD: -5 → -9
-    3. The distilled output correctly merges this into ONE Decrease component
+- 3 components: Simple stories with one major turning point (e.g., fall then recovery, or steady rise)
+- 4 components: Standard narratives with rise-fall-resolution or fall-rise-resolution  
+- 5 components: Complex narratives with distinct sub-phases (use sparingly)
 
-    Counter-example: If Cinderella had sustained the hope for 20% of the story before 
-    the dress incident, that WOULD be a separate component.
+**Prefer fewer components when in doubt.** The goal is to capture the ESSENTIAL shape, 
+not every structural beat. A 3-component shape that captures the essence is better 
+than a 5-component shape that tracks every fluctuation..
 
-    **Description Synthesis:**
-    The distilled component at end_time 90 merges THREE detailed components (time 60→70, 
-    70→90, 90→100 from detailed data). Notice how the description:
+## 2.3 Mandatory Anchors (NON-NEGOTIABLE)
 
-    ✅ DOES:
-    - Use specific plot beats: "clock strikes midnight," "lose a glass slipper," "stepsisters 
-    try to force their feet"
-    - Maintain chronological order
-    - Focus on events that justify the DECREASE (-2 → -4): the fleeing, the return to rags, 
-    the helpless watching
+You MUST preserve these exact values from the input:
 
-    ❌ DOES NOT:
-    - Include emotional adjectives like "sadly" or "desperately" (show, don't tell)
-    - Omit the brief panic at midnight (time 60→70) just because it had a different arc 
-    type in the detailed data
-    - Use vague language like "things get worse"
+1. **START ANCHOR**: First component (end_time: 0) must match input exactly
+2. **END ANCHOR**: Final component (end_time: 100) must have the same end_emotional_score as input
+3. **PEAK ANCHOR**: The single highest score in the story must appear at its structural moment
+4. **NADIR ANCHOR**: The single lowest score in the story must appear at its structural moment
 
-    All events are traceable to the story summary.
-    </distillation_notes>
-    </example>
-    """
+These anchors are the "skeleton" of the shape. Everything else can be smoothed.
+
+## 2.4 The Structural Turning Point Test
+
+Before creating a component boundary, ask:
+
+**"Has {protagonist}'s fundamental situation or narrative position changed?"**
+
+✅ CREATE a boundary when:
+- The protagonist's core circumstances shift (e.g., from "pursuing" to "possessing," or from "secure" to "threatened")
+- A major goal is achieved or irrevocably lost
+- A revelation fundamentally changes the protagonist's understanding or relationships
+- The moment represents the story's PEAK or NADIR emotional score
+- The protagonist transitions from action to consequence (or vice versa)
+
+❌ DO NOT create a boundary when:
+- The score temporarily fluctuates but the protagonist remains in the same situation
+- A setback occurs within an ongoing struggle (same position, different intensity)
+- The change is gradual continuation of an existing trend
+- Minor events cause temporary emotional shifts without altering the fundamental situation
+
+## 2.5 Handling Fluctuations Within Segments
+
+When multiple detailed components share the SAME narrative position, **MERGE THEM** 
+into one component that:
+- Starts at the first score of that segment
+- Ends at the final score of that segment
+- Uses an arc type that reflects the overall trajectory
+- Combines the key events in the description
+
+Example: If three detailed components show the protagonist struggling (-2 → -4 → -6), 
+all within the same conflict, merge into ONE component: -2 → -6 with "Linear Decrease"
+
+## 2.6 The False Reversal Rule
+
+A brief reversal does NOT require a new component if ALL conditions are met:
+1. The reversal spans < 15% of story duration, AND
+2. The reversal magnitude is ≤ 5 points, AND  
+3. The protagonist's fundamental situation hasn't changed, AND
+4. The story returns to continue the prior trajectory
+
+**ALWAYS preserve reversals involving:**
+- The story's absolute peak or nadir score
+- Death, near-death, or mortal danger
+- Major betrayal, loss, or irreversible change
+- Achievement or loss of the protagonist's primary goal
+- Revelations that fundamentally alter relationships or understanding
+
+## 2.7 Minimum Duration Guideline
+
+Components should generally span at least 8-10% of the story timeline.
+
+If a potential component is shorter:
+- Consider whether it truly represents a distinct narrative position
+- If so, preserve it (climactic moments can be brief but crucial)
+- If not, merge it with the adjacent segment sharing similar trajectory
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 3: COMPONENT CONSTRUCTION
+═══════════════════════════════════════════════════════════════════════════════
+
+## 3.1 Arc Type Selection
+
+Choose the arc that best describes HOW the emotional change occurs:
+
+| Arc Type                    | When to Use                                           |
+|-----------------------------|-------------------------------------------------------|
+| Step-by-Step Increase/Dec.  | Distinct stages with pauses between shifts            |
+| Linear Increase/Decrease    | Steady, consistent change throughout                  |
+| Gradual-to-Rapid Inc./Dec.  | Slow start that accelerates toward the end            |
+| Rapid-to-Gradual Inc./Dec.  | Fast initial change that tapers off                   |
+| Straight Increase/Decrease  | Sudden, dramatic shift (shocks, revelations)          |
+| S-Curve Increase/Decrease   | Slow-fast-slow pattern                                |
+| Linear Flat                 | Net change of ≤ 1 point; oscillation returning to start|
+
+**CRITICAL - Arc types MUST match score changes:**
+- "Increase" → end score HIGHER than start score
+- "Decrease" → end score LOWER than start score  
+- "Flat" → end score within ±1 point of start score
+
+## 3.2 Description Writing Rules
+
+For each distilled component, write a NEW description following these rules:
+
+### Rule 1: Focus on Concrete Events
+The description must be a chronological sequence of concrete actions and plot beats 
+focused on {protagonist}'s experience and perspective. 
+
+✅ DO: State exactly what happens using specific details (proper names, settings, physical actions)
+❌ DO NOT: Use abstract emotional summaries ("feels hopeful," "becomes sad," "grows anxious")
+
+### Rule 2: Source Material Only
+Construct the description strictly from events in the story summary and the underlying 
+detailed components. When merging components, cross-reference the story summary to 
+ensure factual accuracy.
+
+✅ DO: Include only events that appear in the provided story summary
+❌ DO NOT: Invent details, infer unstated events, or embellish beyond the source material
+
+### Rule 3: Arc-Aligned Event Selection
+Select events that JUSTIFY the specific emotional arc of the distilled component.
+The description should demonstrate WHY the score changed (or didn't change) as it did.
+
+- **For INCREASE arcs:** Emphasize the positive events, victories, connections, or 
+  improvements that drove the score upward. You may briefly mention setbacks only 
+  if they were overcome.
+  
+- **For DECREASE arcs:** Emphasize the negative events, losses, failures, or 
+  deteriorations that drove the score downward. You may briefly mention hopes 
+  only if they were dashed.
+  
+- **For FLAT arcs (CRITICAL EXCEPTION):** You MUST include BOTH the positive AND 
+  negative events to demonstrate why there was no net emotional change. Show the 
+  oscillation or stasis explicitly—the protagonist experienced ups and downs that 
+  canceled out, or nothing significant occurred.
+
+### Rule 4: Protagonist Naming
+Begin the description with {protagonist}'s name explicitly. Do not start with 
+pronouns ("He," "She," "They"). After the first mention, pronouns are acceptable.
+
+### Rule 5: Conciseness
+Each description should be 2-3 sentences. Capture the essential events without 
+excessive detail.
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 4: VALIDATION CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+Before outputting, verify ALL of the following:
+
+□ Start score (time 0) matches input exactly
+□ End score (time 100) matches input exactly  
+□ Story's peak score appears at the appropriate structural moment
+□ Story's nadir score appears at the appropriate structural moment
+□ Total of 3-5 components (excluding time-0 baseline)
+□ Each component represents a distinct narrative position
+□ All arc types correctly match their score changes (Increase/Decrease/Flat)
+□ All descriptions contain only events from the story summary
+□ Increase arc descriptions emphasize positive events
+□ Decrease arc descriptions emphasize negative events
+□ Flat arc descriptions include BOTH positive and negative events
+□ All descriptions begin with {protagonist}'s name (not pronouns)
+□ end_time values are in strictly ascending order
+□ Final end_time is exactly 100
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 5: COMMON MISTAKES TO AVOID
+═══════════════════════════════════════════════════════════════════════════════
+
+❌ MISTAKE 1: Creating too many components
+   Wrong: 6+ components tracking each structural beat
+   Right: 3-5 components tracking the essential shape
+
+❌ MISTAKE 2: Averaging or losing peak/nadir scores
+   Wrong: Input peak is +9, output peak is +7
+   Right: Preserve the exact +9 at the triumph moment
+
+❌ MISTAKE 3: Mismatched arc types
+   Wrong: Score goes -5 → -3, arc labeled "Linear Decrease"
+   Right: Score goes -5 → -3, arc labeled "Linear Increase" (score improved!)
+
+❌ MISTAKE 4: Using "Linear Flat" when score changes by ≥2 points
+   Wrong: Start -5, End -3, Arc "Linear Flat"  
+   Right: Start -5, End -3, Arc "Linear Increase"
+
+❌ MISTAKE 5: Wrong event emphasis in descriptions
+   Wrong: Decrease arc description focuses on brief moments of hope
+   Right: Decrease arc description focuses on losses and failures
+
+❌ MISTAKE 6: Flat arc descriptions missing the oscillation
+   Wrong: Flat arc says "nothing happened" or only mentions one type of event
+   Right: Flat arc shows both ups AND downs that canceled out
+
+❌ MISTAKE 7: Starting descriptions with pronouns
+   Wrong: "She discovers the invitation and feels excited..."
+   Right: "Cinderella discovers the invitation and feels excited..."
+
+❌ MISTAKE 8: Including events not in the story summary
+   Wrong: Adding inferred backstory or imagined details
+   Right: Using only events explicitly stated in the provided summary
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 6: OUTPUT FORMAT
+═══════════════════════════════════════════════════════════════════════════════
+
+Output ONLY valid JSON in this exact format:
+
+{{
+    "title": "{story_title}",
+    "protagonist": "{protagonist}",
+    "story_components": [
+        {{
+            "end_time": 0,
+            "description": "N/A",
+            "end_emotional_score": <must match input>,
+            "arc": "N/A"
+        }},
+        {{
+            "end_time": <int 1-100>,
+            "description": "<2-3 sentences of concrete events per Rule 3>",
+            "end_emotional_score": <int -10 to +10>,
+            "arc": "<arc type from Section 3.1>"
+        }},
+        ... (2-4 more components, for 3-5 total excluding baseline)
+    ]
+}}
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 7: WORKED EXAMPLE
+═══════════════════════════════════════════════════════════════════════════════
+
+<example>
+<story>Cinderella (Charles Perrault version)</story>
+
+<input_story_summary>
+Heartbroken and exhausted, Cinderella toils endlessly in her own home after her 
+father's death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. 
+Forced to cook, clean, and tend to every chore while enduring their constant insults, 
+Cinderella clings to a quiet hope for a kinder future. One day, an announcement arrives 
+that the royal family is hosting a grand ball to find a bride for the Prince. Eager for 
+a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and 
+stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella 
+manages to gather scraps of optimism, trying to sew a suitable dress from her late 
+mother's belongings—only for her stepsisters to shred it in a fit of jealousy moments 
+before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed 
+by despair. It is there that her Fairy Godmother appears, transforming Cinderella's 
+tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble 
+pumpkin. As Cinderella's hopes rise, the Fairy Godmother warns her that the magic will 
+end at midnight. At the grand royal ball, the Prince is immediately enchanted by her 
+gentle grace and luminous presence. For the first time, Cinderella basks in admiration 
+instead of scorn, feeling her spirits soar with each dance and conversation. However, 
+as the clock strikes midnight, she is forced to flee the palace. In her panic to escape 
+before the spell breaks, she loses one of her delicate glass slippers on the palace steps. 
+Despite her sudden disappearance, the Prince is determined to find this mysterious young 
+woman, traveling throughout the kingdom with the slipper in hand. When his search brings 
+him to Cinderella's home, her stepsisters deride the idea that she could be the one who 
+captured the Prince's heart. Yet, as soon as Cinderella tries on the slipper, it fits 
+perfectly. Freed at last from servitude, she marries the Prince, and her enduring 
+kindness and patience are joyously rewarded.
+</input_story_summary>
+
+<input_detailed_analysis>
+{{
+    "title": "Cinderella",
+    "protagonist": "Cinderella",
+    "story_components": [
+        {{"end_time": 0, "description": "N/A", "end_emotional_score": -5, "arc": "N/A"}},
+        {{"end_time": 10, "description": "Cinderella hears about the royal ball and asks permission to attend, feeling a spark of hope.", "end_emotional_score": -3, "arc": "Linear Increase"}},
+        {{"end_time": 20, "description": "Her stepmother mocks and forbids her. Cinderella secretly sews a dress from her mother's old things.", "end_emotional_score": -4, "arc": "Linear Decrease"}},
+        {{"end_time": 28, "description": "Her stepsisters discover the dress and rip it to shreds. Cinderella flees to the garden, sobbing in despair.", "end_emotional_score": -9, "arc": "Straight Decrease"}},
+        {{"end_time": 38, "description": "The Fairy Godmother appears and transforms a pumpkin into a carriage, mice into horses, and rags into a gown.", "end_emotional_score": 4, "arc": "Straight Increase"}},
+        {{"end_time": 55, "description": "Cinderella arrives at the ball. The Prince asks her to dance. She is admired by the entire court.", "end_emotional_score": 8, "arc": "Gradual-to-Rapid Increase"}},
+        {{"end_time": 62, "description": "Cinderella and the Prince dance and talk through the evening. She feels seen and valued for the first time.", "end_emotional_score": 9, "arc": "Linear Increase"}},
+        {{"end_time": 70, "description": "The clock strikes midnight. Cinderella panics and flees, losing her glass slipper on the stairs.", "end_emotional_score": -2, "arc": "Straight Decrease"}},
+        {{"end_time": 85, "description": "Back in rags, Cinderella resumes her chores. She watches helplessly as the Prince searches the kingdom and her stepsisters try on the slipper.", "end_emotional_score": -4, "arc": "Linear Decrease"}},
+        {{"end_time": 100, "description": "The Prince allows Cinderella to try the slipper. It fits perfectly. She marries the Prince and leaves her stepfamily forever.", "end_emotional_score": 10, "arc": "Straight Increase"}}
+    ]
+}}
+</input_detailed_analysis>
+
+<structural_analysis>
+Step 1: Identify the anchors from input:
+- START: -5 (time 0)
+- NADIR: -9 (time 28, dress destroyed)
+- PEAK: +10 (time 100, marriage) — Note: also +9 at ball, but +10 is the true peak
+- END: +10 (time 100)
+
+Step 2: Identify narrative positions:
+- Time 0-28: "Oppression/Pursuit blocked" — Cinderella is trapped, her attempts to escape are crushed
+- Time 28-38: "Magical Intervention" — External help transforms her situation
+- Time 38-62: "Fulfillment/Joy" — Cinderella experiences what she longed for
+- Time 62-85: "Loss/Return to Oppression" — The magic ends, she's back where she started
+- Time 85-100: "Liberation" — Permanent escape and reward
+
+Step 3: Apply merging rules:
+- Time 0-10 and 10-28: Both are "Oppression" — hopes raised and crushed, still trapped. 
+  But the NADIR (-9) must be preserved. Keep the descent to -9 as the endpoint.
+- Time 38-55 and 55-62: Both are "Fulfillment" — merge into one rising arc to the ball's peak.
+- Time 70-85: Both are "Return to Oppression" — merge into one falling arc.
+
+Step 4: Check that descriptions follow arc-alignment rules.
+</structural_analysis>
+
+<ideal_output>
+{{
+    "title": "Cinderella",
+    "protagonist": "Cinderella",
+    "story_components": [
+        {{
+            "end_time": 0,
+            "description": "N/A",
+            "end_emotional_score": -5,
+            "arc": "N/A"
+        }},
+        {{
+            "end_time": 28,
+            "description": "Cinderella asks to attend the royal ball but is mocked and forbidden by her stepmother. She secretly sews a dress from her mother's belongings, but her stepsisters discover it and rip it to shreds, leaving her sobbing in the garden in despair.",
+            "end_emotional_score": -9,
+            "arc": "Rapid-to-Gradual Decrease"
+        }},
+        {{
+            "end_time": 38,
+            "description": "Cinderella's Fairy Godmother appears in the garden and transforms a pumpkin into a carriage, mice into horses, and her tattered clothes into a resplendent gown, warning that the magic will end at midnight.",
+            "end_emotional_score": 4,
+            "arc": "Straight Increase"
+        }},
+        {{
+            "end_time": 62,
+            "description": "Cinderella arrives at the royal ball where the Prince is immediately enchanted by her. They dance and talk through the evening, and for the first time she feels admired and valued rather than scorned.",
+            "end_emotional_score": 9,
+            "arc": "Gradual-to-Rapid Increase"
+        }},
+        {{
+            "end_time": 85,
+            "description": "Cinderella flees at midnight as the magic ends, losing her glass slipper on the palace steps. Back in rags and servitude, she watches helplessly as the Prince searches the kingdom and her stepsisters attempt to claim the slipper.",
+            "end_emotional_score": -4,
+            "arc": "Rapid-to-Gradual Decrease"
+        }},
+        {{
+            "end_time": 100,
+            "description": "Cinderella tries on the glass slipper and it fits perfectly, revealing her identity to the Prince. She marries him and is freed from her stepfamily's cruelty forever.",
+            "end_emotional_score": 10,
+            "arc": "Straight Increase"
+        }}
+    ]
+}}
+</ideal_output>
+
+<distillation_notes>
+KEY DECISIONS EXPLAINED:
+
+1. **Merged time 0-28 into one DECREASE component:**
+   - Narrative position throughout: "Oppression/Pursuit blocked"
+   - The brief hope when asking (+2 points) was a false reversal—immediately crushed
+   - Preserved the NADIR (-9) as the endpoint
+   - Description emphasizes the NEGATIVE events (mocking, forbidding, dress destruction) 
+     because this is a Decrease arc
+
+2. **Kept time 28-38 as separate component:**
+   - Clear shift in narrative position: "Magical Intervention"
+   - Sudden transformation justifies "Straight Increase"
+   - This is a structural turning point—external help changes everything
+
+3. **Merged time 38-62 into one INCREASE component:**
+   - Same narrative position throughout: "Fulfillment/Joy"
+   - Ball arrival and dancing are one continuous experience of joy
+   - Description emphasizes POSITIVE events (enchantment, dancing, feeling valued)
+   - Used +9 not +10 because the true peak (+10) is reserved for the ending
+
+4. **Merged time 62-85 into one DECREASE component:**
+   - Same narrative position: "Loss/Return to Oppression"  
+   - Midnight flight and return to servitude are one continuous fall
+   - Description emphasizes NEGATIVE events (fleeing, losing slipper, helplessness)
+
+5. **Kept time 85-100 as separate component:**
+   - Clear shift to "Liberation" position
+   - This is the PEAK (+10)—must be preserved
+   - Description emphasizes the POSITIVE events (slipper fits, marriage, freedom)
+
+TOTAL: 5 components (plus baseline) — appropriate for this classic fairy tale structure.
+Note: This example shows 5 components because Cinderella has distinct phases 
+(oppression → magic → joy → loss → liberation). A simpler story with just 
+one major fall and recovery would need only 3 components.
+
+ANCHOR VERIFICATION:
+✓ Start: -5 (matches input)
+✓ Nadir: -9 at time 28 (preserved)
+✓ Peak: +10 at time 100 (preserved)  
+✓ End: +10 (matches input)
+</distillation_notes>
+</example>
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Now distill the provided detailed analysis of "{story_title}" following all guidelines above.
+
+Output ONLY the JSON. No additional commentary.
+"""
 
     prompt = PromptTemplate(
-        input_variables=["story_summary","granular_components", "story_title", "protagonist", "author"],
+        input_variables=["story_summary", "granular_components", "story_title", "protagonist", "author"],
         template=prompt_template
     )
-
-    
 
     config = load_config(config_path=config_path)
     llm = get_llm(llm_provider, llm_model, config, max_tokens=16384)
 
-    # Calculate count to shame the LLM into compressing
+    # Convert granular components to JSON string for prompt
     granular_json_str = json.dumps(granular_components, indent=2)
-
-    #test to see what prompt actually looks like
-    # try:
-    #     final_rendered_prompt = prompt.format(
-    #         granular_components=granular_json_str,
-    #         story_title=story_title,
-    #         protagonist=protagonist,
-    #         author=author
-    #     )
-    #     print("\n" + "="*40)
-    #     print("DEBUG: ACTUAL PROMPT SENT TO LLM")
-    #     print("="*40)
-    #     print(final_rendered_prompt)
-    #     print("="*40 + "\n")
-    # except Exception as e:
-    #     print(f"❌ Error formatting prompt: {e}")
-    #     # This usually happens if you have a syntax error in the template 
 
     runnable = prompt | llm
 
@@ -813,16 +1373,9 @@ def distill_story_components(config_path, story_summary, granular_components, st
         print(f"Error during Distillation LLM call: {e}")
         raise e
 
-    # if hasattr(output, "content"):
-    #     output_text = output.content
-    # else:
-    #     output_text = output
-
-    #attempt to extact json (if needed)
+    # Extract text from output (handle different LLM response formats)
     if hasattr(output, "content"):
-        # Check if content is a list (Google/LangChain edge case)
         if isinstance(output.content, list):
-            # Extract text from all blocks
             text_parts = []
             for block in output.content:
                 if isinstance(block, dict) and "text" in block:
@@ -831,25 +1384,26 @@ def distill_story_components(config_path, story_summary, granular_components, st
                     text_parts.append(block)
             output_text = "".join(text_parts)
         else:
-            # Standard string content
             output_text = str(output.content)
     else:
         output_text = str(output)
 
+    # Extract JSON from output
     output_text = extract_json(output_text)
     
     try:
         result = json.loads(output_text)
     except json.JSONDecodeError as e:
-        # Added 'e' here so you can see the actual error if it happens again
         print(f"Error decoding JSON from distillation step: {e}")
-        print(f"Raw Text causing error: {output_text[:200]}...") 
-        return "ERROR!" 
+        print(f"Raw Text causing error: {output_text[:500]}...") 
+        raise ValueError(f"Failed to parse distillation output as JSON: {e}")
     
-    
-    # Final Safety Check: If it didn't compress, print a warning
-    if len(result["story_components"]) > 8:
-        print(f"⚠️ WARNING: Distillation failed to compress significantly (Count: {len(result['story_components'])})")
+    # Validation warnings
+    component_count = len(result.get("story_components", [])) - 1  # Exclude baseline
+    if component_count > TARGET_COMPONENTS_MAX:
+        print(f"⚠️ WARNING: Distillation produced {component_count} components (target: {TARGET_COMPONENTS_MIN}-{TARGET_COMPONENTS_MAX})")
+    elif component_count < TARGET_COMPONENTS_MIN:
+        print(f"⚠️ WARNING: Distillation produced only {component_count} components (target: {TARGET_COMPONENTS_MIN}-{TARGET_COMPONENTS_MAX})")
 
     return result
 
@@ -904,6 +1458,122 @@ def get_distilled_story_components(config_path, story_components_detailed, story
     return final_components
 
 
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+def visualize_distillation(detailed_components, distilled_components, story_title, protagonist, output_path=None):
+    """
+    Visualize detailed vs distilled story components on X/Y graph.
+    X-axis: Story Progress (0-100%)
+    Y-axis: Emotional Score (-10 to +10)
+    
+    Args:
+        detailed_components: List of detailed story component dicts
+        distilled_components: List of distilled story component dicts
+        story_title: Title of the story
+        protagonist: Name of the protagonist
+        output_path: Path to save the image (optional)
+    
+    Returns:
+        Path to saved image
+    """
+    
+    # Extract data from detailed components
+    detailed_times = [comp['end_time'] for comp in detailed_components]
+    detailed_scores = [comp['end_emotional_score'] for comp in detailed_components]
+    
+    # Extract data from distilled components
+    distilled_times = [comp['end_time'] for comp in distilled_components]
+    distilled_scores = [comp['end_emotional_score'] for comp in distilled_components]
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    # Plot detailed components (thinner line, more transparent)
+    ax.plot(detailed_times, detailed_scores, 
+            marker='o', 
+            markersize=6,
+            linewidth=1.5, 
+            alpha=0.5,
+            color='#3498db',
+            label=f'Detailed ({len(detailed_components)} components)',
+            linestyle='-')
+    
+    # Plot distilled components (thicker line, bold)
+    ax.plot(distilled_times, distilled_scores, 
+            marker='s', 
+            markersize=10,
+            linewidth=3, 
+            alpha=0.9,
+            color='#e74c3c',
+            label=f'Distilled ({len(distilled_components)} components)',
+            linestyle='-')
+    
+    # Add markers for nadir and climax in distilled
+    distilled_nadir_idx = np.argmin(distilled_scores)
+    distilled_climax_idx = np.argmax(distilled_scores)
+    
+    ax.scatter([distilled_times[distilled_nadir_idx]], 
+               [distilled_scores[distilled_nadir_idx]], 
+               s=200, 
+               color='purple', 
+               marker='v',
+               zorder=5,
+               label=f'Nadir ({distilled_scores[distilled_nadir_idx]})')
+    
+    ax.scatter([distilled_times[distilled_climax_idx]], 
+               [distilled_scores[distilled_climax_idx]], 
+               s=200, 
+               color='gold', 
+               marker='^',
+               zorder=5,
+               label=f'Climax ({distilled_scores[distilled_climax_idx]})')
+    
+    # Formatting
+    ax.set_xlabel('Story Progress (%)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Emotional Score', fontsize=14, fontweight='bold')
+    ax.set_title(f'{story_title}\n{protagonist}\'s Emotional Journey: Detailed vs Distilled', 
+                 fontsize=16, fontweight='bold', pad=20)
+    
+    # Set axis limits
+    ax.set_xlim(-2, 102)
+    ax.set_ylim(-11, 11)
+    
+    # Add horizontal line at y=0 (neutral emotions)
+    ax.axhline(y=0, color='gray', linestyle='--', linewidth=1, alpha=0.5)
+    
+    # Grid
+    ax.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
+    
+    # Legend
+    ax.legend(loc='best', fontsize=11, framealpha=0.9)
+    
+    # Add component count info
+    info_text = f"Reduction: {len(detailed_components)} → {len(distilled_components)} components"
+    ax.text(0.02, 0.98, info_text, 
+            transform=ax.transAxes,
+            fontsize=10,
+            verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    
+    # Tight layout
+    plt.tight_layout()
+    
+    # Save figure
+    if output_path is None:
+        # Auto-generate filename
+        safe_title = story_title.lower().replace(' ', '-').replace("'", '')
+        safe_title = safe_title + "_distillation"
+        output_path = os.path.join(PATHS['story_distillations'], safe_title + ".png")   
+    
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"✅ Visualization saved to: {output_path}")
+    
+    # Close to free memory
+    plt.close()
+    
+    return output_path
 
 
 
@@ -1029,7 +1699,7 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
       template=prompt_template
   )
   config = load_config(config_path=config_path)
-  llm = get_llm(llm_provider, llm_model, config, max_tokens=4000) # Increased tokens for the more detailed analysis
+  llm = get_llm(llm_provider, llm_model, config, max_tokens=16000) # Increased tokens for the more detailed analysis
   runnable = prompt | llm
   output = runnable.invoke({
         "generated_analysis": generated_analysis_str,
@@ -1062,6 +1732,7 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 
   # 3. UPDATED to return the dictionary `grades_dict`.
   return grades_dict
+
 
 
 #TESTING!
