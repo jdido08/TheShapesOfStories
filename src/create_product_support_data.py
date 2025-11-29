@@ -14,6 +14,8 @@ import time
 
 def create_product_support_data(product_data_path):
 
+    print("...Creating Product Support Data...")
+
     with open(product_data_path, "r", encoding="utf-8") as f:
         product_data = json.load(f)
 
@@ -48,7 +50,7 @@ def create_product_support_data(product_data_path):
     create_mockups(
         product_data_path=product_data_path,
         product_design_path=product_design_path,
-        mockup_list=["11x14_poster","11x14_table", "11x14_wall", "3x_11x14_wall"],
+        mockup_list=["11x14_poster_with_cover","11x14_wall","11x14_table", "3x_11x14_wall", "11x14_poster"],
         output_dir=PATHS['product_mockups'] 
     )
     print("✅ Product Mockups")
@@ -135,3 +137,8 @@ def create_product_support_data(product_data_path):
 
 
     return product_data_path
+
+
+# #TESTING
+# example_product_data = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/product_data/the-great-gatsby-jay-gatsby-print-11x14-poiret-one-charcoal-light-gray.json"
+# create_product_support_data(product_data_path=example_product_data)

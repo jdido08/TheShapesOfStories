@@ -1239,7 +1239,7 @@ def create_shape_single_pass(
                         component['arc_text_valid_message'] = "spacing failed - need more characters"
                         # INCREASE target since curve is too short (need longer text to fill it)
                         old_target = component.get('target_arc_text_chars', 50)
-                        component['target_arc_text_chars'] = max(5, old_target - 3)
+                        component['target_arc_text_chars'] = max(5, old_target - random.randint(2, 4))
                         print(f"   → Increasing target chars: {old_target} → {component['target_arc_text_chars']}")
                         maybe_save(surface, story_shape_path, output_format, save_intermediate)
                         return story_data, "processing"
@@ -1407,7 +1407,7 @@ def create_shape_single_pass(
                         component['arc_text_valid_message'] = "spacing failed - need fewer characters"
                         # DECREASE target since curve is too long (need shorter text)
                         old_target = component.get('target_arc_text_chars', 50)
-                        component['target_arc_text_chars'] = old_target + 3
+                        component['target_arc_text_chars'] = old_target + random.randint(2, 4)
                         print(f"   → Decreasing target chars: {old_target} → {component['target_arc_text_chars']}")
                         maybe_save(surface, story_shape_path, output_format, save_intermediate)
                         return story_data, "processing"

@@ -12,6 +12,9 @@ from typing import Optional, Tuple, List
 from PIL import Image, ImageFilter
 from PIL.Image import Resampling  # Pillow 10+
 
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
+
+
 
 ### CLIPS FUNCTIONS #####
 # ---------- CONFIG DATACLASS ----------
@@ -31,6 +34,10 @@ class ClipSpec:
     shadow_blur: int = 6
     shadow_opacity: int = 110       # 0–255
     trim_transparent_edges: bool = True  # remove extra transparent padding around the clip
+
+    # --- NEW FIELDS ---
+    outline_width: int = 0                  # Set to > 0 to enable
+    outline_color: Tuple[int,int,int] = (240, 238, 225) # Pale cream (page color)
 
 # ---------- CORE CLIP HELPERS ----------
 
@@ -127,6 +134,18 @@ def overlay_clips_exact(
         if th is not None: th = int(round(th * ss))
         overlay = _resize_keep_aspect(overlay, (tw, th))
 
+        # --- NEW: ADD OUTLINE LOGIC HERE ---
+        if spec.outline_width > 0:
+            # Scale outline width by supersample factor so it stays visible
+            w_px = int(spec.outline_width * ss)
+            
+            # ImageOps.expand adds the border. 
+            # We convert to RGBA to ensure compatibility.
+            overlay = ImageOps.expand(overlay, border=w_px, fill=spec.outline_color)
+            # -----------------------------------
+
+
+        
         # rotate, then sharpen RGB a touch to recover edge contrast
         if abs(spec.rotation_deg) > 1e-6:
             overlay = overlay.rotate(spec.rotation_deg, expand=True, resample=Resampling.BICUBIC)
@@ -607,6 +626,11 @@ MOCKUPS = {
         "slots":[{'quad': [(750, 2040), (2118, 2040), (2118, 3822), (750, 3822)], 'mode': 'fill'}, {'quad': [(2388, 2040), (3756, 2040), (3756, 3822), (2388, 3822)], 'mode': 'fill'}, {'quad': [(4032, 2040), (5400, 2040), (5400, 3822), (4032, 3822)], 'mode': 'fill'}],
         "name": "3x_wall"
     },
+    "11x14_poster_with_cover":{
+        "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_poster_no_frame_base@BIG.png",
+        "slots":[{"quad": [(60, 110), (1706, 110), (1706, 2204), (60, 2204)], "mode": "fill"}],
+        "name": "poster_with_cover"
+    },
     # "3x_11x14_wall":{
     #     "mockup_template_path": "/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/11x14_3_frames_on_wall.jpeg",
     #     "slots":[{'quad': [(125,340),(353,340),(353,637),(125,637)], 'mode': 'fill'}, {'quad': [(398,340),(626,340),(626,637),(398,637)], 'mode': 'fill'}, {'quad': [(672,340),(900,340),(900,637),(672,637)], 'mode': 'fill'}],
@@ -622,6 +646,7 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
     design_background_color = product_data.get("background_color_hex")
     design_title = product_data.get("title")
     design_author = product_data.get("author")
+    story_cover_path = product_data.get("cover_data")["cover_path_file"]
 
     mockups_paths_added = []
     for mockup_type in mockup_list:
@@ -695,6 +720,69 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
                 supersample=3,                   # key for tiny overlays
                 post_unsharp=(0.6, 240, 0),      # per-clip after rotate
                 final_unsharp=(0.35, 110, 1),    # gentle overall after downscale
+            )
+        elif mockup_type == "11x14_poster_with_cover":
+            objects_to_add=[
+                ClipSpec(
+                    path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip@BIG.png",
+                    pos=(230, 30),  
+                    size_px=(65, None),
+                    rotation_deg=-0.2,
+                    anchor="top_center",
+                    shadow_offset=(1, 2),
+                    shadow_blur=2,
+                    shadow_opacity=105
+                ),
+                ClipSpec(
+                    path="/Users/johnmikedidonato/Projects/TheShapesOfStories/mockup_templates/gold-clip@BIG.png",
+                    pos=(1560, 30),
+                    size_px=(65, None),
+                    rotation_deg=0.2,
+                    anchor="top_center",
+                    shadow_offset=(1, 2),
+                    shadow_blur=2,
+                    shadow_opacity=105
+                ),
+            ]
+
+            #add story cover 
+            if story_cover_path and os.path.exists(story_cover_path):
+                objects_to_add.append(
+                    ClipSpec(
+                        path=story_cover_path,
+                        # [ADJUST POS]: (X, Y) pixel coordinates on the base image.
+                        # Since your base is likely ~1700px wide, placing it at 
+                        # bottom-right (e.g., 1400, 2000) creates an overlap.
+                        pos=(1735, 2225), 
+                        
+                        # [ADJUST SIZE]: Width 500px, Height Auto (None). 
+                        # This preserves the aspect ratio of your specific book.
+                        size_px=(420, None), 
+                        
+                        rotation_deg=0,     # Slight tilt looks natural
+                        anchor="bottom_right",       # Coordinates define the center of the book
+
+                        # --- NEW OUTLINE SETTINGS ---
+                        outline_width=3,  # 3px represents the thickness of the pages
+                        outline_color=(245, 245, 240), # Off-white/Cream page color
+                        
+                        # Shadow makes it pop off the poster
+                        add_shadow=True,
+                        shadow_offset=(15, 15), 
+                        shadow_blur=20,
+                        shadow_opacity=140,
+                        trim_transparent_edges=True
+                    )
+                )
+        
+            # Apply all clips (Gold Clips + Book) in one pass
+            overlay_clips_exact(
+                base_path=mockup_output_path,
+                clips=objects_to_add,
+                output_path=mockup_output_path,
+                supersample=3,                   
+                post_unsharp=(0.6, 240, 0),      
+                final_unsharp=(0.35, 110, 1),    
             )
 
 
@@ -871,9 +959,3 @@ def create_mockups(product_data_path, product_design_path, mockup_list, output_d
 #     "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/data/story_data/to-kill-a-mockingbird-scout-finch.json"
 # ]
 
-
-# for story_data_path in example_story_data:
-#     create_product_data(story_data_path=story_data_path,
-#                         product_type="print", 
-#                         product_size="11x14", 
-#                         product_style="")

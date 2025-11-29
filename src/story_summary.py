@@ -73,6 +73,8 @@ def build_sources_block(story_summary_data) -> str:
 
     if len(sources_used) < 2:
         print("⚠️ WARNING: Only ", len(sources_used), " sources used. Need more!")
+    else:
+        print(len(sources_used), " sources used to create summary")
 
     return sources_block, sources_used
 

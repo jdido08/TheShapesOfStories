@@ -22,6 +22,8 @@ def publish_product(product_data_path):
         product_data = json.load(f)
     story_data_path = product_data['story_data_path']
 
+    print("Publishing: ", product_data.get("title") )
+
     create_product_support_data(product_data_path)
 
     publish_product_on_printify(product_data_path=product_data_path)
