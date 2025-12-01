@@ -50,7 +50,7 @@ def create_product_support_data(product_data_path):
     create_mockups(
         product_data_path=product_data_path,
         product_design_path=product_design_path,
-        mockup_list=["11x14_poster_with_cover","11x14_wall","11x14_table", "3x_11x14_wall", "11x14_poster"],
+        mockup_list=["11x14_poster_with_cover", "11x14_poster", "11x14_wall","11x14_table", "3x_11x14_wall"],
         output_dir=PATHS['product_mockups'] 
     )
     print("✅ Product Mockups")
