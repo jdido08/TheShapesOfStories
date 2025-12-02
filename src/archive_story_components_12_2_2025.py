@@ -18,8 +18,7 @@ def analyze_story(config_path, author_name, story_title, protagonist, story_summ
     
 
     # The user_message includes placeholders that will be replaced by the function arguments
-    
-    prompt_template = """You are a world-class literary scholar and expert in story analysis. Your task is to analyze a story through the journey of {protagonist}'s fortune. Please carefully read and analyze the following story summary:
+    prompt_template = """You are a world-class literary scholar and expert in story analysis. Your task is to analyze a story through the emotional journey of {protagonist}. Please carefully read and analyze the following story summary:
 
 <author_name>
 {author_name}
@@ -41,117 +40,56 @@ def analyze_story(config_path, author_name, story_title, protagonist, story_summ
 
 ## Framework Overview:
 1. Story Timeline: The narrative is viewed on a scale from 0 to 100, representing the percentage of progress through the story.
-2. Story Components: The story is segmented into components defined by changes in {protagonist}'s fortune.
-3. Continuity: Each story component starts where the previous one ended, ensuring a seamless journey.
-4. Fortune Scores: {protagonist}'s fortune throughout each story component is scored on a scale from +10 (best possible outcome) to -10 (worst possible outcome), based on how a reader would judge their situation.
+2. Story Components: The story is segmented into components defined by {protagonist}'s emotional journey.
+3. Continuity: Each story component starts where the previous one ended, ensuring a seamless emotional journey.
+4. Emotional Arcs: {protagonist}'s emotional journey throughout each story component can vary in a range from euphoric (+10) to depressed (-10), based on their direct experiences and reactions to events.
 
 
-## Fortune Arcs
-### Types of Fortune Arcs:
-1. Increase: The protagonist's fortune improves by the end of the arc.
-2. Decrease: The protagonist's fortune worsens by the end of the arc.
-3. Flat: The protagonist's fortune remains unchanged by the end of the arc.
+## Emotional Arcs
+### Types of Emotional Arcs:
+1. Increase: The protagonist's emotional state improves by the end of the arc.
+2. Decrease: The protagonist's emotional state worsens by the end of the arc.
+3. Flat: The protagonist's emotional state remains unchanged by the end of the arc.
 
-### Specific Fortune Arc Patterns:
-1. Step-by-Step Increase/Decrease: Fortune changes in distinct, noticeable stages
-   Example: A character moving from peril (-5) to uncertainty (-2) to safety (+2) to triumph (+6)
-2. Linear Increase/Decrease: Consistent, steady change in fortune
-   Example: A character's situation worsening as danger approaches, declining steadily from +3 to -4
+### Specific Emotional Arc Patterns:
+1. Step-by-Step Increase/Decrease: Emotions change in distinct, noticeable stages
+   Example: A character moving from fear (-5) to uncertainty (-2) to hope (+2) to joy (+6)
+2. Linear Increase/Decrease: Consistent, steady change in emotional state
+   Example: A character's growing dread as they approach danger, declining steadily from +3 to -4
 3. Gradual-to-Rapid Increase/Decrease: Change starts slowly, then accelerates
-   Example: A slow accumulation of problems that suddenly culminates in disaster
+   Example: A slow build of suspicion that suddenly turns to shocking realization
 4. Rapid-to-Gradual Increase/Decrease: Change starts quickly, then slows down
-   Example: A sudden rescue followed by gradual recovery
-5. Straight Increase/Decrease: Sudden, dramatic change in fortune
+   Example: An immediate burst of joy that settles into content satisfaction
+5. Straight Increase/Decrease: Sudden, dramatic change in emotions
    Example: An unexpected tragedy causing immediate shift from +5 to -8
 6. S-Curve Increase/Decrease: Change follows an 'S' shape (slow-fast-slow)
-   Example: Gradual improvement, rapid success, then settling into stability
-7. Linear Flat: No change in fortune
-   Example: A character trapped in unchanging circumstances throughout a section
-
-   
-   
-## SCORING FRAMEWORK: NARRATIVE JUDGMENT
-You are scoring the protagonist's FORTUNE—their objective situation and 
-how a reader would judge their fate—not their momentary feelings.
-
-Guiding question: "How would a thoughtful reader assess whether things 
-are going well or badly for this character?"
-
-### Core Principle
-
-Readers judge a character's fortune based on what HAPPENS to them, not 
-how they FEEL about it. A character can feel content while their 
-situation is terrible, or feel miserable while their fortune is good.
-
-**Always prioritize situation over sensation.**
-
-### Edge Cases
-
-**Psychological Destruction / Coerced Acceptance**
-When a protagonist is brainwashed, spiritually broken, or coerced into 
-"contentment" or "acceptance," this represents severely negative fortune. 
-The destruction of authentic selfhood is among the worst outcomes 
-possible, regardless of the character's resulting emotional state.
-
-**Sole Survivor of Catastrophe**
-When a protagonist survives but everyone and everything around them is 
-destroyed, mere survival does not constitute positive fortune. The 
-character is left amid loss and devastation. Score as negative, with 
-severity proportional to the magnitude of loss.
-
-**Death**
-Death represents negative fortune, even when described as "peaceful" 
-or as a release from suffering. Dying forecloses all future possibility.
-Exception: Self-sacrifice that achieves the protagonist's core goal may 
-be scored as bittersweet rather than purely negative.
-
-**Pyrrhic Victory**  
-When a protagonist achieves their goal but at devastating cost—losing 
-loved ones, health, integrity, or everything else that mattered—score 
-based on net outcome, not the nominal "win."
-
-**Ambiguous or Ironic Endings**
-Some stories deliberately obscure whether the ending is "good" or "bad," 
-or present surface success masking deeper failure. Score based on the 
-predominant interpretation among readers and scholars.
-
-**Resignation vs. Growth**
-Distinguish between genuine wisdom or acceptance (character grows, 
-makes peace authentically) and resignation or defeat (character gives 
-up, stops fighting). The former may be neutral to positive; the latter 
-is negative.
-
-### The Reader Test
-Before finalizing a score, ask: "If a well-read fan of this story saw 
-this score, would they nod in recognition?"
-
-The scores should align with how the story is commonly understood.
-
-
+   Example: Gradually accepting good news, rapid excitement, then settling into happiness
+7. Linear Flat: No change in emotions
+   Example: Maintaining determined focus throughout a challenging task
 
 ## Analysis Guidelines
 
 ### Analysis Steps:
 1. Understand {protagonist}'s starting position in the story.
    - Identify their initial circumstances and relationships
-   - Look for early indicators of their situation
+   - Look for early indicators of their emotional state
    - Note their primary motivations and desires
-2. Segment the story into components based on major changes in {protagonist}'s fortune.
-   - The number of components should be determined by the natural transitions in their situation
-   - Identify as many components as necessary to accurately track the protagonist's journey. Do not worry about the total number of components; accuracy is prioritized over brevity.   
-   - Each significant change in their fortune should mark the start of a new component
-   - Create a new component for any discernible shift in fortune (e.g., a shift of even 1 or 2 points). We want to capture the granular nuance of the journey.
-   - Components can vary in length based on the pace of change
+2. Segment the story into components based on major changes in {protagonist}'s emotions.
+   - The number of components should be determined by the natural transitions in their emotional state
+   - Identify as many components as necessary to accurately track the protagonist's journey. Do not worry about the total number of components; accuracy is prioritized over brevity.
+   - Each significant change in their emotional state should mark the start of a new component
+   - Create a new component for any discernible shift in emotional state (e.g., a shift of even 1 or 2 points). We want to capture the granular nuance of the journey.
+   - Components can vary in length based on the pace of emotional change
    - When in doubt, create a new segment. Capture the sequence of events precisely.
-3. Identify the fortune scores of each story component.
-   - Scores must be whole numbers between -10 and +10 that reflect how a reader would judge {protagonist}'s situation as evidenced in the story summary
+3. Identify the emotional scores of each story component.
+   - Scores must be whole numbers between -10 and +10 that reflect {protagonist}'s emotional state as evidenced in the story summary
    - Score changes must match the selected arc type
 4. For each story component:
    - Identify the portion of the story summary that shows {protagonist}'s experience
-   - Focus on events and details that reveal changes in their fortune
+   - Focus on events and details that reveal their emotional state
    - Note their actions, reactions, and key interactions
    - Use these details to write a description that centers on their journey
-5. Identify the fortune arcs which connect story components.
+5. Identify the emotional arcs which connect story components.
 
 After your analysis, provide the final output in the following JSON format:
 
@@ -162,13 +100,13 @@ After your analysis, provide the final output in the following JSON format:
         {{{{
             "end_time": 0,
             "description": "#N/A",
-            "end_fortune_score": initial_score,
+            "end_emotional_score": initial_score,
             "arc": "#N/A"
         }}}},
         {{{{
             "end_time": percentage,
             "description": "Detailed description of events in this component",
-            "end_fortune_score": score,
+            "end_emotional_score": score,
             "arc": "Arc Type"
         }}}},
     ]
@@ -178,27 +116,27 @@ After your analysis, provide the final output in the following JSON format:
 - Each description must be derived directly from the provided story summary
 - Center the description on {protagonist}'s experience and perspective
 - Describe events primarily in terms of their impact on {protagonist}
-- Include their actions, reactions, and how events affect their situation
+- Include their actions, reactions, and emotional responses
 - Detail settings as they relate to their experience
 - Include other characters mainly through their interaction with or impact on {protagonist}
-- Quote or closely paraphrase passages that reveal changes in their fortune
+- Quote or closely paraphrase passages that reveal their emotional state
 - Include sensory details that contribute to understanding their experience
 
-### Initial Score Guidelines:
+### Initial Emotional Score Guidelines:
 - Carefully examine how {protagonist} is first presented in the story
-- Consider their starting circumstances, relationships, and situation
-- Assess how a reader would judge their initial fortune
+- Look for descriptive words indicating their initial emotional state
+- Consider their starting circumstances and relationships
 
 ## Important Notes:
 - The first component always has an end_time of 0, no description, and no arc.
-- The first component (end_time = 0) is the baseline fortune *before* any on-page events shift the protagonist's situation.
+- The first component (end_time = 0) is the baseline emotional state *before* any on-page events shift the protagonist’s emotions.
 - If the backstory implies a sharp change *into* the opening scene, do not reflect the change at end_time = 0; instead, start from the baseline and make the first change in the first arc that ends > 0.
-- Ensure that end_fortune_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_fortune_score than the previous component).
-- Fortune scores must be whole numbers between -10 and +10. 
-- If the fortune score remains the same (e.g., -5 to -5), the Arc Type MUST be "Linear Flat". You strictly cannot label an arc as "Increase" or "Decrease" if the score number does not change.
-- Adjacent components should not have the same fortune score unless using Linear Flat arc.
+- Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
+- Emotional scores must be whole numbers between -10 and +10. 
+- If the emotional score remains the same (e.g., -5 to -5), the Arc Type MUST be "Linear Flat". You strictly cannot label an arc as "Increase" or "Decrease" if the score number does not change.
+- Adjacent components should not have the same emotional score unless using Linear Flat arc.
 - End times must be in ascending order and the final component must end at 100.
-- Each arc type must match the fortune change described:
+- Each arc type must match the emotional change described:
   * Increase arcs must show higher end scores than start scores
   * Decrease arcs must show lower end scores than start scores
   * Flat arcs must maintain the same score
@@ -224,7 +162,6 @@ Cinderella
 Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
 </story_summary>
 <ideal_output>
-<ideal_output>
 {{
     "title": "Cinderella at the Ball",
     "protagonist": "Cinderella",
@@ -232,49 +169,49 @@ Heartbroken and exhausted, Cinderella toils endlessly in her own home after her 
         {{
             "end_time": 0,
             "description": "#N/A",
-            "end_fortune_score": -5,
+            "end_emotional_score": -5,
             "arc": "#N/A"
         }},
         {{
             "end_time": 15,
             "description": "Cinderella asks to attend the ball, hoping for a brief respite from her misery. Her stepmother and stepsisters cruelly mock her request and forbid her from going, crushing her tentative hope.",
-            "end_fortune_score": -7,
+            "end_emotional_score": -7,
             "arc": "Linear Decrease"
         }},
         {{
             "end_time": 25,
             "description": "Despite the ban, Cinderella tries to sew a dress from her mother's old things. However, right before the ball, her stepsisters discover her and physically rip the dress to shreds. Devastated and betrayed, she runs to the garden sobbing.",
-            "end_fortune_score": -9,
+            "end_emotional_score": -9,
             "arc": "Rapid-to-Gradual Decrease"
         }},
         {{
             "end_time": 35,
-            "description": "The Fairy Godmother appears in the garden. Cinderella's situation transforms as the pumpkin becomes a carriage and her rags become a gown. She gains the means to attend the ball.",
-            "end_fortune_score": 4,
+            "description": "The Fairy Godmother appears in the garden. Cinderella's despair turns to shock and then rising wonder as the pumpkin is transformed into a carriage and her rags into a gown.",
+            "end_emotional_score": 4,
             "arc": "Step-by-Step Increase"
         }},
         {{
             "end_time": 60,
-            "description": "Cinderella enters the ball. The Prince asks her to dance and she becomes the center of admiration. For the first time in her life, she is treated with dignity and admiration rather than scorn.",
-            "end_fortune_score": 9,
+            "description": "Cinderella enters the ball. She is overcome with joy as the Prince asks her to dance. For the first time in her life, she feels seen, admired, and deeply happy, forgetting her life of servitude completely.",
+            "end_emotional_score": 9,
             "arc": "Gradual-to-Rapid Increase"
         }},
         {{
             "end_time": 70,
-            "description": "The clock strikes midnight. Cinderella must flee the palace before her transformation reverses. She loses her slipper on the stairs and returns to her former circumstances.",
-            "end_fortune_score": -2,
+            "description": "The clock strikes midnight. The dream abruptly ends. Cinderella is seized by panic and anxiety as she flees the palace, losing her slipper and terrified of being discovered in her rags.",
+            "end_emotional_score": -2,
             "arc": "Straight Decrease"
         }},
         {{
             "end_time": 90,
-            "description": "Back home, Cinderella resumes her servitude. The Prince searches the kingdom while her stepsisters attempt to claim the slipper. Her situation remains uncertain, her fate in others' hands.",
-            "end_fortune_score": -4,
+            "description": "Back home, Cinderella resumes her chores. She is anxious and fearful as the Prince searches the kingdom, watching her stepsisters try to force the slipper on. She feels powerless, unsure if she should reveal herself.",
+            "end_emotional_score": -4,
             "arc": "Linear Decrease"
         }},
         {{
             "end_time": 100,
-            "description": "The Prince allows Cinderella to try the slipper. It fits perfectly. She is freed from servitude and marries the Prince, achieving complete reversal of her circumstances.",
-            "end_fortune_score": 10,
+            "description": "The Prince allows Cinderella to try the slipper. It fits perfectly. In a moment of pure vindication and relief, she is whisked away to marry the Prince, her kindness finally rewarded with a happily ever after.",
+            "end_emotional_score": 10,
             "arc": "Straight Increase"
         }}
     ]
@@ -284,10 +221,10 @@ Heartbroken and exhausted, Cinderella toils endlessly in her own home after her 
 
 Note About Example Output:
 The descriptions in the example output demonstrate the minimum expected level of detail for story components. Each description should:
-- Center on the protagonist's experience and journey
-- Include concrete details that reveal changes in the protagonist's situation
-- Describe events in terms of their impact on the protagonist's fortune
-- Capture interactions primarily through their effect on the protagonist
+- Center on the protagonist's experience and emotional journey
+- Include concrete details that reveal the protagonist's state of mind
+- Use language that reflects the protagonist's perspective
+- Capture interactions primarily through their impact on the protagonist
 
 """
     
@@ -1034,70 +971,7 @@ You MUST preserve these exact values from the input:
 
 These anchors are the "skeleton" of the shape. Everything else can be smoothed.
 
-## 2.4 Scoring Framework: Narrative Judgment
-
-The following framework governs how emotional scores should be interpreted. 
-This applies both to evaluating the input scores AND to any adjustments 
-you make during distillation.
-
-You are scoring the protagonist's FORTUNE—their objective situation and 
-how a reader would judge their fate—not their momentary feelings.
-
-Guiding question: "How would a thoughtful reader assess whether things 
-are going well or badly for this character?"
-
-### Core Principle
-
-Readers judge a character's fortune based on what HAPPENS to them, not 
-how they FEEL about it. A character can feel content while their 
-situation is terrible, or feel miserable while their fortune is good.
-
-**Always prioritize situation over sensation.**
-
-### Edge Cases
-
-**Psychological Destruction / Coerced Acceptance**
-When a protagonist is brainwashed, spiritually broken, or coerced into 
-"contentment" or "acceptance," this represents severely negative fortune. 
-The destruction of authentic selfhood is among the worst outcomes 
-possible, regardless of the character's resulting emotional state.
-
-**Sole Survivor of Catastrophe**
-When a protagonist survives but everyone and everything around them is 
-destroyed, mere survival does not constitute positive fortune. The 
-character is left amid loss and devastation. Score as negative, with 
-severity proportional to the magnitude of loss.
-
-**Death**
-Death represents negative fortune, even when described as "peaceful" 
-or as a release from suffering. Dying forecloses all future possibility.
-Exception: Self-sacrifice that achieves the protagonist's core goal may 
-be scored as bittersweet rather than purely negative.
-
-**Pyrrhic Victory**  
-When a protagonist achieves their goal but at devastating cost—losing 
-loved ones, health, integrity, or everything else that mattered—score 
-based on net outcome, not the nominal "win."
-
-**Ambiguous or Ironic Endings**
-Some stories deliberately obscure whether the ending is "good" or "bad," 
-or present surface success masking deeper failure. Score based on the 
-predominant interpretation among readers and scholars.
-
-**Resignation vs. Growth**
-Distinguish between genuine wisdom or acceptance (character grows, 
-makes peace authentically) and resignation or defeat (character gives 
-up, stops fighting). The former may be neutral to positive; the latter 
-is negative.
-
-### The Reader Test
-
-Before finalizing a score, ask: "If a well-read fan of this story saw 
-this score, would they nod in recognition?"
-
-The scores should align with how the story is commonly understood.
-
-## 2.5 The Structural Turning Point Test
+## 2.4 The Structural Turning Point Test
 
 Before creating a component boundary, ask:
 
@@ -1116,7 +990,7 @@ Before creating a component boundary, ask:
 - The change is gradual continuation of an existing trend
 - Minor events cause temporary emotional shifts without altering the fundamental situation
 
-## 2.6 Handling Fluctuations Within Segments
+## 2.5 Handling Fluctuations Within Segments
 
 When multiple detailed components share the SAME narrative position, **MERGE THEM** 
 into one component that:
@@ -1128,7 +1002,7 @@ into one component that:
 Example: If three detailed components show the protagonist struggling (-2 → -4 → -6), 
 all within the same conflict, merge into ONE component: -2 → -6 with "Linear Decrease"
 
-## 2.7 The False Reversal Rule
+## 2.6 The False Reversal Rule
 
 A brief reversal does NOT require a new component if ALL conditions are met:
 1. The reversal spans < 15% of story duration, AND
@@ -1143,7 +1017,7 @@ A brief reversal does NOT require a new component if ALL conditions are met:
 - Achievement or loss of the protagonist's primary goal
 - Revelations that fundamentally alter relationships or understanding
 
-## 2.8 Minimum Duration Guideline
+## 2.7 Minimum Duration Guideline
 
 Components should generally span at least 8-10% of the story timeline.
 

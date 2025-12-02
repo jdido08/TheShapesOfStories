@@ -65,7 +65,7 @@ for row in rows:
     
     #get input data
     story_type = row.get("story_type")
-    story_title = row.get("story_title")
+    story_title = str(row.get("story_title"))
     story_author = row.get("story_author")
     story_protagonist = row.get("story_protagonist")
     story_year = row.get("story_year")

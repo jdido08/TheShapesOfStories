@@ -241,6 +241,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # get category of shape
     story_symbolic_rep,  story_archetype = get_story_symbolic_and_archetype(story_components)
     print("✅ Story Shape Category")
+    print("SHAPE: ", story_symbolic_rep)
 
     # get story cover
     if story_cover_path == "":
