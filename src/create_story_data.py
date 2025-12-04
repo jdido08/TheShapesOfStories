@@ -9,7 +9,7 @@ from datetime import datetime
 
 # imports from my code
 from story_style import get_story_style, pango_font_exists #move to this sheet
-from story_components import get_story_components, grade_story_components, get_distilled_story_components, visualize_distillation
+from story_components import get_story_components, grade_story_components, get_distilled_story_components, visualize_distillation, review_story_shape
 from story_summary import get_story_summary
 from story_shape_category import get_story_symbolic_and_archetype
 from story_metadata import get_story_metadata
@@ -236,12 +236,28 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     print("GRADE: ", story_component_grades['shape_accuracy']['final_grade'])
 
 
-    
-    
     # get category of shape
     story_symbolic_rep,  story_archetype = get_story_symbolic_and_archetype(story_components)
     print("✅ Story Shape Category")
     print("SHAPE: ", story_symbolic_rep)
+
+    # review shape category 
+    story_shape_review_llm_model = "claude-sonnet-4-5" #google good for grading 
+    story_shape_review = review_story_shape(
+        config_path=PATHS['config'], 
+        story_title=story_title, 
+        author=story_author, 
+        protagonist=story_protagonist, 
+        story_summary=story_summary, 
+        shape=story_symbolic_rep, 
+        llm_provider=story_shape_review_llm_model, 
+        llm_model="anthropic")
+    print(story_shape_review)
+    if story_shape_review.get("passes_review") == True:
+        print("✅ Story Shape Reviewed Passed")
+    else:
+        print("❌ Story Shape Reviewed Failed. ACTION REQUIRED!")
+
 
     # get story cover
     if story_cover_path == "":
@@ -285,6 +301,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         "shape_symbolic_representation": story_symbolic_rep,
         "shape_archetype": story_archetype,
         "story_components_detailed": story_components_detailed,
+        "story_components_adjusted": False,
         "story_components": story_components,
         "default_style": {
             "background_color_hex": design_background_color,
@@ -299,10 +316,12 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         "story_summary_sources_path":story_summary_path,
 
         "story_component_grades":story_component_grades,
+        "story_shape_review":story_shape_review,
         "llm_models": {
             "story_summary": story_summary_llm_model,
             "story_components": story_components_llm_model,
             "story_components_grade": story_components_grader_llm_model,
+            "story_shape_review": story_shape_review_llm_model,
             "story_default_style": story_style_llm_model
         },
         "story_manual_colletion":[],

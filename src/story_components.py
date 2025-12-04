@@ -101,11 +101,6 @@ severity proportional to the magnitude of loss. Being rescued or surviving
 does not meaningfully offset total loss when the protagonist's world has 
 been destroyed.
 
-Ask: "Is the protagonist better off, or merely still alive?" If they have 
-lost everything that mattered — friends, purpose, community, livelihood — 
-then survival alone does not improve their fortune. The score should 
-remain at or within 1-2 points of the nadir.
-
 **Death**
 Death represents negative fortune, even when described as "peaceful" 
 or as a release from suffering. Dying forecloses all future possibility.
@@ -933,6 +928,18 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
 
 #     return result
 
+# ## 2.2 Target Output: 3-5 Components
+
+# Your distilled output should have 3-5 components (plus the time-0 baseline).
+
+# - 3 components: Simple stories with one major turning point (e.g., fall then recovery, or steady rise)
+# - 4 components: Standard narratives with rise-fall-resolution or fall-rise-resolution  
+# - 5 components: Complex narratives with distinct sub-phases (use sparingly)
+
+# **Prefer fewer components when in doubt.** The goal is to capture the ESSENTIAL shape, 
+# not every structural beat. A 3-component shape that captures the essence is better 
+# than a 5-component shape that tracks every fluctuation.
+
 MIN_COMPONENT_DURATION = 8  # Minimum percentage points for a component
 TARGET_COMPONENTS_MIN = 3   # Minimum target (excluding time-0 baseline)
 TARGET_COMPONENTS_MAX = 5   # Maximum target (excluding time-0 baseline)
@@ -1009,11 +1016,6 @@ examples include:
 - **Consequence/Fallout**: Living with the results of the climax
 - **New Equilibrium**: Settling into a changed (or unchanged) state
 
-Note: Mere survival or rescue after catastrophe typically falls under 
-"Consequence/Fallout," not a new position. A protagonist's situation 
-has not meaningfully changed if they have simply stopped falling — 
-surviving is not the same as recovering.
-
 Different story types have different positions:
 - A tragedy may lack "Recovery" and end in "Destruction"
 - A romance may have "Separation" and "Reunion" as key positions
@@ -1032,7 +1034,7 @@ Your distilled output should have 3-5 components (plus the time-0 baseline).
 
 **Prefer fewer components when in doubt.** The goal is to capture the ESSENTIAL shape, 
 not every structural beat. A 3-component shape that captures the essence is better 
-than a 5-component shape that tracks every fluctuation..
+than a 5-component shape that tracks every fluctuation.
 
 ## 2.3 Mandatory Anchors (NON-NEGOTIABLE)
 
@@ -1079,11 +1081,6 @@ destroyed, mere survival does not constitute positive fortune. The
 character is left amid loss and devastation. Score as negative, with 
 severity proportional to the magnitude of loss. Being rescued or surviving 
 does not meaningfully offset total loss when the protagonist's world has been destroyed.
-
-Ask: "Is the protagonist better off, or merely still alive?" If they have 
-lost everything that mattered — friends, purpose, community, livelihood — 
-then survival alone does not improve their fortune. The score should 
-remain at or within 1-2 points of the nadir.
 
 **Death**
 Death represents negative fortune, even when described as "peaceful" 
@@ -1893,6 +1890,157 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 
   # 3. UPDATED to return the dictionary `grades_dict`.
   return grades_dict
+
+
+#review story shape 
+def review_story_shape(config_path, story_title, author, protagonist, story_summary, shape, llm_provider, llm_model):
+    """
+    Reviews a story shape and determines if it passes the "glance test."
+    
+    Returns a dict with passes_review, confidence, assessment, and recommended_shape.
+    """
+    
+    prompt_template = """
+You are a literary editor reviewing story shape analyses for "The Shapes of Stories," 
+an art print business that visualizes narrative arcs based on Kurt Vonnegut's theory.
+
+Your task is to determine if the shape accurately captures how readers experience this story.
+
+---
+## PRODUCT CONTEXT
+
+"The Shapes of Stories" creates art prints visualizing narrative arcs for bibliophiles.
+
+**Key considerations:**
+- The audience (BookTok, Bookstagram) has deep emotional connections to these stories
+- The shape must pass the "glance test" — a fan should instantly recognize the story's arc
+- Shapes capture how readers EXPERIENCE and REMEMBER a story, not every plot point
+- When in doubt, favor the interpretation that matches cultural consensus
+
+If the shape requires explanation, it's wrong.
+
+---
+## HOW SHAPES WORK
+
+Every story can be drawn on a simple graph.
+- The horizontal axis is Time, from Beginning to End.
+- The vertical axis is Fortune. Good is up, Ill is down.
+
+A character's journey is made of a few simple movements:
+- ↑ Rise: A change for the better. More arrows (↑↑, ↑↑↑) = more dramatic rise.
+- ↓ Fall: A change for the worse. More arrows (↓↓, ↓↓↓) = more catastrophic fall.
+- → Stasis: No significant change.
+
+---
+## INPUT
+
+**Title:** {story_title}
+**Author:** {author}
+**Protagonist:** {protagonist}
+
+**Story Summary:**
+{story_summary}
+
+**Generated Shape:** {shape}
+
+---
+## YOUR TASK
+
+Apply the "Reader Test": If a well-read fan of this story saw this shape, would they 
+nod in recognition?
+
+**Watch for these common problems:**
+
+1. **False recovery in tragedies:** Stories remembered as tragedies should not end 
+   with an uptick. Survival after catastrophe is not recovery.
+
+2. **Destruction scored as positive:** Brainwashing, spiritual breaking, or loss of 
+   self should not produce an uptick, even if the character "accepts" their fate.
+
+3. **Wrong emotional direction:** Does the ending feel right? A story remembered as 
+   triumphant should end up. A story remembered as devastating should end down.
+
+4. **Overcomplicated shape:** Too many arrows for a simple story, or vice versa.
+
+---
+## OUTPUT FORMAT
+
+Respond with JSON only. No other text.
+
+{{
+    "passes_review": true or false,
+    "confidence": "high" or "medium" or "low",
+    "assessment": "Brief explanation of why the shape does or doesn't match how readers experience this story",
+    "recommended_shape": "What the shape should be if it fails, otherwise null"
+}}
+
+---
+## EXAMPLES
+
+**Example 1: FAIL**
+Story: A tragedy where the protagonist loses everything and everyone, but survives.
+Shape: ↑ ↓↓↓ ↑
+Assessment: Final uptick contradicts how readers remember this as a tragedy. Survival 
+amid total loss is not recovery. Shape should end down.
+Recommended: ↑ ↓↓↓
+
+**Example 2: FAIL**
+Story: A dystopian tale where the protagonist is broken and brainwashed into loving 
+their oppressor.
+Shape: ↑ ↓↓ ↑
+Assessment: Final uptick treats psychological destruction as positive. Readers 
+understand this ending as devastation, not contentment. Shape should end down.
+Recommended: ↑ ↓↓
+
+**Example 3: PASS**
+Story: A romance with obstacles, a crisis, and a happy ending.
+Shape: ↑ ↓ ↑↑
+Assessment: Shape matches the genre expectation — attraction, setback, triumph. 
+A fan would recognize this arc instantly.
+
+**Example 4: PASS**
+Story: A classic tragedy where hubris leads to downfall.
+Shape: ↑ ↓↓
+Assessment: Clean tragic arc — rise followed by catastrophic fall. Matches cultural 
+understanding of the story.
+
+---
+
+Now review the provided shape and respond with your JSON assessment.
+"""
+
+    prompt = PromptTemplate(
+        input_variables=["story_title", "author", "protagonist", "story_summary", "shape"],
+        template=prompt_template
+    )
+    
+    config = load_config(config_path=config_path)
+    llm = get_llm(llm_provider, llm_model, config, max_tokens=1024)
+    runnable = prompt | llm
+    
+    output = runnable.invoke({
+        "story_title": story_title,
+        "author": author,
+        "protagonist": protagonist,
+        "story_summary": story_summary,
+        "shape": shape
+    })
+
+    if hasattr(output, "content"):
+        output_text = output.content
+    else:
+        output_text = output
+
+    extracted_text = extract_json(output_text)
+    
+    try:
+        review_result = json.loads(extracted_text)
+    except (json.JSONDecodeError, TypeError) as e:
+        print(f"Error parsing JSON from reviewer LLM: {e}")
+        print(f"Raw extracted text was: {extracted_text}")
+        return {"error": "Failed to parse reviewer response as JSON."}
+    
+    return review_result
 
 
 
