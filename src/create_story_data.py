@@ -185,7 +185,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
 
 
     # get story components --> don't use google you often get blocked
-    story_components_llm_model = "gemini-3-pro-preview" ## openai gpt 5 seems to best for this 
+    story_components_llm_model = "gemini-3-pro-preview" #"gemini-3-pro-preview" ## openai gpt 5 seems to best for this 
     story_components_detailed = get_story_components(
         config_path=PATHS['config'],
         story_title=story_title,
@@ -198,7 +198,7 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     )
     print("✅ Story Components Created")
 
-    story_component_distill_llm_model = "gemini-3-pro-preview" #"gpt-5-2025-08-07"
+    story_component_distill_llm_model = "gemini-3-pro-preview" #"gemini-3-pro-preview" #"gpt-5-2025-08-07"
     story_components = get_distilled_story_components(
         config_path=PATHS['config'],
         story_components_detailed=story_components_detailed,

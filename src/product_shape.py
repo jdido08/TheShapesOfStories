@@ -438,9 +438,9 @@ def create_shape_single_pass(
     x_values = story_data['x_values']  # Scaled x_values (from 1 to 10)
     y_values = story_data['y_values']  # Scaled y_values (from -10 to 10)
 
-    # Extract original end_time and end_emotional_score values
+    # Extract original end_time and end_fortune_score values
     original_end_times = [component['end_time'] for component in story_data['story_components']]
-    original_emotional_scores = [component['end_emotional_score'] for component in story_data['story_components']]
+    original_emotional_scores = [component['end_fortune_score'] for component in story_data['story_components']]
 
     # Get the original min and max values from your data
     old_min_x = min(original_end_times)
@@ -764,7 +764,7 @@ def create_shape_single_pass(
                 reverse_scale_plot_points(xv, old_min_x, old_max_x, new_min_x, new_max_x)
                 for xv in arc_x_values
             ]
-            original_arc_end_emotional_score_values = [
+            original_arc_end_fortune_score_values = [
                 reverse_scale_y_values(yv, old_min_y, old_max_y, new_min_y, new_max_y)
                 for yv in arc_y_values
             ]
@@ -948,7 +948,7 @@ def create_shape_single_pass(
                         component['adjust_spacing'] = False
                         component['spacing_optimized'] = False #ADDED 11/29/2025
                         component['modified_end_time'] = component['end_time']
-                        component['modified_end_emotional_score'] = component['end_emotional_score']
+                        component['modified_end_fortune_score'] = component['end_fortune_score']
                     
                     else:
                         print("#", reasonable_descriptiors_attempts,".) Descriptors NOT Valid: ", descriptors_text, "Target Chars: ", llm_target_chars, " Error: ",  descriptor_message)
@@ -1049,7 +1049,7 @@ def create_shape_single_pass(
             if curve_length_status == "curve_too_short":
                 # Attempt adjusting via CubicSpline
                 x_og = np.array(original_arc_end_time_values)
-                y_og = np.array(original_arc_end_emotional_score_values)
+                y_og = np.array(original_arc_end_fortune_score_values)
                 sorted_indices = np.argsort(x_og)
                 x_og = x_og[sorted_indices]
                 y_og = y_og[sorted_indices]
@@ -1097,7 +1097,7 @@ def create_shape_single_pass(
                             design_width=design_width,
                             design_height=design_height,
                             original_arc_end_time_values=original_arc_end_time_values,
-                            original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
+                            original_arc_end_fortune_score_values=original_arc_end_fortune_score_values,
                             old_min_x=old_min_x,
                             old_max_x=old_max_x,
                             old_min_y=old_min_y,
@@ -1130,7 +1130,7 @@ def create_shape_single_pass(
                     and recursive_mode
                     and component['adjust_spacing'] == False):
                     component['modified_end_time'] = new_x
-                    component['modified_end_emotional_score'] = new_y
+                    component['modified_end_fortune_score'] = new_y
                     
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
@@ -1146,7 +1146,7 @@ def create_shape_single_pass(
                     new_x = x_og[-1]
                     #print(round(new_y,3), " != ", round(y_og[-1],3)) 
                     component['modified_end_time'] = new_x
-                    component['modified_end_emotional_score'] = new_y
+                    component['modified_end_fortune_score'] = new_y
 
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
@@ -1161,7 +1161,7 @@ def create_shape_single_pass(
                     #print("#we hit y max / min and need to extend x")
                     new_y = y_og[-1]
                     component['modified_end_time'] = new_x
-                    component['modified_end_emotional_score'] = new_y
+                    component['modified_end_fortune_score'] = new_y
 
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
@@ -1218,7 +1218,7 @@ def create_shape_single_pass(
                         design_width=design_width,
                         design_height=design_height,
                         original_arc_end_time_values=original_arc_end_time_values,
-                        original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
+                        original_arc_end_fortune_score_values=original_arc_end_fortune_score_values,
                         old_min_x=old_min_x,
                         old_max_x=old_max_x,
                         old_min_y=old_min_y,
@@ -1276,23 +1276,23 @@ def create_shape_single_pass(
                 #doing - 10 is super janky; the problem is that num a points is fixed so if you make arc length smaller but keep number of points the same then decreasing arc like becomes hard
                 #an alternative apprach is instead of defining num of point you could define x_delta size and infer num of points
                 original_arc_end_time_index_length = len(original_arc_end_time_values) - 3
-                original_arc_end_emotional_score_index_length = len(original_arc_end_emotional_score_values) - 3
+                original_arc_end_fortune_score_index_length = len(original_arc_end_fortune_score_values) - 3
                 
-                #print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length])
+                #print(original_arc_end_time_values[original_arc_end_time_index_length], " : ", original_arc_end_fortune_score_values[original_arc_end_fortune_score_index_length])
 
                 #check if last values of arc segments is the global max; if it's the global max then shouldn't touch unless the second to last is the same value then you can shorten it
                 #normal mode can decrease everything 
                 if (original_arc_end_time_values[-1] > old_min_x 
                     and original_arc_end_time_values[-1] < old_max_x
-                    and original_arc_end_emotional_score_values[-1] > old_min_y
-                    and original_arc_end_emotional_score_values[-1] < old_max_y
+                    and original_arc_end_fortune_score_values[-1] > old_min_y
+                    and original_arc_end_fortune_score_values[-1] < old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode
                     and original_arc_end_time_index_length >= 0 
-                    and original_arc_end_emotional_score_index_length >= 0
+                    and original_arc_end_fortune_score_index_length >= 0
                     and component['adjust_spacing'] == False):
                     
                     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
-                    component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
+                    component['modified_end_fortune_score'] = original_arc_end_fortune_score_values[original_arc_end_fortune_score_index_length]
                     
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
@@ -1303,15 +1303,15 @@ def create_shape_single_pass(
                 
                 #cant touch x -- maybe want to remove
                 elif ((original_arc_end_time_values[-1] == old_min_x or original_arc_end_time_values[-1] == old_max_x)
-                    and original_arc_end_emotional_score_values[-1] > old_min_y
-                    and original_arc_end_emotional_score_values[-1] < old_max_y
+                    and original_arc_end_fortune_score_values[-1] > old_min_y
+                    and original_arc_end_fortune_score_values[-1] < old_max_y
                     and len(component['arc_x_values']) > 1 and recursive_mode 
-                    and round(original_arc_end_emotional_score_values[-1],3) != round(original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length],3)
-                    and original_arc_end_emotional_score_index_length >= 0
+                    and round(original_arc_end_fortune_score_values[-1],3) != round(original_arc_end_fortune_score_values[original_arc_end_fortune_score_index_length],3)
+                    and original_arc_end_fortune_score_index_length >= 0
                     and component['adjust_spacing'] == False):
 
                     component['modified_end_time'] = original_arc_end_time_values[-1]
-                    component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[original_arc_end_emotional_score_index_length]
+                    component['modified_end_fortune_score'] = original_arc_end_fortune_score_values[original_arc_end_fortune_score_index_length]
                     
                     maybe_save(surface, story_shape_path, output_format, save_intermediate)
 
@@ -1321,7 +1321,7 @@ def create_shape_single_pass(
                     return story_data, "processing"
                 
                 # #cant touch y
-                # elif ((original_arc_end_emotional_score_values[-1] == old_min_y or original_arc_end_emotional_score_values[-1] == old_max_y)
+                # elif ((original_arc_end_fortune_score_values[-1] == old_min_y or original_arc_end_fortune_score_values[-1] == old_max_y)
                 #     and original_arc_end_time_values[-1] > old_min_x 
                 #     and original_arc_end_time_values[-1] < old_max_x
                 #     and len(component['arc_x_values']) > 1 and recursive_mode
@@ -1330,7 +1330,7 @@ def create_shape_single_pass(
                 #     #print("hey")
                 #     print("modifying end time")
                 #     component['modified_end_time'] = original_arc_end_time_values[original_arc_end_time_index_length]
-                #     component['modified_end_emotional_score'] = original_arc_end_emotional_score_values[-1]
+                #     component['modified_end_fortune_score'] = original_arc_end_fortune_score_values[-1]
 
                 #     if output_format == "svg":
                 #         surface.flush()   # flush the partial drawing, but do *not* finalize!
@@ -1386,7 +1386,7 @@ def create_shape_single_pass(
                         design_width=design_width,
                         design_height=design_height,
                         original_arc_end_time_values=original_arc_end_time_values,
-                        original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
+                        original_arc_end_fortune_score_values=original_arc_end_fortune_score_values,
                         old_min_x=old_min_x,
                         old_max_x=old_max_x,
                         old_min_y=old_min_y,
@@ -2422,7 +2422,7 @@ def transform_story_data(data, x_delta, step_k, max_num_steps ):
             continue 
 
         mod_end_time = component_data_item.get('modified_end_time')
-        mod_emo_score = component_data_item.get('modified_end_emotional_score')
+        mod_emo_score = component_data_item.get('modified_end_fortune_score')
         arc_type = component_data_item.get('arc') 
         description = component_data_item.get('description', '#N/A') # Get description
 
@@ -2446,7 +2446,7 @@ def transform_story_data(data, x_delta, step_k, max_num_steps ):
             # Fields that will be renamed later (or you can name them directly now)
             # Using 'modified_...' prefix initially, then renaming, is fine if you prefer that pattern.
             'story_component_modified_end_time': mod_end_time,
-            'story_component_modified_end_emotional_score': mod_emo_score,
+            'story_component_modified_end_fortune_score': mod_emo_score,
         }
         components_for_df_creation.append(essential_comp_info)
 
@@ -2473,9 +2473,9 @@ def transform_story_data(data, x_delta, step_k, max_num_steps ):
     # Print the column names for debugging
     #print("DataFrame columns:", df.columns.tolist())
 
-    # Use 'story_component_modified_end_time' and 'story_component_modified_end_emotional_score' directly
+    # Use 'story_component_modified_end_time' and 'story_component_modified_end_fortune_score' directly
     df['story_component_end_time'] = df['story_component_modified_end_time']
-    df['story_component_end_emotional_score'] = df['story_component_modified_end_emotional_score']
+    df['story_component_end_fortune_score'] = df['story_component_modified_end_fortune_score']
 
     # Rename other columns as needed
     df = df.rename(columns={
@@ -2484,7 +2484,7 @@ def transform_story_data(data, x_delta, step_k, max_num_steps ):
     })
 
     # Select relevant columns
-    df = df[['title', 'protagonist', 'story_component_end_time', 'story_component_end_emotional_score', 'story_component_arc', 'story_component_description']]
+    df = df[['title', 'protagonist', 'story_component_end_time', 'story_component_end_fortune_score', 'story_component_arc', 'story_component_description']]
     df = df.sort_values(by='story_component_end_time', ascending=True)
 
     # Convert time values to x-values
@@ -2500,13 +2500,13 @@ def transform_story_data(data, x_delta, step_k, max_num_steps ):
     for i in range(len(df) - 1):  # -1 because we are considering pairs of adjacent rows
         start_time = x_dict[df.loc[i, 'story_component_end_time']]
         end_time = x_dict[df.loc[i + 1, 'story_component_end_time']]
-        start_emotional_score = df.loc[i, 'story_component_end_emotional_score']
-        end_emotional_score = df.loc[i + 1, 'story_component_end_emotional_score']
+        start_emotional_score = df.loc[i, 'story_component_end_fortune_score']
+        end_fortune_score = df.loc[i + 1, 'story_component_end_fortune_score']
         arc = df.loc[i + 1, 'story_component_arc']  # Using the arc of the second point
 
         dict_item = {
             'story_component_times': [start_time, end_time],
-            'story_component_end_emotional_scores': [start_emotional_score, end_emotional_score],
+            'story_component_end_fortune_scores': [start_emotional_score, end_fortune_score],
             'arc': arc
         }
         array_of_dicts.append(dict_item)
@@ -2515,15 +2515,15 @@ def transform_story_data(data, x_delta, step_k, max_num_steps ):
     story_arc_functions_list = []
     for item in array_of_dicts:
         story_component_times = item['story_component_times']
-        story_component_end_emotional_scores = item['story_component_end_emotional_scores']
+        story_component_end_fortune_scores = item['story_component_end_fortune_scores']
         story_component_arc = item['arc']
 
         # Create the function based on the specified interpolation
         component_arc_function = get_component_arc_function(
             story_component_times[0],
             story_component_times[1],
-            story_component_end_emotional_scores[0],
-            story_component_end_emotional_scores[1],
+            story_component_end_fortune_scores[0],
+            story_component_end_fortune_scores[1],
             story_component_arc,
             step_k,
             max_num_steps
@@ -2548,14 +2548,14 @@ def transform_story_data(data, x_delta, step_k, max_num_steps ):
     story_component_index = 1
     for item in array_of_dicts:
         story_component_times = item['story_component_times']
-        story_component_end_emotional_scores = item['story_component_end_emotional_scores']
+        story_component_end_fortune_scores = item['story_component_end_fortune_scores']
         story_component_arc = item['arc']
 
         component_arc_function = get_component_arc_function(
             story_component_times[0],
             story_component_times[1],
-            story_component_end_emotional_scores[0],
-            story_component_end_emotional_scores[1],
+            story_component_end_fortune_scores[0],
+            story_component_end_fortune_scores[1],
             story_component_arc, 
             step_k,
             max_num_steps

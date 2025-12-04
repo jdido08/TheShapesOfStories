@@ -236,10 +236,10 @@ RESPONSE RULES
      </ul>
         
   2) <h2>The Story Behind the Shape</h2>
-     <p>Write 2–4 sentences (≈45–90 words) explaining the emotional journey. Embed arrow notation inline and
+     <p>Write 2–4 sentences (≈45–90 words) explaining the fortune journey. Embed arrow notation inline and
         follow the Shape **as grouped tokens** left to right: {symbolic}. Keep identical consecutive arrows **together**,
         e.g., if the Shape is "↓ ↑↑ →", reference “(↓)”, “(↑↑)”, “(→)”—never split “(↑↑)” into two “(↑)”.
-        Use specific moments when they clarify the rise/fall, but keep it concise and focused on the emotional movement (not a step-by-step recap). Do **not** mention archetype in this paragraph.
+        Use specific moments when they clarify the rise/fall, but keep it concise and focused on the fortune movement (not a step-by-step recap). Do **not** mention archetype in this paragraph.
         Lightly ground the flow using these beat cues when helpful (keep it narrative, not a list): {arc_texts_inline}</p>
 
   3) <h2>Print Details</h2>

@@ -140,7 +140,7 @@ def load_points_from_json(story_components: dict) -> Tuple[List[float], List[flo
     xs, ys = [], []
     for it in items:
         x = it.get("modified_end_time", it.get("end_time"))
-        y = it.get("modified_end_emotional_score", it.get("end_emotional_score"))
+        y = it.get("modified_end_fortune_score", it.get("end_fortune_score"))
         if x is None or y is None:
             continue
         xs.append(float(x)); ys.append(float(y))

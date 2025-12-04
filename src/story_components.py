@@ -97,7 +97,14 @@ possible, regardless of the character's resulting emotional state.
 When a protagonist survives but everyone and everything around them is 
 destroyed, mere survival does not constitute positive fortune. The 
 character is left amid loss and devastation. Score as negative, with 
-severity proportional to the magnitude of loss.
+severity proportional to the magnitude of loss. Being rescued or surviving 
+does not meaningfully offset total loss when the protagonist's world has 
+been destroyed.
+
+Ask: "Is the protagonist better off, or merely still alive?" If they have 
+lost everything that mattered — friends, purpose, community, livelihood — 
+then survival alone does not improve their fortune. The score should 
+remain at or within 1-2 points of the nadir.
 
 **Death**
 Death represents negative fortune, even when described as "peaceful" 
@@ -223,7 +230,6 @@ Cinderella
 <story_summary>
 Heartbroken and exhausted, Cinderella toils endlessly in her own home after her father’s death leaves her at the mercy of her cruel stepmother and spiteful stepsisters. Forced to cook, clean, and tend to every chore while enduring their constant insults, Cinderella clings to a quiet hope for a kinder future, though she often feels lonely and powerless. One day, an announcement arrives that the royal family is hosting a grand ball to find a bride for the Prince. Eager for a chance at happiness, Cinderella timidly asks if she may attend. Her stepmother and stepsisters mock her wish and forbid it, leaving her devastated. Even so, Cinderella manages to gather scraps of optimism, trying to sew a suitable dress from her late mother’s belongings—only for her stepsisters to shred it in a fit of jealousy moments before the ball. Crushed by this cruel betrayal, she flees to the garden, overwhelmed by despair. It is there that her Fairy Godmother appears, transforming Cinderella’s tattered clothes into a resplendent gown and conjuring a gleaming carriage from a humble pumpkin. As Cinderella’s hopes rise, the Fairy Godmother warns her that the magic will end at midnight. At the grand royal ball, the Prince is immediately enchanted by her gentle grace and luminous presence. For the first time, Cinderella basks in admiration instead of scorn, feeling her spirits soar with each dance and conversation. However, as the clock strikes midnight, she is forced to flee the palace. In her panic to escape before the spell breaks, she loses one of her delicate glass slippers on the palace steps. Despite her sudden disappearance, the Prince is determined to find this mysterious young woman, traveling throughout the kingdom with the slipper in hand. When his search brings him to Cinderella’s home, her stepsisters deride the idea that she could be the one who captured the Prince’s heart. Yet, as soon as Cinderella tries on the slipper, it fits perfectly. Freed at last from servitude, she marries the Prince, and her enduring kindness and patience are joyously rewarded.
 </story_summary>
-<ideal_output>
 <ideal_output>
 {{
     "title": "Cinderella at the Ball",
@@ -360,11 +366,11 @@ def validate_story_arcs(data): #data should be json object
     
     # Previous emotional score for comparison; start with the first component
     title = data['title']
-    prev_score = data['story_components'][0]['end_emotional_score']
+    prev_score = data['story_components'][0]['end_fortune_score']
     
     # Iterate through story components, starting from the second one
     for component in data['story_components'][1:]:
-        current_score = component['end_emotional_score']
+        current_score = component['end_fortune_score']
         arc = component['arc']
         end_time = component['end_time']
         expected_change = None
@@ -439,7 +445,7 @@ def get_story_components(config_path,story_title, story_summary, author, year, p
     #end modified times -- needed for product creation
     for component in story_components["story_components"]:
         component['modified_end_time'] = component['end_time']
-        component['modified_end_emotional_score'] = component['end_emotional_score']
+        component['modified_end_fortune_score'] = component['end_fortune_score']
     
     return story_components["story_components"]
 
@@ -470,8 +476,8 @@ def clean_distilled_scores(components, tolerance=1, strict=False):
         strict: If True, raises error for large deviations. If False, logs warning (default: False)
     """
     for i in range(1, len(components)):
-        prev_score = components[i-1]['end_emotional_score']
-        curr_score = components[i]['end_emotional_score']
+        prev_score = components[i-1]['end_fortune_score']
+        curr_score = components[i]['end_fortune_score']
         arc_label = components[i]['arc']
 
         if "Flat" in arc_label and curr_score != prev_score:
@@ -481,7 +487,7 @@ def clean_distilled_scores(components, tolerance=1, strict=False):
                 # Small deviation - auto-correct
                 print(f"⚠️ Adjusting Component {i}: Arc is '{arc_label}' with minor deviation "
                       f"({prev_score} → {curr_score}), snapping to {prev_score}")
-                components[i]['end_emotional_score'] = prev_score
+                components[i]['end_fortune_score'] = prev_score
             else:
                 # Large deviation
                 error_msg = (
@@ -494,7 +500,7 @@ def clean_distilled_scores(components, tolerance=1, strict=False):
                     raise ValueError(f"❌ ERROR: {error_msg}")
                 else:
                     print(f"⚠️ WARNING: {error_msg} Auto-correcting anyway.")
-                    components[i]['end_emotional_score'] = prev_score
+                    components[i]['end_fortune_score'] = prev_score
             
     return components
 
@@ -514,8 +520,8 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
 
     # Check last component
     last_duration = components[-1]['end_time'] - components[-2]['end_time']
-    last_score_change = abs(components[-1]['end_emotional_score'] - 
-                            components[-2]['end_emotional_score'])
+    last_score_change = abs(components[-1]['end_fortune_score'] - 
+                            components[-2]['end_fortune_score'])
     
     if last_duration < min_finale_duration and last_score_change >= min_score_change:
         needed = min_finale_duration - last_duration
@@ -545,10 +551,10 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
 #    - You MUST reduce the story to **between 3 and 6 components total**.
 #    - **Identify Major Inflection Points:** Only create a new component when the narrative's emotional direction **significantly reverses** (e.g. a sustained rise hits a peak and turns into a fall).
 #    - **Filter out Noise:** If the protagonist fluctuates slightly (e.g., -5 to -8 to -6 to -9), this is NOT a zig-zag. It is ONE single "Decrease" trend. Ignore the minor blips.
-#    - **The "Stasis" Rule:** If the narrative feels static or stuck, and the score changes only negligibly (e.g. +/- 1 point), you MUST adjust the end_emotional_score to match the previous component's score exactly to create a flat line.
+#    - **The "Stasis" Rule:** If the narrative feels static or stuck, and the score changes only negligibly (e.g. +/- 1 point), you MUST adjust the end_fortune_score to match the previous component's score exactly to create a flat line.
 #    - **Merge Aggressively:** Create a broad "Trend Line" that connects the Start, the Major Turning Points (Peaks/Valleys), and the End.
 #    - **Preserve the Start:** Keep the first component (end_time 0) exactly as is.
-#    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+#    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_fortune_score as the input data.
 
 #VERSION 2
     # 2.1) Simplify and Distill Components i.e. **The "Zoom Out" Rule**
@@ -562,7 +568,7 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
     #      * Example: -5 -> -8 -> -6 -> -9 is a "Decrease" trend. The brief jump to -6 is noise. The trend is from -5 down to -9.
     #    - **The "Stasis" Rule:** If the emotional score varies by only +/- 1 point over a long duration (e.g. -5 to -6 to -5), treat this as "Linear Flat" and flatten the score to the baseline.
     #    - **Preserve the Start:** Keep the first component (end_time 0) exactly as is.
-    #    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+    #    - **Preserve the End:** The final component (end_time 100) MUST have the exact same end_fortune_score as the input data.
 
 
 #archiving 11/28/2025
@@ -622,7 +628,7 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
 #         - Ensure the distilled shape hits these exact extremes at the correct time.
 #         - The "Stasis" Rule: Use "Linear Flat" ONLY when the emotional score changes by ±1 point or less from start to end of the component. You may use "Linear Flat" for periods where the protagonist oscillates through ups and downs (e.g., -5 → -3 → -7 → -5) but returns to within ±1 point of the starting score. CRITICAL: If the component's ending score differs from the starting score by ±2 or more points, you MUST use an appropriate Increase/Decrease arc type, NOT Linear Flat—even if the character felt "stuck" or "trapped" during this period. Major events that cause sustained emotional shifts must be reflected in the arc type.        
 #         - Preserve the Start: Keep the first component (end_time 0) exactly as is.
-#         - Preserve the End: The final component (end_time 100) MUST have the exact same end_emotional_score as the input data.
+#         - Preserve the End: The final component (end_time 100) MUST have the exact same end_fortune_score as the input data.
 
 #     ## 2.2) Distilled Component **Arc Selection:**
 #        For each distilled component, choose the emotional arc pattern that best fits the rate of change for distilled component. Here are the following choices:
@@ -654,7 +660,7 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
     
 #     ## 2.5)  Double Check according to the following **TECHNICAL & VALIDATION RULES (CRITICAL):**
 #        - **Anchor Check:** Ensure the Start Score (Time 0) and End Score (Time 100) match the input data exactly.
-#        - Ensure that end_emotional_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_emotional_score than the previous component).
+#        - Ensure that end_fortune_scores are consistent with the arc types (e.g., an "Increase" arc should have a higher end_fortune_score than the previous component).
 #        - Emotional scores must be whole numbers between -10 and +10. 
 #        - If the emotional score remains the same (e.g., -5 to -5), the Arc Type MUST be "Linear Flat". You strictly cannot label an arc as "Increase" or "Decrease" if the score number does not change.
 #        - Adjacent components should not have the same emotional score unless using Linear Flat arc.
@@ -675,13 +681,13 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
 #             {{
 #                 "end_time": 0,
 #                 "description": "N/A",
-#                 "end_emotional_score": <int matches input>,
+#                 "end_fortune_score": <int matches input>,
 #                 "arc": "N/A"
 #             }},
 #             {{
 #                 "end_time": <int>, 
 #                 "description": "<Narrative description of the dominant trend>",
-#                 "end_emotional_score": <int>,
+#                 "end_fortune_score": <int>,
 #                 "arc": "<Selected Arc Pattern>"
 #             }}
 #             ...
@@ -708,49 +714,49 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
 #             {{
 #                 "end_time": 0,
 #                 "description": "#N/A",
-#                 "end_emotional_score": -5,
+#                 "end_fortune_score": -5,
 #                 "arc": "#N/A"
 #             }},
 #             {{
 #                 "end_time": 15,
 #                 "description": "Cinderella timidly asks to attend the ball, feeling a spark of hope that she might be allowed a night of happiness.",
-#                 "end_emotional_score": -3,
+#                 "end_fortune_score": -3,
 #                 "arc": "Linear Increase"
 #             }},
 #             {{
 #                 "end_time": 25,
 #                 "description": "Her stepmother mocks the request. Then, her stepsisters discover her homemade dress and rip it to shreds. Devastated, she runs to the garden.",
-#                 "end_emotional_score": -9,
+#                 "end_fortune_score": -9,
 #                 "arc": "Straight Decrease"
 #             }},
 #             {{
 #                 "end_time": 35,
 #                 "description": "The Fairy Godmother appears. Cinderella's despair turns to rising wonder as the pumpkin is transformed into a carriage.",
-#                 "end_emotional_score": 4,
+#                 "end_fortune_score": 4,
 #                 "arc": "Step-by-Step Increase"
 #             }},
 #             {{
 #                 "end_time": 60,
 #                 "description": "Cinderella enters the ball and dances with the Prince. She feels seen and adored, forgetting her life of servitude.",
-#                 "end_emotional_score": 9,
+#                 "end_fortune_score": 9,
 #                 "arc": "Gradual-to-Rapid Increase"
 #             }},
 #             {{
 #                 "end_time": 70,
 #                 "description": "Midnight strikes. Cinderella panics and flees, losing her slipper on the stairs.",
-#                 "end_emotional_score": -2,
+#                 "end_fortune_score": -2,
 #                 "arc": "Straight Decrease"
 #             }},
 #             {{
 #                 "end_time": 90,
 #                 "description": "Back in rags, she resumes chores. She watches helplessly as the Prince searches the kingdom and her stepsisters try on the slipper.",
-#                 "end_emotional_score": -4,
+#                 "end_fortune_score": -4,
 #                 "arc": "Linear Decrease"
 #             }},
 #             {{
 #                 "end_time": 100,
 #                 "description": "The slipper fits. Cinderella reveals herself, marries the Prince, and leaves her abusive home forever.",
-#                 "end_emotional_score": 10,
+#                 "end_fortune_score": 10,
 #                 "arc": "Straight Increase"
 #             }}
 #         ]
@@ -765,31 +771,31 @@ def ensure_finale_visibility(components, min_finale_duration=10, min_score_chang
 #             {{
 #                 "end_time": 0,
 #                 "description": "N/A",
-#                 "end_emotional_score": -5,
+#                 "end_fortune_score": -5,
 #                 "arc": "N/A"
 #             }},
 #             {{
 #                 "end_time": 25,
 #                 "description": "Cinderella asks to attend the ball but is mocked and forbidden by her stepmother. She attempts to sew a dress from her mother's old things, but her stepsisters discover her, rip the dress to shreds, and leave her sobbing in the garden.",
-#                 "end_emotional_score": -9,
+#                 "end_fortune_score": -9,
 #                 "arc": "Rapid-to-Gradual Decrease"
 #             }},
 #             {{
 #                 "end_time": 60,
 #                 "description": "The Fairy Godmother transforms a pumpkin into a carriage and rags into a gown. Cinderella enters the ball, dances with the Prince, and is admired by the entire court, forgetting her life of servitude.",
-#                 "end_emotional_score": 9,
+#                 "end_fortune_score": 9,
 #                 "arc": "Step-by-Step Increase"
 #             }},
 #             {{
 #                 "end_time": 90,
 #                 "description": "The clock strikes midnight, forcing Cinderella to flee and lose a glass slipper. Back in her rags, she resumes chores while the Prince searches the kingdom; she watches helplessly as her stepsisters try to force their feet into the slipper.",
-#                 "end_emotional_score": -4,
+#                 "end_fortune_score": -4,
 #                 "arc": "Rapid-to-Gradual Decrease"
 #             }},
 #             {{
 #                 "end_time": 100,
 #                 "description": "The Prince allows Cinderella to try the slipper, and it fits perfectly. She reveals her identity, leaves her stepfamily behind, and marries the Prince.",
-#                 "end_emotional_score": 10,
+#                 "end_fortune_score": 10,
 #                 "arc": "Straight Increase"
 #             }}
 #         ]
@@ -962,7 +968,7 @@ def distill_story_components(
     prompt_template = """
 You are a world-class literary scholar specializing in narrative structure analysis.
 
-Your task is to DISTILL a detailed emotional journey analysis into a simplified shape 
+Your task is to DISTILL a detailed fortune analysis into a simplified shape
 that captures the STRUCTURAL ESSENCE of {protagonist}'s arc in "{story_title}" by {author}.
 
 The output will be used for visualization—clarity and meaningful simplification are paramount.
@@ -977,7 +983,7 @@ All plot details must be verified against this summary:
 {story_summary}
 
 ## 1.2 Detailed Analysis (INPUT TO DISTILL)
-Framework: Timeline 0-100, Emotional scores -10 (despair) to +10 (euphoria)
+Framework: Timeline 0-100, Fortune scores -10 (worst outcome) to +10 (best outcome)
 
 {granular_components}
 
@@ -1002,6 +1008,11 @@ examples include:
 - **Climactic Moment**: The turning point—victory, defeat, revelation, or transformation
 - **Consequence/Fallout**: Living with the results of the climax
 - **New Equilibrium**: Settling into a changed (or unchanged) state
+
+Note: Mere survival or rescue after catastrophe typically falls under 
+"Consequence/Fallout," not a new position. A protagonist's situation 
+has not meaningfully changed if they have simply stopped falling — 
+surviving is not the same as recovering.
 
 Different story types have different positions:
 - A tragedy may lack "Recovery" and end in "Destruction"
@@ -1028,7 +1039,7 @@ than a 5-component shape that tracks every fluctuation..
 You MUST preserve these exact values from the input:
 
 1. **START ANCHOR**: First component (end_time: 0) must match input exactly
-2. **END ANCHOR**: Final component (end_time: 100) must have the same end_emotional_score as input
+2. **END ANCHOR**: Final component (end_time: 100) must have the same end_fortune_score as input
 3. **PEAK ANCHOR**: The single highest score in the story must appear at its structural moment
 4. **NADIR ANCHOR**: The single lowest score in the story must appear at its structural moment
 
@@ -1036,7 +1047,7 @@ These anchors are the "skeleton" of the shape. Everything else can be smoothed.
 
 ## 2.4 Scoring Framework: Narrative Judgment
 
-The following framework governs how emotional scores should be interpreted. 
+The following framework governs how fortune scores should be interpreted.
 This applies both to evaluating the input scores AND to any adjustments 
 you make during distillation.
 
@@ -1066,7 +1077,13 @@ possible, regardless of the character's resulting emotional state.
 When a protagonist survives but everyone and everything around them is 
 destroyed, mere survival does not constitute positive fortune. The 
 character is left amid loss and devastation. Score as negative, with 
-severity proportional to the magnitude of loss.
+severity proportional to the magnitude of loss. Being rescued or surviving 
+does not meaningfully offset total loss when the protagonist's world has been destroyed.
+
+Ask: "Is the protagonist better off, or merely still alive?" If they have 
+lost everything that mattered — friends, purpose, community, livelihood — 
+then survival alone does not improve their fortune. The score should 
+remain at or within 1-2 points of the nadir.
 
 **Death**
 Death represents negative fortune, even when described as "peaceful" 
@@ -1107,14 +1124,14 @@ Before creating a component boundary, ask:
 - The protagonist's core circumstances shift (e.g., from "pursuing" to "possessing," or from "secure" to "threatened")
 - A major goal is achieved or irrevocably lost
 - A revelation fundamentally changes the protagonist's understanding or relationships
-- The moment represents the story's PEAK or NADIR emotional score
+- The moment represents the story's PEAK or NADIR fortune score
 - The protagonist transitions from action to consequence (or vice versa)
 
 ❌ DO NOT create a boundary when:
 - The score temporarily fluctuates but the protagonist remains in the same situation
 - A setback occurs within an ongoing struggle (same position, different intensity)
 - The change is gradual continuation of an existing trend
-- Minor events cause temporary emotional shifts without altering the fundamental situation
+- Minor events cause temporary fortune shifts without altering the fundamental situation
 
 ## 2.6 Handling Fluctuations Within Segments
 
@@ -1158,7 +1175,7 @@ SECTION 3: COMPONENT CONSTRUCTION
 
 ## 3.1 Arc Type Selection
 
-Choose the arc that best describes HOW the emotional change occurs:
+Choose the arc that best describes HOW the fortune change occurs:
 
 | Arc Type                    | When to Use                                           |
 |-----------------------------|-------------------------------------------------------|
@@ -1195,8 +1212,8 @@ ensure factual accuracy.
 ❌ DO NOT: Invent details, infer unstated events, or embellish beyond the source material
 
 ### Rule 3: Arc-Aligned Event Selection
-Select events that JUSTIFY the specific emotional arc of the distilled component.
-The description should demonstrate WHY the score changed (or didn't change) as it did.
+Select events that JUSTIFY the specific fortune arc of the distilled component.
+The description should demonstrate WHY the fortune changed (or didn't change) as it did.
 
 - **For INCREASE arcs:** Emphasize the positive events, victories, connections, or 
   improvements that drove the score upward. You may briefly mention setbacks only 
@@ -1207,7 +1224,7 @@ The description should demonstrate WHY the score changed (or didn't change) as i
   only if they were dashed.
   
 - **For FLAT arcs (CRITICAL EXCEPTION):** You MUST include BOTH the positive AND 
-  negative events to demonstrate why there was no net emotional change. Show the 
+  negative events to demonstrate why there was no net fortune change. Show the 
   oscillation or stasis explicitly—the protagonist experienced ups and downs that 
   canceled out, or nothing significant occurred.
 
@@ -1270,7 +1287,7 @@ SECTION 5: COMMON MISTAKES TO AVOID
 
 ❌ MISTAKE 7: Starting descriptions with pronouns
    Wrong: "She discovers the invitation and feels excited..."
-   Right: "Cinderella discovers the invitation and feels excited..."
+   Right: "Cinderella discovers the invitation and gains a chance to attend the ball..."
 
 ❌ MISTAKE 8: Including events not in the story summary
    Wrong: Adding inferred backstory or imagined details
@@ -1289,13 +1306,13 @@ Output ONLY valid JSON in this exact format:
         {{
             "end_time": 0,
             "description": "N/A",
-            "end_emotional_score": <must match input>,
+            "end_fortune_score": <must match input>,
             "arc": "N/A"
         }},
         {{
             "end_time": <int 1-100>,
             "description": "<2-3 sentences of concrete events per Rule 3>",
-            "end_emotional_score": <int -10 to +10>,
+            "end_fortune_score": <int -10 to +10>,
             "arc": "<arc type from Section 3.1>"
         }},
         ... (2-4 more components, for 3-5 total excluding baseline)
@@ -1341,16 +1358,16 @@ kindness and patience are joyously rewarded.
     "title": "Cinderella",
     "protagonist": "Cinderella",
     "story_components": [
-        {{"end_time": 0, "description": "N/A", "end_emotional_score": -5, "arc": "N/A"}},
-        {{"end_time": 10, "description": "Cinderella hears about the royal ball and asks permission to attend, feeling a spark of hope.", "end_emotional_score": -3, "arc": "Linear Increase"}},
-        {{"end_time": 20, "description": "Her stepmother mocks and forbids her. Cinderella secretly sews a dress from her mother's old things.", "end_emotional_score": -4, "arc": "Linear Decrease"}},
-        {{"end_time": 28, "description": "Her stepsisters discover the dress and rip it to shreds. Cinderella flees to the garden, sobbing in despair.", "end_emotional_score": -9, "arc": "Straight Decrease"}},
-        {{"end_time": 38, "description": "The Fairy Godmother appears and transforms a pumpkin into a carriage, mice into horses, and rags into a gown.", "end_emotional_score": 4, "arc": "Straight Increase"}},
-        {{"end_time": 55, "description": "Cinderella arrives at the ball. The Prince asks her to dance. She is admired by the entire court.", "end_emotional_score": 8, "arc": "Gradual-to-Rapid Increase"}},
-        {{"end_time": 62, "description": "Cinderella and the Prince dance and talk through the evening. She feels seen and valued for the first time.", "end_emotional_score": 9, "arc": "Linear Increase"}},
-        {{"end_time": 70, "description": "The clock strikes midnight. Cinderella panics and flees, losing her glass slipper on the stairs.", "end_emotional_score": -2, "arc": "Straight Decrease"}},
-        {{"end_time": 85, "description": "Back in rags, Cinderella resumes her chores. She watches helplessly as the Prince searches the kingdom and her stepsisters try on the slipper.", "end_emotional_score": -4, "arc": "Linear Decrease"}},
-        {{"end_time": 100, "description": "The Prince allows Cinderella to try the slipper. It fits perfectly. She marries the Prince and leaves her stepfamily forever.", "end_emotional_score": 10, "arc": "Straight Increase"}}
+        {{"end_time": 0, "description": "N/A", "end_fortune_score": -5, "arc": "N/A"}},
+        {{"end_time": 10, "description": "Cinderella hears about the royal ball and asks permission to attend, feeling a spark of hope.", "end_fortune_score": -3, "arc": "Linear Increase"}},
+        {{"end_time": 20, "description": "Her stepmother mocks and forbids her. Cinderella secretly sews a dress from her mother's old things.", "end_fortune_score": -4, "arc": "Linear Decrease"}},
+        {{"end_time": 28, "description": "Her stepsisters discover the dress and rip it to shreds. Cinderella flees to the garden, sobbing in despair.", "end_fortune_score": -9, "arc": "Straight Decrease"}},
+        {{"end_time": 38, "description": "The Fairy Godmother appears and transforms a pumpkin into a carriage, mice into horses, and rags into a gown.", "end_fortune_score": 4, "arc": "Straight Increase"}},
+        {{"end_time": 55, "description": "Cinderella arrives at the ball. The Prince asks her to dance. She is admired by the entire court.", "end_fortune_score": 8, "arc": "Gradual-to-Rapid Increase"}},
+        {{"end_time": 62, "description": "Cinderella and the Prince dance and talk through the evening. For the first time, she is treated with respect and admiration.", "end_fortune_score": 9, "arc": "Linear Increase"}},
+        {{"end_time": 70, "description": "The clock strikes midnight. Cinderella panics and flees, losing her glass slipper on the stairs.", "end_fortune_score": -2, "arc": "Straight Decrease"}},
+        {{"end_time": 85, "description": "Back in rags, Cinderella resumes her chores. She watches helplessly as the Prince searches the kingdom and her stepsisters try on the slipper.", "end_fortune_score": -4, "arc": "Linear Decrease"}},
+        {{"end_time": 100, "description": "The Prince allows Cinderella to try the slipper. It fits perfectly. She marries the Prince and leaves her stepfamily forever.", "end_fortune_score": 10, "arc": "Straight Increase"}}
     ]
 }}
 </input_detailed_analysis>
@@ -1386,37 +1403,37 @@ Step 4: Check that descriptions follow arc-alignment rules.
         {{
             "end_time": 0,
             "description": "N/A",
-            "end_emotional_score": -5,
+            "end_fortune_score": -5,
             "arc": "N/A"
         }},
         {{
             "end_time": 28,
             "description": "Cinderella asks to attend the royal ball but is mocked and forbidden by her stepmother. She secretly sews a dress from her mother's belongings, but her stepsisters discover it and rip it to shreds, leaving her sobbing in the garden in despair.",
-            "end_emotional_score": -9,
+            "end_fortune_score": -9,
             "arc": "Rapid-to-Gradual Decrease"
         }},
         {{
             "end_time": 38,
             "description": "Cinderella's Fairy Godmother appears in the garden and transforms a pumpkin into a carriage, mice into horses, and her tattered clothes into a resplendent gown, warning that the magic will end at midnight.",
-            "end_emotional_score": 4,
+            "end_fortune_score": 4,
             "arc": "Straight Increase"
         }},
         {{
             "end_time": 62,
-            "description": "Cinderella arrives at the royal ball where the Prince is immediately enchanted by her. They dance and talk through the evening, and for the first time she feels admired and valued rather than scorned.",
-            "end_emotional_score": 9,
+            "description": "Cinderella arrives at the royal ball where the Prince is immediately enchanted by her. They dance and talk through the evening, and for the first time she is treated with admiration and respect rather than scorn.",
+            "end_fortune_score": 9,
             "arc": "Gradual-to-Rapid Increase"
         }},
         {{
             "end_time": 85,
             "description": "Cinderella flees at midnight as the magic ends, losing her glass slipper on the palace steps. Back in rags and servitude, she watches helplessly as the Prince searches the kingdom and her stepsisters attempt to claim the slipper.",
-            "end_emotional_score": -4,
+            "end_fortune_score": -4,
             "arc": "Rapid-to-Gradual Decrease"
         }},
         {{
             "end_time": 100,
             "description": "Cinderella tries on the glass slipper and it fits perfectly, revealing her identity to the Prince. She marries him and is freed from her stepfamily's cruelty forever.",
-            "end_emotional_score": 10,
+            "end_fortune_score": 10,
             "arc": "Straight Increase"
         }}
     ]
@@ -1441,7 +1458,7 @@ KEY DECISIONS EXPLAINED:
 3. **Merged time 38-62 into one INCREASE component:**
    - Same narrative position throughout: "Fulfillment/Joy"
    - Ball arrival and dancing are one continuous experience of joy
-   - Description emphasizes POSITIVE events (enchantment, dancing, feeling valued)
+   - Description emphasizes POSITIVE events (enchantment, dancing, being treated with admiration)
    - Used +9 not +10 because the true peak (+10) is reserved for the ending
 
 4. **Merged time 62-85 into one DECREASE component:**
@@ -1578,7 +1595,7 @@ def get_distilled_story_components(config_path, story_components_detailed, story
     # 5. Add modified times -- needed for product creation
     for component in final_components:
         component['modified_end_time'] = component['end_time']
-        component['modified_end_emotional_score'] = component['end_emotional_score']
+        component['modified_end_fortune_score'] = component['end_fortune_score']
     
     # 6. Return complete structure with title and protagonist
     return final_components
@@ -1607,11 +1624,11 @@ def visualize_distillation(detailed_components, distilled_components, story_titl
     
     # Extract data from detailed components
     detailed_times = [comp['end_time'] for comp in detailed_components]
-    detailed_scores = [comp['end_emotional_score'] for comp in detailed_components]
+    detailed_scores = [comp['end_fortune_score'] for comp in detailed_components]
     
     # Extract data from distilled components
     distilled_times = [comp['end_time'] for comp in distilled_components]
-    distilled_scores = [comp['end_emotional_score'] for comp in distilled_components]
+    distilled_scores = [comp['end_fortune_score'] for comp in distilled_components]
     
     # Create figure
     fig, ax = plt.subplots(figsize=(14, 8))
@@ -1705,10 +1722,10 @@ def visualize_distillation(detailed_components, distilled_components, story_titl
 
 def grade_story_components(config_path: str, story_components: dict, canonical_summary: str, title:str, author: str, protagonist: str, llm_provider: str, llm_model: str) -> dict:
   """
-  Grades the accuracy of a story's emotional shape using a two-phase analysis.
+  Grades the accuracy of a story's fortune shape using a two-phase analysis.
 
-  Phase 1 (Bottom-Up): Verifies that each emotional transition is factually justified.
-  Phase 2 (Top-Down): Assesses the holistic accuracy of the entire emotional arc,
+  Phase 1 (Bottom-Up): Verifies that each fortune transition is factually justified.
+  Phase 2 (Top-Down): Assesses the holistic accuracy of the entire fortune arc,
   checking for correct proportions, pacing, and identification of key turning points.
 
   Args:
@@ -1729,14 +1746,14 @@ def grade_story_components(config_path: str, story_components: dict, canonical_s
   simplified_components.append({
       "end_time": initial_component.get("end_time"),
       "description": "Initial State",
-      "end_emotional_score": initial_component.get("end_emotional_score")
+      "end_fortune_score": initial_component.get("end_fortune_score")
   })
   for component in story_components:
       if component.get("end_time") > 0:
           simplified_components.append({
               "end_time": component.get("end_time"),
               "description": component.get("description"),
-              "end_emotional_score": component.get("end_emotional_score")
+              "end_fortune_score": component.get("end_fortune_score")
           })
           
   analysis_to_grade = {
@@ -1750,15 +1767,15 @@ def grade_story_components(config_path: str, story_components: dict, canonical_s
   prompt_template = """
 You are an expert literary scholar specializing in narrative theory and the quantitative analysis of story structures. You are trained to evaluate character arcs with academic rigor, objectivity, and precision. 
 
-Your task is to perform a rigorous two-phase quality assessment of a story's emotional shape.
-
+Your task is to perform a rigorous two-phase quality assessment of a story's fortune shape.
 
 ---
 ## INPUT DATA
 
 ### 1. Generated Story Analysis
-This JSON contains the proposed emotional scores for {protagonist} from {author}'s {title} and the text descriptions for each story segment. 
-Emotional scores range from euphoric (+10) to depressed (-10), based on {protagonist}'s direct experiences and reactions to events in each story segment.
+This JSON contains the proposed fortune scores for {protagonist} from {author}'s {title} and the text descriptions for each story segment. 
+Fortune scores range from +10 (best possible outcome) to -10 (worst possible outcome), based on how a reader would judge {protagonist}'s situation
+
 {generated_analysis}
 
 ### 2. Canonical Story Summary (External Ground Truth)
@@ -1768,19 +1785,37 @@ This text is the source of truth for the story's events.
 ---
 ## FRAMEWORK FOR JUDGMENT (Your Analytical Rubric)
 
-You must apply the following principles when assessing the emotional scores:
-1.  **Anchoring:** Scores must be anchored to the protagonist's emotional stakes. +10 represents ultimate triumph/euphoria; -10 represents ultimate despair/tragedy (e.g., death, total failure).
-2.  **Proportionality:** The *magnitude* of a score change must be proportional to the *magnitude* of the causal event. A minor setback should not cause a 10-point drop.
-3.  **Narrative Weight:** The story's most pivotal moment (the climax or point of no return) should be clearly identifiable in the trajectory, often marked by the largest emotional shift.
+You must apply the following principles when assessing the fortune scores:
+1.  **Anchoring:** Scores must be anchored to the protagonist's situational stakes. +10 represents the best possible outcome; -10 represents the worst possible outcome (e.g., death, total destruction, loss of self)
+2.  **Proportionality:** The magnitude of a score change must be proportional to the magnitude of the causal event
+3.  **Narrative Weight:** The story's most pivotal moment (the climax or point of no return) should be clearly identifiable in the trajectory, often marked by the largest fortune shift.
+
+---
+  
+## SCORING FRAMEWORK: NARRATIVE JUDGMENT
+
+Fortune scores reflect the protagonist's objective SITUATION—how a reader would 
+judge their fate—not their momentary feelings.
+
+**Core Principle:** A character can feel content while their situation is terrible, 
+or feel miserable while their fortune is good. Always prioritize situation over sensation.
+
+**Critical Edge Cases:**
+- **Psychological destruction / brainwashing:** Severely negative fortune, even if the character "accepts" or "loves" their condition. The destruction of authentic selfhood is among the worst outcomes.
+- **Sole survivor of catastrophe:** Negative fortune. Mere survival amid total loss is not positive.
+- **Death:** Negative fortune, even if "peaceful" or a "release."
+- **Pyrrhic victory:** Score based on net outcome, not the nominal "win."
+
+**The Reader Test:** Would a well-read fan of this story nod in recognition at this score?
 
 ---
 ## ASSESSMENT & INSTRUCTIONS
 
 ### Phase 1: Bottom-Up Component Validation
-For each emotional transition, determine if the event in the `description` factually justifies the change in `end_emotional_score` according to the `Canonical Story Summary`.
+For each fortune transition, determine if the event in the `description` factually justifies the change in `end_fortune_score` according to the `Canonical Story Summary`.
 
 ### Phase 2: Top-Down Holistic Review
-After completing Phase 1, evaluate the entire emotional journey using the `FRAMEWORK FOR JUDGMENT`.
+After completing Phase 1, evaluate the entire fortune journey using the `FRAMEWORK FOR JUDGMENT`.
 -   Is the shape **proportional** and well-paced?
 -   Are the scores correctly **anchored** to the story's stakes?
 -   Does the shape give appropriate **narrative weight** to the climax?
@@ -1799,13 +1834,13 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
   "component_assessments": [
     {{
       "end_time": 40, 
-      "emotional_transition": "1 -> 8",
+      "fortune_transition": "1 -> 8",
       "is_justified": true,
       "reasoning": "The reunion with Daisy after years of obsession justifies a significant rise to euphoria."
     }},
     {{
       "end_time": 55,
-      "emotional_transition": "8 -> 4",
+      "fortune_transition": "8 -> 4",
       "is_justified": true,
       "reasoning": "Daisy's negative reaction to the party correctly tempers Gatsby's euphoria, justifying a moderate fall."
     }}
@@ -1867,138 +1902,138 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 #     {
 #       "end_time": 0,
 #       "description": "#N/A",
-#       "end_emotional_score": -5,
+#       "end_fortune_score": -5,
 #       "arc": "#N/A",
 #       "modified_end_time": 0,
-#       "modified_end_emotional_score": -5
+#       "modified_end_fortune_score": -5
 #     },
 #     {
 #       "end_time": 8,
 #       "description": "Holden, already expelled and having bungled the fencing team's equipment, skips the big game and trudges to Mr. Spencer's. The lecture—\"life is a game\"—lands as condescension. He fidgets, resents the pity, and bolts with relief, the encounter confirming his sense that adults are phony and that he's failing out of everything.",
-#       "end_emotional_score": -6,
+#       "end_fortune_score": -6,
 #       "arc": "Linear Decrease",
 #       "modified_end_time": 8,
-#       "modified_end_emotional_score": -6
+#       "modified_end_fortune_score": -6
 #     },
 #     {
 #       "end_time": 15,
 #       "description": "Back in the dorm, his red hunting cap gives him a fragile, private comfort, but Ackley's grating presence needles him. Stradlater's casual date with Jane Gallagher stirs anxious protectiveness and jealousy. Holden pours himself into writing about Allie's baseball glove—tender, mournful memories—leaving him raw and exposed.",
-#       "end_emotional_score": -7,
+#       "end_fortune_score": -7,
 #       "arc": "Gradual-to-Rapid Decrease",
 #       "modified_end_time": 15,
-#       "modified_end_emotional_score": -7
+#       "modified_end_fortune_score": -7
 #     },
 #     {
 #       "end_time": 20,
 #       "description": "Stradlater sneers at the composition; when he hints he might have fooled around with Jane, Holden explodes. The fight is brief and humiliating—he's pinned and bloodied. The dorm feels unendurable, and he impulsively decides to leave Pencey that night, hollow and angry.",
-#       "end_emotional_score": -9,
+#       "end_fortune_score": -9,
 #       "arc": "Straight Decrease",
 #       "modified_end_time": 20,
-#       "modified_end_emotional_score": -9
+#       "modified_end_fortune_score": -9
 #     },
 #     {
 #       "end_time": 28,
 #       "description": "On the train to New York, he reinvents himself as \"Rudolf Schmidt,\" flattering Mrs. Morrow about her son. The lies give him a perverse, fleeting buoyancy. In the hotel, voyeuristic glimpses across the courtyard are titillating and sad. Rebuffed by Faith Cavendish, he's left alone with the city's neon and his own ache.",
-#       "end_emotional_score": -8,
+#       "end_fortune_score": -8,
 #       "arc": "Rapid-to-Gradual Increase",
 #       "modified_end_time": 28,
-#       "modified_end_emotional_score": -8
+#       "modified_end_fortune_score": -8
 #     },
 #     {
 #       "end_time": 40,
 #       "description": "At the Lavender Room he dances well and briefly enjoys Bernice's company, but is abandoned with the tab. At Ernie's, the crowd's pretension and Lillian Simmons's phoniness drive him out. Maurice sells him a prostitute; faced with Sunny, he panics, pays to talk instead, and is then shaken down. Maurice punches him; Holden fantasizes melodramatic revenge and even suicide before dawn.",
-#       "end_emotional_score": -10,
+#       "end_fortune_score": -10,
 #       "arc": "Gradual-to-Rapid Decrease",
 #       "modified_end_time": 40,
-#       "modified_end_emotional_score": -10
+#       "modified_end_fortune_score": -10
 #     },
 #     {
 #       "end_time": 52,
 #       "description": "After a fitful sleep, small human connections rekindle him: an earnest chat with two nuns about Romeo and Juliet, pressing donations on them; hunting for \"Little Shirley Beans\" for Phoebe; and a little boy's off-key \"If a body catch a body…,\" which oddly soothes him. These kindnesses and signs of innocence lift the heaviness.",
-#       "end_emotional_score": -6,
+#       "end_fortune_score": -6,
 #       "arc": "Step-by-Step Increase",
 #       "modified_end_time": 52,
-#       "modified_end_emotional_score": -6
+#       "modified_end_fortune_score": -6
 #     },
 #     {
 #       "end_time": 60,
 #       "description": "He meets Sally Hayes, is dazzled, then repelled by her polish and social climbing. After the Lunts' play and a phony reunion with a boy from Andover, he spirals. At Radio City's rink and over lunch, he rants that he's fed up with everything and blurts a fantasy of running away to a New England cabin. Sally's refusal triggers his cruel \"royal pain in the ass,\" and he storms off.",
-#       "end_emotional_score": -8,
+#       "end_fortune_score": -8,
 #       "arc": "Rapid-to-Gradual Decrease",
 #       "modified_end_time": 60,
-#       "modified_end_emotional_score": -8
+#       "modified_end_fortune_score": -8
 #     },
 #     {
 #       "end_time": 66,
 #       "description": "He numbs himself with the Christmas show's spectacle and a dreary movie, then meets Carl Luce at the Wicker Bar. Holden's fixation on sex annoys Luce—\"typical Caulfield conversation\"—who briskly advises a psychiatrist and leaves. Holden gets very drunk and flails at forming any genuine contact.",
-#       "end_emotional_score": -9,
+#       "end_fortune_score": -9,
 #       "arc": "Linear Decrease",
 #       "modified_end_time": 66,
-#       "modified_end_emotional_score": -9
+#       "modified_end_fortune_score": -9
 #     },
 #     {
 #       "end_time": 74,
 #       "description": "In Central Park, the ducks' disappearance becomes an emblem of his own fear of vanishing. He breaks Phoebe's record, is seized by diarrhea, and staggers through crosswalks convinced he will die each time. Exhausted and near-delirious, he decides to go home to see Phoebe.",
-#       "end_emotional_score": -10,
+#       "end_fortune_score": -10,
 #       "arc": "Gradual-to-Rapid Decrease",
 #       "modified_end_time": 74,
-#       "modified_end_emotional_score": -10
+#       "modified_end_fortune_score": -10
 #     },
 #     {
 #       "end_time": 82,
 #       "description": "Sneaking into his parents' apartment, he wakes Phoebe. She is stricken that he's flunked again and demands to know what he likes. He fumbles—Allie, the nuns, a dead boy at Elkton Hills—then articulates his one true wish: to be \"the catcher in the rye,\" saving children from tumbling over a cliff. This confession, and Phoebe's presence, give him a rare sense of purpose and love.",
-#       "end_emotional_score": -5,
+#       "end_fortune_score": -5,
 #       "arc": "Gradual-to-Rapid Increase",
 #       "modified_end_time": 82,
-#       "modified_end_emotional_score": -5
+#       "modified_end_fortune_score": -5
 #     },
 #     {
 #       "end_time": 88,
 #       "description": "At Mr. Antolini's, he finds a concerned adult who speaks seriously of a \"fall\" ahead and quotes Stekel about living humbly rather than dying nobly. The sober talk feels like guidance, not a lecture. Holden, bone-tired, falls asleep with a faint sense of being looked after.",
-#       "end_emotional_score": -4,
+#       "end_fortune_score": -4,
 #       "arc": "Linear Increase",
 #       "modified_end_time": 88,
-#       "modified_end_emotional_score": -4
+#       "modified_end_fortune_score": -4
 #     },
 #     {
 #       "end_time": 90,
 #       "description": "He wakes to Mr. Antolini patting his head in the dark. Startled and mistrustful, he interprets it as a sexual advance, panics, and flees into the night, clutching at his bags and the last shreds of trust.",
-#       "end_emotional_score": -8,
+#       "end_fortune_score": -8,
 #       "arc": "Straight Decrease",
 #       "modified_end_time": 90,
-#       "modified_end_emotional_score": -8
+#       "modified_end_fortune_score": -8
 #     },
 #     {
 #       "end_time": 92,
 #       "description": "He dozes at Grand Central and wakes to Monday with mounting dread. Convinced he should run west and live as a deaf-mute to avoid phoniness, he drifts deeper into isolation while drafting a goodbye to Phoebe.",
-#       "end_emotional_score": -9,
+#       "end_fortune_score": -9,
 #       "arc": "Linear Decrease",
 #       "modified_end_time": 92,
-#       "modified_end_emotional_score": -9
+#       "modified_end_fortune_score": -9
 #     },
 #     {
 #       "end_time": 96,
 #       "description": "He meets Phoebe at the museum to say goodbye. She insists on coming with him; he refuses, she goes silent and furious. Confronted with her hurt, he abandons the runaway fantasy and agrees to stay—choosing connection over flight.",
-#       "end_emotional_score": -7,
+#       "end_fortune_score": -7,
 #       "arc": "Linear Increase",
 #       "modified_end_time": 96,
-#       "modified_end_emotional_score": -7
+#       "modified_end_fortune_score": -7
 #     },
 #     {
 #       "end_time": 98,
 #       "description": "At the zoo's carousel, he buys Phoebe a ticket and watches in the rain as she rides, reaching for the gold ring. He lets her try, accepting risk. Something breaks open; he cries and says he is happy, soaking in a simple, undiluted joy he's chased all along.",
-#       "end_emotional_score": 2,
+#       "end_fortune_score": 2,
 #       "arc": "Gradual-to-Rapid Increase",
 #       "modified_end_time": 98,
-#       "modified_end_emotional_score": 2
+#       "modified_end_fortune_score": 2
 #     },
 #     {
 #       "end_time": 100,
 #       "description": "A year later in the California sanitarium, he won't say how he got sick. He's supposed to go back to school, unsure if anything will change. Telling the story makes him miss people—Stradlater, Ackley, even Maurice—softening his edges, but uncertainty and melancholy remain.",
-#       "end_emotional_score": -1,
+#       "end_fortune_score": -1,
 #       "arc": "Linear Decrease",
 #       "modified_end_time": 100,
-#       "modified_end_emotional_score": -1
+#       "modified_end_fortune_score": -1
 #     }
 #   ]
 

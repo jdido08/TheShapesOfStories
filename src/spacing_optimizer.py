@@ -277,7 +277,7 @@ def optimize_spacing_binary_search(
 
 def check_has_constraints(
     original_arc_end_time_values,
-    original_arc_end_emotional_score_values,
+    original_arc_end_fortune_score_values,
     old_min_x, old_max_x,
     old_min_y, old_max_y,
     recursive_mode
@@ -293,7 +293,7 @@ def check_has_constraints(
         return True, "recursive_mode_disabled"
     
     end_time = original_arc_end_time_values[-1]
-    end_score = original_arc_end_emotional_score_values[-1]
+    end_score = original_arc_end_fortune_score_values[-1]
     
     constraints = []
     
@@ -333,7 +333,7 @@ def handle_spacing_adjustment_optimized(
     design_width,
     design_height,
     original_arc_end_time_values,
-    original_arc_end_emotional_score_values,
+    original_arc_end_fortune_score_values,
     old_min_x, old_max_x,
     old_min_y, old_max_y,
     recursive_mode
@@ -425,7 +425,7 @@ success, multiplier, message = handle_spacing_adjustment_optimized(
     design_width=design_width,
     design_height=design_height,
     original_arc_end_time_values=original_arc_end_time_values,
-    original_arc_end_emotional_score_values=original_arc_end_emotional_score_values,
+    original_arc_end_fortune_score_values=original_arc_end_fortune_score_values,
     old_min_x=old_min_x,
     old_max_x=old_max_x,
     old_min_y=old_min_y,
