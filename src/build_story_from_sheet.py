@@ -30,6 +30,7 @@ def build_story(story_type, story_title, story_author, story_protagonist, story_
     print(story_data_path)
 
 
+
 # Load credentials from the YAML file
 def load_credentials_from_yaml(file_path):
     with open(file_path, "r") as yaml_file:

@@ -78,6 +78,7 @@ def manually_adjust_story_data(story_data_file_path):
         protagonist=story_protagonist,
         story_summary=story_summary,
         shape=story_symbolic_rep,
+        story_components=story_components,
         llm_provider="anthropic",
         llm_model=story_shape_review_llm_model
     )
@@ -112,5 +113,5 @@ def manually_adjust_story_data(story_data_file_path):
 
 
 #TEST
-# story_to_adjust = ""
-# manually_adjust_story_data(story_to_adjust)
+story_to_adjust = "/Users/johnmikedidonato/Library/CloudStorage/GoogleDrive-johnmike@theshapesofstories.com/My Drive/story_data/frankenstein-victor-frankenstein.json"
+manually_adjust_story_data(story_to_adjust)

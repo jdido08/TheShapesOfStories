@@ -154,25 +154,43 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
     # get story summary from story summary path 
     #story_summary = get_story_summary(story_summary_path)
     if build_story_summary == True:
-        story_summary_llm_model = "claude-sonnet-4-5" #anthropic claude 4-5 seems to best 
-        story_summary_data = get_story_summary(
-            story_title=story_title, 
-            story_author=story_author, 
-            story_protagonist=story_protagonist, 
-            story_summary_path=story_summary_path, 
-            config_path=PATHS['config'],
-            llm_provider="anthropic", 
-            llm_model=story_summary_llm_model)
-        
-        print(story_summary_data)
 
-        story_summary = story_summary_data.get("main_story", "")
-        backstory = story_summary_data.get("backstory", "")
-        if story_summary != "":
-            print("✅ Story Summary Created")
+        #check to see if story summary already exists
+        summary_file_name = f'{story_title.lower().replace(" ", "-")}-{story_protagonist.lower().replace(" ", "-")}_summary.json'
+        summary_file_path = PATHS['story_summaries'] + "/" + summary_file_name
+        if os.path.exists(summary_file_path):
+            print("⚠️ STORY SUMMARY ALREADY EXISTS. Skipping Recreating it!")
+            with open(summary_file_path, 'r') as f:
+                story_summary_data = json.load(f)
+            story_summary = story_summary_data.get("main_story", "")
+            backstory = story_summary_data.get("backstory", "") 
+            story_summary_llm_model = "#N/A"
+            if story_summary != "":
+                print("✅ Story Summary Loaded")
+            else:
+                print("❌ Story Summary Failed")
+                return 
         else:
-             print("❌ Story Summary Failed")
-             return 
+
+            story_summary_llm_model = "claude-sonnet-4-5" #anthropic claude 4-5 seems to best 
+            story_summary_data = get_story_summary(
+                story_title=story_title, 
+                story_author=story_author, 
+                story_protagonist=story_protagonist, 
+                story_summary_path=story_summary_path, 
+                config_path=PATHS['config'],
+                llm_provider="anthropic", 
+                llm_model=story_summary_llm_model)
+            
+            print(story_summary_data)
+
+            story_summary = story_summary_data.get("main_story", "")
+            backstory = story_summary_data.get("backstory", "")
+            if story_summary != "":
+                print("✅ Story Summary Created")
+            else:
+                print("❌ Story Summary Failed")
+                return 
     else:
         story_summary_llm_model = "#N/A"
         with open(story_summary_path, 'r') as f:
@@ -250,13 +268,14 @@ def create_story_data(story_type, story_title, story_author,story_protagonist, s
         protagonist=story_protagonist, 
         story_summary=story_summary, 
         shape=story_symbolic_rep, 
-        llm_provider=story_shape_review_llm_model, 
-        llm_model="anthropic")
+        story_components=story_components,
+        llm_provider="anthropic", 
+        llm_model=story_shape_review_llm_model)
     print(story_shape_review)
     if story_shape_review.get("passes_review") == True:
         print("✅ Story Shape Reviewed Passed")
     else:
-        print("❌ Story Shape Reviewed Failed. ACTION REQUIRED!")
+        print("❌ Story Shape Reviewed Failed. Need to Review.")
 
 
     # get story cover

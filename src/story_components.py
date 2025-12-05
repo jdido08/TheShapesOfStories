@@ -499,46 +499,164 @@ def clean_distilled_scores(components, tolerance=1, strict=False):
             
     return components
 
-def ensure_finale_visibility(components, min_finale_duration=10, min_score_change=3):
+# def ensure_finale_visibility(components, min_finale_duration=10, min_score_change=3):
+#     """
+#     Simple rule: If the last component is very short but has a meaningful
+#     emotional shift, expand it by compressing earlier components.
+    
+#     Args:
+#         components: List of story components
+#         min_finale_duration: Minimum percentage duration for finale (default: 10)
+#         min_score_change: Minimum score change to consider "meaningful" (default: 3)
+#     """
+#     if len(components) < 3:
+#         print("⚠️ NEED TO CHECK STORY COMPONENTS LESS THAN 3")
+
+
+#     # Check last component
+#     last_duration = components[-1]['end_time'] - components[-2]['end_time']
+#     last_score_change = abs(components[-1]['end_fortune_score'] - 
+#                             components[-2]['end_fortune_score'])
+    
+#     if last_duration < min_finale_duration and last_score_change >= min_score_change:
+#         needed = min_finale_duration - last_duration
+
+#         print("⚠️ Changing Duration of Final Component to Ensure Visibility")
+        
+#         # Compress all earlier components proportionally
+#         # Everything from 0 to components[-2]['end_time'] needs to fit in 0 to (100 - min_finale_duration)
+#         total_earlier_time = components[-2]['end_time']
+#         available_earlier_time = 100 - min_finale_duration
+#         compression_ratio = available_earlier_time / total_earlier_time
+        
+#         for i in range(1, len(components) - 1):
+#             original_end = components[i]['end_time']
+#             components[i]['end_time'] = int(original_end * compression_ratio)
+        
+#         # Finale now starts at the compressed endpoint and ends at 100
+#         components[-2]['end_time'] = available_earlier_time
+#         components[-1]['end_time'] = 100
+    
+#     return components
+
+def ensure_component_visibility(components, min_duration=10, min_score_change=3):
     """
-    Simple rule: If the last component is very short but has a meaningful
-    emotional shift, expand it by compressing earlier components.
+    Ensures all story components meet minimum duration requirements so they
+    won't be filtered as noise during shape generation.
+    
+    Components with meaningful score changes but short durations are expanded
+    by proportionally compressing adjacent components.
     
     Args:
         components: List of story components
-        min_finale_duration: Minimum percentage duration for finale (default: 10)
+        min_duration: Minimum percentage duration for any component (default: 8)
         min_score_change: Minimum score change to consider "meaningful" (default: 3)
+    
+    Returns:
+        Modified components list
     """
     if len(components) < 3:
         print("⚠️ NEED TO CHECK STORY COMPONENTS LESS THAN 3")
-
-
-    # Check last component
-    last_duration = components[-1]['end_time'] - components[-2]['end_time']
-    last_score_change = abs(components[-1]['end_fortune_score'] - 
-                            components[-2]['end_fortune_score'])
+        return components
     
-    if last_duration < min_finale_duration and last_score_change >= min_score_change:
-        needed = min_finale_duration - last_duration
-
-        print("⚠️ Changing Duration of Final Component to Ensure Visibility")
+    # Track which components need expansion
+    adjustments_made = False
+    
+    # Check each component (skip the baseline at index 0)
+    for i in range(2, len(components)):
+        current_duration = components[i]['end_time'] - components[i-1]['end_time']
+        score_change = abs(components[i]['end_fortune_score'] - 
+                         components[i-1]['end_fortune_score'])
         
-        # Compress all earlier components proportionally
-        # Everything from 0 to components[-2]['end_time'] needs to fit in 0 to (100 - min_finale_duration)
-        total_earlier_time = components[-2]['end_time']
-        available_earlier_time = 100 - min_finale_duration
-        compression_ratio = available_earlier_time / total_earlier_time
+        if current_duration < min_duration and score_change >= min_score_change:
+            print(f"⚠️ Component at end_time {components[i]['end_time']} has duration {current_duration}% but meaningful score change of {score_change}")
+            adjustments_made = True
+    
+    if not adjustments_made:
+        return components
+    
+    # Recalculate all timings to ensure minimum durations
+    # First pass: identify total "borrowed" time needed
+    components_needing_expansion = []
+    total_expansion_needed = 0
+    
+    for i in range(2, len(components)):
+        current_duration = components[i]['end_time'] - components[i-1]['end_time']
+        score_change = abs(components[i]['end_fortune_score'] - 
+                         components[i-1]['end_fortune_score'])
         
-        for i in range(1, len(components) - 1):
-            original_end = components[i]['end_time']
-            components[i]['end_time'] = int(original_end * compression_ratio)
+        if current_duration < min_duration and score_change >= min_score_change:
+            expansion_needed = min_duration - current_duration
+            components_needing_expansion.append(i)
+            total_expansion_needed += expansion_needed
+    
+    if total_expansion_needed == 0:
+        return components
+    
+    # Calculate how much time is available from components that DON'T need expansion
+    available_time = 0
+    compressible_components = []
+    
+    for i in range(2, len(components)):
+        if i not in components_needing_expansion:
+            current_duration = components[i]['end_time'] - components[i-1]['end_time']
+            # Only compress if component has room (keep at least min_duration)
+            compressible = max(0, current_duration - min_duration)
+            if compressible > 0:
+                available_time += compressible
+                compressible_components.append((i, current_duration, compressible))
+    
+    if available_time < total_expansion_needed:
+        print(f"⚠️ Warning: Not enough time to expand all short components. Need {total_expansion_needed}%, only {available_time}% available.")
+        # Proceed with what we can do
+    
+    # Proportionally compress larger components to make room
+    compression_ratio = min(1.0, total_expansion_needed / max(available_time, 1))
+    
+    # Build new timeline
+    new_times = [0]  # Start at 0
+    current_time = 0
+    
+    for i in range(1, len(components)):
+        if i == 1:
+            # First component after baseline
+            original_duration = components[i]['end_time'] - components[i-1]['end_time']
+        else:
+            original_duration = components[i]['end_time'] - components[i-1]['end_time']
         
-        # Finale now starts at the compressed endpoint and ends at 100
-        components[-2]['end_time'] = available_earlier_time
-        components[-1]['end_time'] = 100
+        score_change = abs(components[i]['end_fortune_score'] - 
+                         components[i-1].get('end_fortune_score', components[i]['end_fortune_score']))
+        
+        # Determine new duration
+        if i in components_needing_expansion:
+            new_duration = min_duration
+        elif any(c[0] == i for c in compressible_components):
+            # Compress this component
+            compressible = next(c[2] for c in compressible_components if c[0] == i)
+            reduction = compressible * compression_ratio
+            new_duration = original_duration - reduction
+        else:
+            new_duration = original_duration
+        
+        current_time += new_duration
+        new_times.append(current_time)
+    
+    # Normalize to ensure we end at 100
+    scale = 100 / current_time if current_time > 0 else 1
+    
+    for i in range(1, len(components)):
+        components[i]['end_time'] = int(round(new_times[i] * scale))
+        if 'modified_end_time' in components[i]:
+            components[i]['modified_end_time'] = components[i]['end_time']
+    
+    # Ensure last component ends exactly at 100
+    components[-1]['end_time'] = 100
+    if 'modified_end_time' in components[-1]:
+        components[-1]['modified_end_time'] = 100
+    
+    print("✅ Component timings adjusted to ensure visibility")
     
     return components
-
 
 #review / grade accuracy of story components
 #VERSION 1
@@ -1575,7 +1693,7 @@ def get_distilled_story_components(config_path, story_components_detailed, story
     final_components = clean_distilled_scores(final_components, tolerance=1, strict=False)
 
     #ensure big changes at the end are visibale
-    final_components = ensure_finale_visibility(final_components, min_finale_duration=10)
+    final_components = ensure_component_visibility(final_components)
 
 
     #check if story_component are valid
@@ -1893,7 +2011,164 @@ Provide your complete two-phase assessment in the following JSON format ONLY. Ou
 
 
 #review story shape 
-def review_story_shape(config_path, story_title, author, protagonist, story_summary, shape, llm_provider, llm_model):
+
+# def review_story_shape(config_path, story_title, author, protagonist, story_summary, shape, llm_provider, llm_model):
+#     """
+#     Reviews a story shape and determines if it passes the "glance test."
+    
+#     Returns a dict with passes_review, confidence, assessment, and recommended_shape.
+#     """
+    
+#     prompt_template = """
+# You are a literary editor reviewing story shape analyses for "The Shapes of Stories," 
+# an art print business that visualizes narrative arcs based on Kurt Vonnegut's theory.
+
+# Your task is to determine if the shape accurately captures how readers experience this story.
+
+# ---
+# ## PRODUCT CONTEXT
+
+# "The Shapes of Stories" creates art prints visualizing narrative arcs for bibliophiles.
+
+# **Key considerations:**
+# - The audience (BookTok, Bookstagram) has deep emotional connections to these stories
+# - The shape must pass the "glance test" — a fan should instantly recognize the story's arc
+# - Shapes capture how readers EXPERIENCE and REMEMBER a story, not every plot point
+# - When in doubt, favor the interpretation that matches cultural consensus
+
+# If the shape requires explanation, it's wrong.
+
+# ---
+# ## HOW SHAPES WORK
+
+# Every story can be drawn on a simple graph.
+# - The horizontal axis is Time, from Beginning to End.
+# - The vertical axis is Fortune. Good is up, Ill is down.
+
+# A character's journey is made of a few simple movements:
+# - ↑ Rise: A change for the better. More arrows (↑↑, ↑↑↑) = more dramatic rise.
+# - ↓ Fall: A change for the worse. More arrows (↓↓, ↓↓↓) = more catastrophic fall.
+# - → Stasis: No significant change.
+
+# ---
+# ## INPUT
+
+# **Title:** {story_title}
+# **Author:** {author}
+# **Protagonist:** {protagonist}
+
+# **Story Summary:**
+# {story_summary}
+
+# **Generated Shape:** {shape}
+
+# **Story Components (for reference):**
+# These are the analyzed components that produced the shape. Use them to understand 
+# what each movement represents, but base your pass/fail judgment on the Reader Test, 
+# not on whether individual scores are precisely correct.
+
+# {story_components}
+
+# ---
+# ## YOUR TASK
+
+# Apply the "Reader Test": If a well-read fan of this story saw this shape, would they 
+# nod in recognition?
+
+# **Watch for these common problems:**
+
+# 1. **False recovery in tragedies:** Stories remembered as tragedies should not end 
+#    with an uptick. Survival after catastrophe is not recovery.
+
+# 2. **Destruction scored as positive:** Brainwashing, spiritual breaking, or loss of 
+#    self should not produce an uptick, even if the character "accepts" their fate.
+
+# 3. **Wrong emotional direction:** Does the ending feel right? A story remembered as 
+#    triumphant should end up. A story remembered as devastating should end down.
+
+# 4. **Overcomplicated shape:** Too many arrows for a simple story, or vice versa.
+
+# ---
+# ## OUTPUT FORMAT
+
+# Respond with JSON only. No other text.
+
+# {{
+#     "passes_review": true or false,
+#     "confidence": "high" or "medium" or "low",
+#     "assessment": "Brief explanation of why the shape does or doesn't match how readers experience this story",
+#     "recommended_shape": "What the shape should be if it fails, otherwise null"
+# }}
+
+# ---
+# ## EXAMPLES
+
+# **Example 1: FAIL**
+# Story: A tragedy where the protagonist loses everything and everyone, but survives.
+# Shape: ↑ ↓↓↓ ↑
+# Assessment: Final uptick contradicts how readers remember this as a tragedy. Survival 
+# amid total loss is not recovery. Shape should end down.
+# Recommended: ↑ ↓↓↓
+
+# **Example 2: FAIL**
+# Story: A dystopian tale where the protagonist is broken and brainwashed into loving 
+# their oppressor.
+# Shape: ↑ ↓↓ ↑
+# Assessment: Final uptick treats psychological destruction as positive. Readers 
+# understand this ending as devastation, not contentment. Shape should end down.
+# Recommended: ↑ ↓↓
+
+# **Example 3: PASS**
+# Story: A romance with obstacles, a crisis, and a happy ending.
+# Shape: ↑ ↓ ↑↑
+# Assessment: Shape matches the genre expectation — attraction, setback, triumph. 
+# A fan would recognize this arc instantly.
+
+# **Example 4: PASS**
+# Story: A classic tragedy where hubris leads to downfall.
+# Shape: ↑ ↓↓
+# Assessment: Clean tragic arc — rise followed by catastrophic fall. Matches cultural 
+# understanding of the story.
+
+# ---
+
+# Now review the provided shape and respond with your JSON assessment.
+# """
+
+#     prompt = PromptTemplate(
+#         input_variables=["story_title", "author", "protagonist", "story_summary", "shape"],
+#         template=prompt_template
+#     )
+    
+#     config = load_config(config_path=config_path)
+#     llm = get_llm(llm_provider, llm_model, config, max_tokens=1024)
+#     runnable = prompt | llm
+    
+#     output = runnable.invoke({
+#         "story_title": story_title,
+#         "author": author,
+#         "protagonist": protagonist,
+#         "story_summary": story_summary,
+#         "shape": shape
+#     })
+
+#     if hasattr(output, "content"):
+#         output_text = output.content
+#     else:
+#         output_text = output
+
+#     extracted_text = extract_json(output_text)
+    
+#     try:
+#         review_result = json.loads(extracted_text)
+#     except (json.JSONDecodeError, TypeError) as e:
+#         print(f"Error parsing JSON from reviewer LLM: {e}")
+#         print(f"Raw extracted text was: {extracted_text}")
+#         return {"error": "Failed to parse reviewer response as JSON."}
+    
+#     return review_result
+
+def review_story_shape(config_path, story_title, author, protagonist, story_summary, shape, story_components, llm_provider, llm_model):
     """
     Reviews a story shape and determines if it passes the "glance test."
     
@@ -1927,9 +2202,28 @@ Every story can be drawn on a simple graph.
 - The vertical axis is Fortune. Good is up, Ill is down.
 
 A character's journey is made of a few simple movements:
-- ↑ Rise: A change for the better. More arrows (↑↑, ↑↑↑) = more dramatic rise.
-- ↓ Fall: A change for the worse. More arrows (↓↓, ↓↓↓) = more catastrophic fall.
+- ↑ Rise: A change for the better.
+- ↓ Fall: A change for the worse.
 - → Stasis: No significant change.
+
+**Magnitude (1-3 arrows) is relative:**
+- Single arrow (↑ or ↓): A standard movement, OR all movements are similar in size
+- Double arrow (↑↑ or ↓↓): A notably larger movement compared to others in the story
+- Triple arrow (↑↑↑ or ↓↓↓): The dominant movement — significantly larger than all others
+
+If all movements in a story are roughly the same size, they will all be single arrows 
+regardless of absolute magnitude. Doubles and triples only appear when there is clear 
+contrast between movements.
+
+**Consecutive movements in the same direction are merged:**
+The shape only changes direction when fortune reverses. Multiple consecutive falls 
+(or rises) are combined into a single movement. You will never see `↓ ↓↓` or `↑ ↑↑` — 
+instead, these would be merged into one fall or rise with appropriate magnitude.
+
+**Small fluctuations may not produce arrows:**
+Brief or minor changes in fortune — especially those that span a short portion of 
+the story or quickly reverse — may be smoothed out and won't appear in the final shape. 
+This is intentional: the shape captures the essential arc, not every plot beat.
 
 ---
 ## INPUT
@@ -1943,13 +2237,38 @@ A character's journey is made of a few simple movements:
 
 **Generated Shape:** {shape}
 
+**Story Components (for reference):**
+These are the analyzed components that produced the shape. Use them to understand 
+what each movement represents, but base your pass/fail judgment on the Reader Test, 
+not on whether individual scores are precisely correct.
+
+{story_components}
+
 ---
 ## YOUR TASK
 
 Apply the "Reader Test": If a well-read fan of this story saw this shape, would they 
 nod in recognition?
 
-**Watch for these common problems:**
+**Guidance:**
+
+1. **Understand what the shape represents** by looking at the components. Each arrow 
+   corresponds to a transition between components.
+
+2. **Judge the shape, not the scores.** Your job is to evaluate whether the overall 
+   shape matches how readers experience and remember the story — not to second-guess 
+   individual fortune scores.
+
+3. **Prefer simplicity over granularity.** A 3-movement shape that captures the 
+   essential arc is often better than a 4 or 5-movement shape that tracks every beat. 
+   Only recommend adding movements if the current shape fundamentally misrepresents 
+   how readers experience the story.
+
+4. **Ask: "Does this shape MISLEAD, or is it just SIMPLIFIED?"**
+   - If it misleads (e.g., a tragedy ending with an uptick) → Fail
+   - If it's a valid simplification of a complex story → Pass
+
+**Watch for these genuine problems:**
 
 1. **False recovery in tragedies:** Stories remembered as tragedies should not end 
    with an uptick. Survival after catastrophe is not recovery.
@@ -1957,10 +2276,11 @@ nod in recognition?
 2. **Destruction scored as positive:** Brainwashing, spiritual breaking, or loss of 
    self should not produce an uptick, even if the character "accepts" their fate.
 
-3. **Wrong emotional direction:** Does the ending feel right? A story remembered as 
+3. **Wrong overall direction:** Does the ending feel right? A story remembered as 
    triumphant should end up. A story remembered as devastating should end down.
 
-4. **Overcomplicated shape:** Too many arrows for a simple story, or vice versa.
+4. **Fundamentally wrong structure:** The shape suggests a completely different 
+   story type (e.g., a steady rise for a story with major setbacks).
 
 ---
 ## OUTPUT FORMAT
@@ -1977,32 +2297,46 @@ Respond with JSON only. No other text.
 ---
 ## EXAMPLES
 
-**Example 1: FAIL**
+**Example 1: FAIL — Misleading ending**
 Story: A tragedy where the protagonist loses everything and everyone, but survives.
 Shape: ↑ ↓↓↓ ↑
-Assessment: Final uptick contradicts how readers remember this as a tragedy. Survival 
-amid total loss is not recovery. Shape should end down.
+Components show: catastrophe at -10, rescue/survival at -5
+
+Assessment: Final uptick contradicts how readers remember this as a tragedy. The 
+components show survival scored at -5, but mere survival amid total loss should not 
+read as "recovery" to fans. Shape should end down.
 Recommended: ↑ ↓↓↓
 
-**Example 2: FAIL**
-Story: A dystopian tale where the protagonist is broken and brainwashed into loving 
-their oppressor.
+**Example 2: FAIL — Destruction as positive**
+Story: A dystopian tale where the protagonist is broken and brainwashed.
 Shape: ↑ ↓↓ ↑
+Components show: torture at -10, "loving Big Brother" at +3
+
 Assessment: Final uptick treats psychological destruction as positive. Readers 
 understand this ending as devastation, not contentment. Shape should end down.
 Recommended: ↑ ↓↓
 
-**Example 3: PASS**
-Story: A romance with obstacles, a crisis, and a happy ending.
-Shape: ↑ ↓ ↑↑
-Assessment: Shape matches the genre expectation — attraction, setback, triumph. 
-A fan would recognize this arc instantly.
+**Example 3: PASS — Valid simplification**
+Story: A gothic romance with a miserable childhood, finding love, a catastrophic 
+revelation, and triumphant reunion.
+Shape: ↑ ↓↓ ↑↑
+Components show: -6 → -7 → +9 → -10 → +10
 
-**Example 4: PASS**
-Story: A classic tragedy where hubris leads to downfall.
-Shape: ↑ ↓↓
-Assessment: Clean tragic arc — rise followed by catastrophic fall. Matches cultural 
-understanding of the story.
+Assessment: Shape captures the essential arc — rise from misery to love, catastrophic 
+fall at the revelation, triumphant recovery. The childhood-to-Lowood phase (-6 → -7) 
+is absorbed into the overall rise, which is a valid simplification. A fan would 
+recognize this as the story's shape.
+
+**Example 4: PASS — Complex but accurate**
+Story: A romantic comedy with initial misjudgments, growing attraction, a family 
+scandal, and a triumphant double wedding.
+Shape: ↓ ↑ ↓↓ ↑↑
+Components show: +2 → -6 → +5 → -9 → +10
+
+Assessment: Shape accurately captures the story's complexity — initial fall through 
+prejudice and misjudgment, rise at Pemberley, catastrophic fall at the scandal, 
+triumphant resolution. This is more nuanced than a simple "romance" shape, but it 
+matches how attentive readers experience the story's emotional beats.
 
 ---
 
@@ -2010,7 +2344,7 @@ Now review the provided shape and respond with your JSON assessment.
 """
 
     prompt = PromptTemplate(
-        input_variables=["story_title", "author", "protagonist", "story_summary", "shape"],
+        input_variables=["story_title", "author", "protagonist", "story_summary", "shape", "story_components"],
         template=prompt_template
     )
     
@@ -2018,12 +2352,16 @@ Now review the provided shape and respond with your JSON assessment.
     llm = get_llm(llm_provider, llm_model, config, max_tokens=1024)
     runnable = prompt | llm
     
+    # Format story components as readable string
+    components_str = json.dumps(story_components, indent=2)
+    
     output = runnable.invoke({
         "story_title": story_title,
         "author": author,
         "protagonist": protagonist,
         "story_summary": story_summary,
-        "shape": shape
+        "shape": shape,
+        "story_components": components_str
     })
 
     if hasattr(output, "content"):
@@ -2041,7 +2379,6 @@ Now review the provided shape and respond with your JSON assessment.
         return {"error": "Failed to parse reviewer response as JSON."}
     
     return review_result
-
 
 
 #TESTING!
